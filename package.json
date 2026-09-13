@@ -1,20 +1,32 @@
 {
-  "name": "violet-virgo",
+  "name": "zz-website",
+  "private": true,
   "type": "module",
-  "version": "0.0.1",
+  "version": "0.1.0",
+  "packageManager": "bun@1.4.0",
   "scripts": {
-    "dev": "astro dev",
-    "start": "astro dev",
-    "build": "astro build",
-    "preview": "astro preview",
-    "astro": "astro"
+    "dev": "bunx astro dev",
+    "start": "bunx astro dev",
+    "build": "bunx astro build",
+    "preview": "bunx astro preview",
+    "check": "bunx astro check",
+    "astro": "bunx astro",
+    "cf:dev": "bunx wrangler pages dev dist",
+    "cf:deploy": "bunx wrangler pages deploy dist --project-name zz-lang"
   },
   "dependencies": {
+    "@astrojs/cloudflare": "^14.3.1",
+    "@astrojs/sitemap": "^0.2.0",
     "@astrojs/starlight": "^0.42.0",
     "@astrojs/starlight-tailwind": "^5.0.0",
     "@tailwindcss/vite": "^4.2.4",
     "astro": "^7.2.10",
+    "monaco-editor": "^0.52.0",
     "sharp": "^0.35.3",
     "tailwindcss": "^4.2.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "wrangler": "^4.0.0"
   }
 }

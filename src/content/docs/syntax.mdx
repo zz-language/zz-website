@@ -1,0 +1,158 @@
+---
+title: ZZ Syntax
+description: Complete syntax reference for the ZZ programming language
+---
+
+ZZ combines Rust-like safety with Python-like simplicity and async-native SQL.
+
+## Variables
+
+ZZ uses `:=` for inferred declarations and explicit type annotations:
+
+```zz
+x := 10              // inferred as int
+name := "ZZ"         // inferred as str
+count: int = 0       // explicit type annotation
+pi: float = 3.14     // explicit float
+```
+
+## Functions
+
+Functions use `func` with typed parameters and return types:
+
+```zz
+func add(a: int, b: int) -> int {
+    a + b
+}
+
+func main() {
+    result := add(3, 4)
+    println(result)  // 7
+}
+main()
+```
+
+Functions can have default parameters:
+
+```zz
+func squareArea(a: int, b: int = 2) {
+    return math.pow(a, b)
+}
+
+println(squareArea(2, 2))  // 4
+println(squareArea(2))     // 4 (uses default b=2)
+```
+
+## Structs
+
+Define structs with named fields:
+
+```zz
+struct User {id: int, name: str, email: str}
+```
+
+Create instances and access fields:
+
+```zz
+users:[User] = []
+users.append(User{id: 1, name: "Alice", email: "alice@example.com"})
+
+for user in users {
+    println("{user.name} ({user.email})")
+}
+```
+
+## Pattern Matching
+
+`match` with exhaustive patterns:
+
+```zz
+match bad {
+    .ok(_) => println("should not happen")
+    .err(msg) => println("error: {msg}")
+}
+```
+
+## Control Flow
+
+```zz
+if condition {
+    // ...
+} else {
+    // ...
+}
+
+for i in range(10) {
+    println("Hello")
+}
+
+while running {
+    // loop body
+}
+```
+
+## Iterators & Closures
+
+Range, map, filter, zip — all built-in:
+
+```zz
+squares := map(range(1, 6), |x: int| x * x)
+evens := filter(range(1, 11), |x: int| x % 2 == 0)
+paired := zip(["alice", "bob"], [95, 87])
+```
+
+## Pipeline Operator
+
+Chain functions with `|>`:
+
+```zz
+func double(x: int) -> int { x * 2 }
+func add_one(x: int) -> int { x + 1 }
+
+result := 5 |> add_one |> double
+println(result)  // 12
+```
+
+## String Interpolation
+
+Embed variables and format specs:
+
+```zz
+name := "ZZ"
+version := 42
+pi := 3.14159
+
+println("Hello, {name}!")           // Hello, ZZ!
+println("{pi:.2f}")                 // 3.14
+println("{version:x}")             // 2a
+println("{name} is {version * 2}") // ZZ is 84
+```
+
+## Elvis Operator
+
+Unwrap with fallback using `??`:
+
+```zz
+name := .some("Alice")
+greeting := name ?? "stranger"
+println(greeting)  // Alice
+
+val := 42 ?? 0
+println(val)  // 42
+```
+
+## Imports
+
+```zz
+import std.str
+import std.math
+import std.encoding
+```
+
+## List Comprehensions
+
+```zz
+squared := [i ** 2 for i in range(0, 6)]
+odd := [i for i in range(21) if i % 2 != 0]
+double := [x * 2 for x in [1, 2, 3, 4, 5, 6, 7, 8] if x < 8]
+```

@@ -1,0 +1,10 @@
+{
+  "siteName": "ZZ Programming Language",
+  "tagline": "Universal SQL. Zero-alloc structs. Pure async.",
+  "domain": "https://zz-lang.pages.dev",
+  "githubRepo": "https://github.com/zaidejjo/zz",
+  "docsPath": "/docs",
+  "pkgRegistryPath": "/pkg",
+  "installScript": "https://zz-lang.pages.dev/install.sh",
+  "ogImage": "/og-default.png"
+}

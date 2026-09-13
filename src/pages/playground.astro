@@ -1,0 +1,247 @@
+---
+import CustomHeader from '../components/header/CustomHeader.astro';
+import site from '../config/site.json';
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Playground | {site.siteName}</title>
+    <meta name="description" content="Try ZZ programming language in the browser" />
+  </head>
+  <body class="bg-[#0F172A] text-[#F8FAFC] font-body antialiased">
+    <CustomHeader />
+
+    <main class="pt-16 min-h-screen">
+      <div class="max-w-7xl mx-auto px-4 md:px-8 py-8">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h1 class="text-2xl font-bold text-[#F8FAFC] font-mono">Playground</h1>
+            <p class="text-[#94A3B8] text-sm mt-1">Write and run ZZ code in the browser</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <select id="example-select" class="bg-[#111827] border border-[#475569] text-[#F8FAFC] rounded-lg px-3 py-2 text-sm font-mono">
+              <option value="hello">Hello World</option>
+              <option value="struct">Struct Mapping</option>
+              <option value="iterators">Iterators & Closures</option>
+              <option value="pipeline">Pipeline Operator</option>
+              <option value="match">Pattern Matching</option>
+            </select>
+            <button id="run-btn" class="px-4 py-2 bg-[#22C55E] text-[#0F172A] font-semibold rounded-lg hover:bg-[#16A34A] transition-colors text-sm">
+              Run ▶
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 h-[60vh] min-h-[400px]">
+          {/* Editor */}
+          <div class="bg-[#111827] rounded-xl border border-[#475569]/50 overflow-hidden flex flex-col">
+            <div class="flex items-center gap-2 px-4 py-2 border-b border-[#475569]/50">
+              <span class="w-3 h-3 rounded-full bg-[#EF4444]"></span>
+              <span class="w-3 h-3 rounded-full bg-[#FBBF24]"></span>
+              <span class="w-3 h-3 rounded-full bg-[#22C55E]"></span>
+              <span class="ml-2 text-[#94A3B8] text-sm font-mono">editor.zz</span>
+            </div>
+            <div id="editor" class="flex-1 min-h-0"></div>
+          </div>
+
+          {/* Output */}
+          <div class="bg-[#111827] rounded-xl border border-[#475569]/50 overflow-hidden flex flex-col">
+            <div class="flex items-center gap-2 px-4 py-2 border-b border-[#475569]/50">
+              <span class="text-[#94A3B8] text-sm font-mono">Output</span>
+            </div>
+            <pre id="output" class="flex-1 p-4 text-sm font-mono text-[#94A3B8] overflow-auto whitespace-pre-wrap"></pre>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      // ZZ code examples
+      const examples: Record<string, string> = {
+        hello: `name := input("What is your name? ")
+println("Hello, {name}!")`,
+        struct: `struct User {id: int, name: str, email: str}
+
+func main() {
+    users:[User] = []
+    users.append(User{id: 1, name: "Alice", email: "alice@example.com"})
+    users.append(User{id: 2, name: "Bob", email: "bob@example.com"})
+
+    for user in users {
+        println("{user.id}. {user.name} <{user.email}>")
+    }
+}`,
+        iterators: `// Range and iterators
+for i in range(5) {
+    print("{i} ")
+}
+println("")
+
+// Map and filter
+squares := map(range(1, 6), |x: int| x * x)
+println("squares: {squares}")
+
+evens := filter(range(1, 11), |x: int| x % 2 == 0)
+println("evens: {evens}")
+
+// Pipeline
+func double(x: int) -> int { x * 2 }
+func add_one(x: int) -> int { x + 1 }
+
+result := 5 |> add_one |> double
+println("5 |> add_one |> double = {result}")`,
+        pipeline: `func double(x: int) -> int {
+    x * 2
+}
+
+func triple(x: int) -> int {
+    x * 3
+}
+
+func add_one(x: int) -> int {
+    x + 1
+}
+
+// Single-arg chaining
+result := 5 |> add_one |> double |> triple
+println("5 |> add_one |> double |> triple = {result}")
+
+// Pipeline with arithmetic
+final := 10 |> triple |> add_one |> double
+println("10 |> triple |> add_one |> double = {final}")`,
+        match: `func describe(x: int) -> str {
+    match x {
+        0 => "zero",
+        1 => "one",
+        2 => "two",
+        _ => "many"
+    }
+}
+
+for i in range(5) {
+    println("{i} -> {describe(i)}")
+}`,
+      };
+
+      let editor: any = null;
+      let monaco: any = null;
+
+      // Load Monaco
+      async function loadMonaco() {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.0/min/vs/loader.js';
+        document.head.appendChild(script);
+
+        await new Promise((resolve) => {
+          script.onload = resolve;
+        });
+
+        return new Promise<void>((resolve) => {
+          (window as any).require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.0/min/vs' } });
+          (window as any).require(['vs/editor/editor.main'], function (m: any) {
+            monaco = m;
+
+            // Register ZZ language
+            monaco.languages.register({ id: 'zz' });
+            monaco.languages.setMonarchTokensProvider('zz', {
+              keywords: [
+                'func', 'struct', 'impl', 'import', 'mod', 'pub', 'use', 'enum', 'trait', 'type', 'const', 'mut',
+                'if', 'else', 'for', 'while', 'return', 'break', 'continue', 'match', 'in',
+                'self', 'true', 'false', 'null', 'none', 'some', 'ok', 'err',
+              ],
+              typeKeywords: ['int', 'float', 'str', 'string', 'bool', 'char', 'void', 'auto'],
+              tokenizer: {
+                root: [
+                  [/\/\/.*$/, 'comment'],
+                  [/\/\*/, 'comment', '@comment'],
+                  [/"([^"\\]|\\.)*$/, 'string.invalid'],
+                  [/"/, 'string', '@string'],
+                  [/\d+\.\d+/, 'number.float'],
+                  [/\d+/, 'number'],
+                  [/[A-Z][a-zA-Z0-9_]*/, 'type'],
+                  [/[a-z_][a-zA-Z0-9_]*(?=\s*\()/, 'function'],
+                  [/\b(func|struct|impl|import|mod|pub|use|enum|trait|type|const|mut|if|else|for|while|return|break|continue|match|in|self|true|false|null|none|some|ok|err)\b/, 'keyword'],
+                  [/sqlz!/, 'keyword.sqlz'],
+                  [/\|>/, 'operator.pipe'],
+                  [/\?\?/, 'operator.elvis'],
+                  [/[a-z_][a-zA-Z0-9_]*/, 'identifier'],
+                  [/\s+/, 'white'],
+                ],
+                comment: [
+                  [/[^/*]+/, 'comment'],
+                  [/\*\//, 'comment', '@pop'],
+                  [/[/*]/, 'comment'],
+                ],
+                string: [
+                  [/[^\\"]+/, 'string'],
+                  [/\\./, 'string.escape'],
+                  [/"/, 'string', '@pop'],
+                ],
+              },
+            });
+
+            monaco.languages.setLanguageConfiguration('zz', {
+              comments: { lineComment: '//', blockComment: ['/*', '*/'] },
+              brackets: [['{', '}'], ['[', ']'], ['(', ')']],
+              autoClosingPairs: [
+                { open: '{', close: '}' },
+                { open: '[', close: ']' },
+                { open: '(', close: ')' },
+                { open: '"', close: '"' },
+              ],
+            });
+
+            editor = monaco.editor.create(document.getElementById('editor')!, {
+              value: examples.hello,
+              language: 'zz',
+              theme: 'vs-dark',
+              fontSize: 14,
+              fontFamily: "'JetBrains Mono', monospace",
+              minimap: { enabled: false },
+              scrollBeyondLastLine: false,
+              automaticLayout: true,
+            });
+
+            resolve();
+          });
+        });
+      }
+
+      // Run code (stub — shows in output panel)
+      function runCode() {
+        const code = editor?.getValue() || '';
+        const output = document.getElementById('output')!;
+        output.textContent = 'Running...\n';
+
+        // Stub execution — in production this would call Wasm runner
+        setTimeout(() => {
+          const lines: string[] = [];
+          // Simple simulation for demo
+          if (code.includes('println')) {
+            const matches = code.match(/println\("([^"]+)"\)/g);
+            if (matches) {
+              matches.forEach((m: string) => {
+                const content = m.slice(9, -2);
+                lines.push(content.replace(/\{([^}]+)\}/g, (_, expr) => `<${expr}>`));
+              });
+            }
+          }
+          output.textContent = lines.length > 0 ? lines.join('\n') : '(output appears here when Wasm runner is connected)';
+        }, 300);
+      }
+
+      // Init
+      loadMonaco().then(() => {
+        document.getElementById('run-btn')?.addEventListener('click', runCode);
+        document.getElementById('example-select')?.addEventListener('change', (e) => {
+          const key = (e.target as HTMLSelectElement).value;
+          if (examples[key] && editor) {
+            editor.setValue(examples[key]);
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

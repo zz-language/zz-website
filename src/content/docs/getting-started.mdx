@@ -1,0 +1,79 @@
+---
+title: Getting Started with ZZ
+description: Install and run your first ZZ program
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+ZZ is a statically-typed language with inferred declarations, pipeline operators, and rich diagnostics.
+
+## Install
+
+<Tabs>
+  <TabItem label="macOS / Linux">
+  ```bash
+  curl -fsSL https://zz-lang.pages.dev/install.sh | sh
+  ```
+  </TabItem>
+  <TabItem label="From Source">
+  ```bash
+  git clone https://github.com/zaidejjo/zz
+  cd zz
+  cargo install --path crates/zz_cli
+  ```
+  </TabItem>
+</Tabs>
+
+## Hello World
+
+Create `hello.zz`:
+
+```zz
+name := input("What is your name? ")
+println("Hello, {name}!")
+```
+
+Run it:
+
+```bash
+zz run hello.zz
+```
+
+## REPL
+
+Start an interactive session:
+
+```bash
+zz
+```
+
+```zz
+> let x = 42
+> x * 2
+84
+> :quit
+```
+
+## Your First Program
+
+A more complete example with functions and string interpolation:
+
+```zz
+func factorial(n: int) -> int {
+    if n <= 1 { 1 } else { n * factorial(n - 1) }
+}
+
+println("5! = {factorial(5)}")
+```
+
+Output:
+
+```
+5! = 120
+```
+
+## Next Steps
+
+- [Syntax Guide](/docs/syntax) — Learn ZZ syntax
+- [Modules](/docs/modules) — Standard library
+- [Playground](/playground) — Try ZZ in the browser

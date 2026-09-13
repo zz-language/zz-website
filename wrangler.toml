@@ -1,0 +1,15 @@
+name = "zz-site"
+compatibility_date = "2026-09-01"
+pages_build_output_dir = "dist"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "zz_registry"
+database_id = "REPLACE_ME"
+
+[[r2_buckets]]
+binding = "PKGS"
+bucket_name = "zz-pkgs"
+
+[vars]
+SITE_DOMAIN = "https://zz-lang.pages.dev"

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://zz-lang.pages.dev/sitemap-index.xml

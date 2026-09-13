@@ -1,0 +1,91 @@
+---
+import site from '../../config/site.json';
+
+const codeExample = `<span class="text-[#94A3B8]">// Struct with zero-alloc mapping</span>
+<span class="text-[#C084FC]">struct</span> <span class="text-[#FBBF24]">User</span> <span class="text-[#F8FAFC]">{id:</span> <span class="text-[#22C55E]">int</span><span class="text-[#F8FAFC]">,</span> <span class="text-[#F8FAFC]">name:</span> <span class="text-[#22C55E]">str</span><span class="text-[#F8FAFC]">,</span> <span class="text-[#F8FAFC]">email:</span> <span class="text-[#22C55E]">str</span><span class="text-[#F8FAFC]">}</span>
+
+<span class="text-[#C084FC]">func</span> <span class="text-[#FBBF24]">main</span><span class="text-[#F8FAFC]">() {</span>
+    <span class="text-[#F8FAFC]">users:</span><span class="text-[#22C55E]">[User]</span> <span class="text-[#F8FAFC]">= []</span>
+    <span class="text-[#F8FAFC]">users.append(</span><span class="text-[#FBBF24]">User</span><span class="text-[#F8FAFC]">{id:</span> <span class="text-[#22C55E]">1</span><span class="text-[#F8FAFC]">,</span> <span class="text-[#F8FAFC]">name:</span> <span class="text-[#22C55E]">"Alice"</span><span class="text-[#F8FAFC]">,</span> <span class="text-[#F8FAFC]">email:</span> <span class="text-[#22C55E]">"alice@example.com"</span><span class="text-[#F8FAFC]">})</span>
+
+    <span class="text-[#F8FAFC]">for</span> <span class="text-[#F8FAFC]">user</span> <span class="text-[#C084FC]">in</span> <span class="text-[#F8FAFC]">users {</span>
+        <span class="text-[#FBBF24]">println</span><span class="text-[#F8FAFC]">(</span><span class="text-[#22C55E]">"{user.name} ({user.email})"</span><span class="text-[#F8FAFC]">)</span>
+    <span class="text-[#F8FAFC]">}</span>
+<span class="text-[#F8FAFC]">}</span>`;
+---
+
+<section class="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#0F172A]">
+  {/* Grid pattern background */}
+  <div class="absolute inset-0 opacity-5" style="background-image: radial-gradient(circle at 1px 1px, #22C55E 1px, transparent 0); background-size: 40px 40px;"></div>
+
+  <div class="relative z-10 max-w-7xl mx-auto px-4 md:px-8 py-24 md:py-32">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      {/* Left: Text */}
+      <div>
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#22C55E]/10 border border-[#22C55E]/20 text-[#22C55E] text-sm font-mono mb-6">
+          <span class="w-2 h-2 rounded-full bg-[#22C55E] animate-pulse"></span>
+          v0.1.0 — Now with AOT compilation
+        </div>
+
+        <h1 class="text-4xl md:text-6xl font-bold text-[#F8FAFC] font-mono leading-tight mb-6">
+          The <span class="text-[#22C55E]">ZZ</span> Programming Language
+        </h1>
+
+        <p class="text-xl text-[#94A3B8] mb-8 leading-relaxed max-w-lg">
+          High-performance systems language with integrated, non-blocking, universal SQL engine.
+          Zero-alloc struct mapping. Pure async. AOT &amp; VM runtime.
+        </p>
+
+        <div class="flex flex-wrap gap-4 mb-12">
+          <a href={site.docsPath} class="inline-flex items-center gap-2 px-6 py-3 bg-[#22C55E] text-[#0F172A] font-semibold rounded-lg hover:bg-[#16A34A] transition-colors">
+            Get Started
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+            </svg>
+          </a>
+          <a href="/playground" class="inline-flex items-center gap-2 px-6 py-3 border border-[#475569] text-[#F8FAFC] font-semibold rounded-lg hover:border-[#22C55E] hover:text-[#22C55E] transition-colors">
+            Try Playground
+          </a>
+          <a href={site.pkgRegistryPath} class="inline-flex items-center gap-2 px-6 py-3 border border-[#475569] text-[#F8FAFC] font-semibold rounded-lg hover:border-[#22C55E] hover:text-[#22C55E] transition-colors">
+            Browse Packages
+          </a>
+        </div>
+      </div>
+
+      {/* Right: Code example */}
+      <div class="bg-[#111827] rounded-xl border border-[#475569]/50 overflow-hidden">
+        <div class="flex items-center gap-2 px-4 py-3 border-b border-[#475569]/50">
+          <span class="w-3 h-3 rounded-full bg-[#EF4444]"></span>
+          <span class="w-3 h-3 rounded-full bg-[#FBBF24]"></span>
+          <span class="w-3 h-3 rounded-full bg-[#22C55E]"></span>
+          <span class="ml-2 text-[#94A3B8] text-sm font-mono">hello.zz</span>
+        </div>
+        <pre class="p-6 text-sm font-mono leading-relaxed overflow-x-auto"><code set:html={codeExample}></code></pre>
+      </div>
+    </div>
+
+    {/* Performance badges */}
+    <div class="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6">
+      <div class="text-center">
+        <div class="text-2xl md:text-3xl font-bold text-[#22C55E] font-mono">17ms</div>
+        <div class="text-sm text-[#94A3B8] mt-1">CPU Intensive</div>
+        <div class="text-xs text-[#475569]">vs Go 71ms, Rust 15ms</div>
+      </div>
+      <div class="text-center">
+        <div class="text-2xl md:text-3xl font-bold text-[#22C55E] font-mono">56K</div>
+        <div class="text-sm text-[#94A3B8] mt-1">HTTP RPS</div>
+        <div class="text-xs text-[#475569]">vs Go 52K, Rust 49K</div>
+      </div>
+      <div class="text-center">
+        <div class="text-2xl md:text-3xl font-bold text-[#22C55E] font-mono">5.5MB</div>
+        <div class="text-sm text-[#94A3B8] mt-1">RSS Memory</div>
+        <div class="text-xs text-[#475569]">vs Go 14MB, Rust 3.3MB</div>
+      </div>
+      <div class="text-center">
+        <div class="text-2xl md:text-3xl font-bold text-[#22C55E] font-mono">0</div>
+        <div class="text-sm text-[#94A3B8] mt-1">GC Pauses</div>
+        <div class="text-xs text-[#475569]">Zero-alloc by default</div>
+      </div>
+    </div>
+  </div>
+</section>

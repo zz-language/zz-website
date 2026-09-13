@@ -1,0 +1,59 @@
+---
+import site from '../../config/site.json';
+---
+
+<section class="bg-[#111827] border-y border-[#475569]/50 py-16 md:py-24">
+  <div class="max-w-7xl mx-auto px-4 md:px-8">
+    <h2 class="text-2xl md:text-3xl font-bold text-[#F8FAFC] font-mono mb-8">Quick Install</h2>
+
+    <div class="bg-[#0F172A] rounded-xl border border-[#475569]/50 p-6 max-w-2xl">
+      <div class="flex items-center gap-2 text-sm text-[#94A3B8] mb-4 font-mono">
+        <span class="text-[#22C55E]">$</span> Install ZZ
+      </div>
+      <div class="flex items-center gap-3">
+        <code class="flex-1 text-[#F8FAFC] font-mono text-sm md:text-base overflow-x-auto whitespace-nowrap">
+          curl -fsSL {site.installScript} | sh
+        </code>
+        <button
+          id="copy-install"
+          class="shrink-0 px-4 py-2 bg-[#22C55E]/10 border border-[#22C55E]/30 text-[#22C55E] rounded-lg hover:bg-[#22C55E]/20 transition-colors text-sm font-mono"
+          aria-label="Copy install command"
+        >
+          Copy
+        </button>
+      </div>
+    </div>
+
+    <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="bg-[#0F172A] rounded-xl border border-[#475569]/50 p-6">
+        <div class="text-[#22C55E] font-mono font-bold mb-2">fn main()</div>
+        <h3 class="text-[#F8FAFC] font-semibold mb-2">Familiar Syntax</h3>
+        <p class="text-[#94A3B8] text-sm">Rust-like structs, pattern matching, and closures. Python-like simplicity.</p>
+      </div>
+      <div class="bg-[#0F172A] rounded-xl border border-[#475569]/50 p-6">
+        <div class="text-[#FBBF24] font-mono font-bold mb-2">sqlz!{}</div>
+        <h3 class="text-[#F8FAFC] font-semibold mb-2">Universal SQL</h3>
+        <p class="text-[#94A3B8] text-sm">Embedded SQL that works with any database. Zero-alloc struct mapping.</p>
+      </div>
+      <div class="bg-[#0F172A] rounded-xl border border-[#475569]/50 p-6">
+        <div class="text-[#C084FC] font-mono font-bold mb-2">async / await</div>
+        <h3 class="text-[#F8FAFC] font-semibold mb-2">Pure Async</h3>
+        <p class="text-[#94A3B8] text-sm">Non-blocking by default. HTTP, sockets, file I/O — all async.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  const btn = document.getElementById('copy-install');
+  if (btn) {
+    btn.addEventListener('click', async () => {
+      const cmd = btn.closest('.bg-\\[\\#0F172A\\]')?.querySelector('code')?.textContent?.trim();
+      if (cmd) {
+        await navigator.clipboard.writeText(cmd);
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+      }
+    });
+  }
+</script>

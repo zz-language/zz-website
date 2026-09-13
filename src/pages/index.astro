@@ -1,0 +1,164 @@
+---
+import CustomHeader from '../components/header/CustomHeader.astro';
+import Hero from '../components/hero/Hero.astro';
+import InstallWidget from '../components/hero/InstallWidget.astro';
+import site from '../config/site.json';
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{site.siteName}</title>
+    <meta name="description" content={site.tagline} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script type="application/ld+json" set:html={JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": site.siteName,
+      "description": site.tagline,
+      "url": site.domain,
+      "applicationCategory": "DeveloperApplication",
+      "operatingSystem": "Cross-platform",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
+    })} />
+  </head>
+  <body class="bg-[#0F172A] text-[#F8FAFC] font-body antialiased">
+    <CustomHeader />
+
+    <main>
+      <Hero />
+      <InstallWidget />
+
+      {/* Features Grid */}
+      <section class="py-16 md:py-24">
+        <div class="max-w-7xl mx-auto px-4 md:px-8">
+          <h2 class="text-2xl md:text-3xl font-bold text-[#F8FAFC] font-mono mb-4">Why ZZ?</h2>
+          <p class="text-[#94A3B8] mb-12 max-w-2xl">A systems language that doesn't make you choose between performance and productivity.</p>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Feature cards */}
+            <div class="bg-[#111827] rounded-xl border border-[#475569]/50 p-6 hover:border-[#22C55E]/30 transition-colors">
+              <div class="text-[#22C55E] text-2xl mb-3">⚡</div>
+              <h3 class="text-[#F8FAFC] font-semibold font-mono mb-2">Zero-Allocation Structs</h3>
+              <p class="text-[#94A3B8] text-sm">Map SQL rows directly to structs without copying. Memory-efficient by default.</p>
+            </div>
+            <div class="bg-[#111827] rounded-xl border border-[#475569]/50 p-6 hover:border-[#22C55E]/30 transition-colors">
+              <div class="text-[#FBBF24] text-2xl mb-3">🗄️</div>
+              <h3 class="text-[#F8FAFC] font-semibold font-mono mb-2">Universal SQL Engine</h3>
+              <p class="text-[#94A3B8] text-sm">Write SQL once, run on SQLite, PostgreSQL, MySQL. The <code class="text-[#FBBF24]">sqlz!{}</code> macro handles it.</p>
+            </div>
+            <div class="bg-[#111827] rounded-xl border border-[#475569]/50 p-6 hover:border-[#22C55E]/30 transition-colors">
+              <div class="text-[#C084FC] text-2xl mb-3">🔄</div>
+              <h3 class="text-[#F8FAFC] font-semibold font-mono mb-2">Pure Async Runtime</h3>
+              <p class="text-[#94A3B8] text-sm">Non-blocking I/O everywhere. HTTP, sockets, files — all async by default.</p>
+            </div>
+            <div class="bg-[#111827] rounded-xl border border-[#475569]/50 p-6 hover:border-[#22C55E]/30 transition-colors">
+              <div class="text-[#22C55E] text-2xl mb-3">🚀</div>
+              <h3 class="text-[#F8FAFC] font-semibold font-mono mb-2">AOT & VM Runtime</h3>
+              <p class="text-[#94A3B8] text-sm">Compile ahead-of-time for production, use the VM for development. Same code, both modes.</p>
+            </div>
+            <div class="bg-[#111827] rounded-xl border border-[#475569]/50 p-6 hover:border-[#22C55E]/30 transition-colors">
+              <div class="text-[#FBBF24] text-2xl mb-3">🔍</div>
+              <h3 class="text-[#F8FAFC] font-semibold font-mono mb-2">Smart Diagnostics</h3>
+              <p class="text-[#94A3B8] text-sm">Levenshtein suggestions, fix-it hints, source-mapped errors. Know what went wrong instantly.</p>
+            </div>
+            <div class="bg-[#111827] rounded-xl border border-[#475569]/50 p-6 hover:border-[#22C55E]/30 transition-colors">
+              <div class="text-[#C084FC] text-2xl mb-3">🧩</div>
+              <h3 class="text-[#F8FAFC] font-semibold font-mono mb-2">Rich Standard Library</h3>
+              <p class="text-[#94A3B8] text-sm">HTTP, JSON, filesystem, math, string ops, encoding — 70+ built-in functions.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Benchmark Section */}
+      <section class="bg-[#111827] border-y border-[#475569]/50 py-16 md:py-24">
+        <div class="max-w-7xl mx-auto px-4 md:px-8">
+          <h2 class="text-2xl md:text-3xl font-bold text-[#F8FAFC] font-mono mb-4">Performance</h2>
+          <p class="text-[#94A3B8] mb-8 max-w-2xl">Head-to-head with Go and Rust. ZZ matches or beats both in most benchmarks.</p>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b border-[#475569]/50">
+                  <th class="text-left py-3 px-4 text-[#94A3B8] font-mono">Benchmark</th>
+                  <th class="text-right py-3 px-4 text-[#22C55E] font-mono">ZZ (AOT MT)</th>
+                  <th class="text-right py-3 px-4 text-[#94A3B8] font-mono">Go</th>
+                  <th class="text-right py-3 px-4 text-[#94A3B8] font-mono">Rust</th>
+                </tr>
+              </thead>
+              <tbody class="font-mono">
+                <tr class="border-b border-[#475569]/30">
+                  <td class="py-3 px-4 text-[#F8FAFC]">CPU Intensive</td>
+                  <td class="py-3 px-4 text-[#22C55E] text-right">17ms</td>
+                  <td class="py-3 px-4 text-[#94A3B8] text-right">71ms</td>
+                  <td class="py-3 px-4 text-[#94A3B8] text-right">15ms</td>
+                </tr>
+                <tr class="border-b border-[#475569]/30">
+                  <td class="py-3 px-4 text-[#F8FAFC]">Concurrency Stress</td>
+                  <td class="py-3 px-4 text-[#22C55E] text-right">240ms</td>
+                  <td class="py-3 px-4 text-[#94A3B8] text-right">812ms</td>
+                  <td class="py-3 px-4 text-[#94A3B8] text-right">254ms</td>
+                </tr>
+                <tr class="border-b border-[#475569]/30">
+                  <td class="py-3 px-4 text-[#F8FAFC]">Memory Alloc</td>
+                  <td class="py-3 px-4 text-[#22C55E] text-right">174ms</td>
+                  <td class="py-3 px-4 text-[#94A3B8] text-right">271ms</td>
+                  <td class="py-3 px-4 text-[#94A3B8] text-right">268ms</td>
+                </tr>
+                <tr class="border-b border-[#475569]/30">
+                  <td class="py-3 px-4 text-[#F8FAFC]">String Concat</td>
+                  <td class="py-3 px-4 text-[#22C55E] text-right">11ms</td>
+                  <td class="py-3 px-4 text-[#94A3B8] text-right">434ms</td>
+                  <td class="py-3 px-4 text-[#94A3B8] text-right">1ms</td>
+                </tr>
+                <tr>
+                  <td class="py-3 px-4 text-[#F8FAFC]">HTTP Throughput</td>
+                  <td class="py-3 px-4 text-[#22C55E] text-right">56,236 rps</td>
+                  <td class="py-3 px-4 text-[#94A3B8] text-right">52,780 rps</td>
+                  <td class="py-3 px-4 text-[#94A3B8] text-right">49,085 rps</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section class="py-16 md:py-24">
+        <div class="max-w-7xl mx-auto px-4 md:px-8 text-center">
+          <h2 class="text-3xl md:text-4xl font-bold text-[#F8FAFC] font-mono mb-6">Ready to build?</h2>
+          <p class="text-[#94A3B8] mb-8 max-w-xl mx-auto">Join the community. Start building fast, safe, and simple.</p>
+          <div class="flex flex-wrap justify-center gap-4">
+            <a href={site.docsPath} class="inline-flex items-center gap-2 px-6 py-3 bg-[#22C55E] text-[#0F172A] font-semibold rounded-lg hover:bg-[#16A34A] transition-colors">
+              Read the Docs
+            </a>
+            <a href={site.githubRepo} target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-6 py-3 border border-[#475569] text-[#F8FAFC] font-semibold rounded-lg hover:border-[#22C55E] hover:text-[#22C55E] transition-colors">
+              Star on GitHub
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    {/* Footer */}
+    <footer class="bg-[#111827] border-t border-[#475569]/50 py-8">
+      <div class="max-w-7xl mx-auto px-4 md:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div class="text-[#94A3B8] text-sm font-mono">
+          &copy; {new Date().getFullYear()} ZZ Language. MIT License.
+        </div>
+        <div class="flex items-center gap-6">
+          <a href={site.docsPath} class="text-[#94A3B8] hover:text-[#F8FAFC] text-sm transition-colors">Docs</a>
+          <a href="/playground" class="text-[#94A3B8] hover:text-[#F8FAFC] text-sm transition-colors">Playground</a>
+          <a href={site.pkgRegistryPath} class="text-[#94A3B8] hover:text-[#F8FAFC] text-sm transition-colors">Packages</a>
+          <a href={site.githubRepo} target="_blank" rel="noopener noreferrer" class="text-[#94A3B8] hover:text-[#F8FAFC] text-sm transition-colors">GitHub</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

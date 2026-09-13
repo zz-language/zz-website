@@ -1,21 +1,26 @@
 # build output
 dist/
-# generated types
 .astro/
 
 # dependencies
 node_modules/
+bun.lockb
+*.bun
 
-# logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
-
-# environment variables
+# env / secrets
 .env
-.env.production
+.env.*
+.dev.vars
+wrangler/*.json
+.mf/
 
-# macOS-specific files
+# plans (gitignored per spec)
+plans/
+
+# editor / os
+.vscode/
 .DS_Store
+*.log
+
+# pagefind
+.pagefind/

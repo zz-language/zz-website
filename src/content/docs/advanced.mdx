@@ -1,0 +1,138 @@
+---
+title: Advanced Features
+description: Generics, impl, error handling, and advanced ZZ patterns
+---
+
+## Generics
+
+ZZ supports generic type parameters with constraints:
+
+```zz
+func min<T: Ord>(a: T, b: T) -> T {
+    if a < b { a } else { b }
+}
+
+func max<T: Ord>(a: T, b: T) -> T {
+    if a > b { a } else { b }
+}
+
+// Works with int, float, str — anything comparable
+println(min(3, 5))      // 3
+println(max("a", "z"))  // z
+```
+
+## Impl Blocks
+
+Add methods to structs:
+
+```zz
+struct Rectangle {width: int, height: int}
+
+impl Rectangle {
+    func area(self) -> int {
+        return self.width * self.height
+    }
+    func perimeter(self) -> int {
+        return (self.width + self.height) * 2
+    }
+}
+
+rect := Rectangle{width: 3, height: 4}
+println(rect.area())       // 12
+println(rect.perimeter())  // 14
+```
+
+## Error Handling
+
+ZZ uses Result types for error handling:
+
+```zz
+func parse(s: str) -> Result<int, str> {
+    match s.parse() {
+        .ok(n) => .ok(n),
+        .err(e) => .err("parse error: {e}")
+    }
+}
+
+func main() {
+    match parse("42") {
+        .ok(n) => println("Parsed: {n}"),
+        .err(msg) => println("Error: {msg}")
+    }
+}
+```
+
+## Pattern Matching
+
+Exhaustive pattern matching with variants:
+
+```zz
+func describe(value: int) -> str {
+    match value {
+        0 => "zero",
+        1 => "one",
+        2 => "two",
+        _ => "many"
+    }
+}
+```
+
+## Option Types
+
+Safe nullable values:
+
+```zz
+func find_user(id: int) -> Option<User> {
+    if id == 1 {
+        .some(User{id: 1, name: "Alice"})
+    } else {
+        .none
+    }
+}
+
+func main() {
+    match find_user(1) {
+        .some(user) => println("Found: {user.name}"),
+        .none => println("User not found")
+    }
+}
+```
+
+## Closures
+
+First-class functions with captured environment:
+
+```zz
+func main() {
+    multiplier := 3
+    triple := |x: int| x * multiplier
+    
+    result := map(range(1, 6), triple)
+    println(result)  // [3, 6, 9, 12, 15]
+}
+```
+
+## AOT vs VM
+
+ZZ supports two runtime modes:
+
+```bash
+# Bytecode VM (development)
+zz run file.zz
+
+# Ahead-of-time compilation (production)
+zz build file.zz -o output
+```
+
+Both modes produce identical results. AOT is faster for production, VM is faster for development iteration.
+
+## Multi-Threaded AOT
+
+For CPU-intensive workloads, ZZ AOT supports multi-threaded execution:
+
+```bash
+# Compile with multi-threading
+zz build file.zz --threads 4 -o output
+```
+
+Benchmark results show ZZ AOT MT matching or beating Rust in concurrent workloads.

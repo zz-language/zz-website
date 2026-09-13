@@ -1,0 +1,116 @@
+---
+title: Async Sockets
+description: Non-blocking I/O and async operations in ZZ
+---
+
+ZZ provides non-blocking I/O through its async runtime. All I/O operations are async by default.
+
+## Async HTTP
+
+```zz
+import std.http
+
+func main() {
+    // Non-blocking HTTP request
+    response := http.get("https://api.example.com/data")
+    println(response.body)
+}
+```
+
+## Concurrent Requests
+
+Run multiple HTTP requests in parallel:
+
+```zz
+import std.http
+import std.json
+
+func fetch_user(id: int) -> str {
+    response := http.get("https://api.example.com/users/{id}")
+    return response.body
+}
+
+func main() {
+    // These run concurrently
+    user1 := fetch_user(1)
+    user2 := fetch_user(2)
+    user3 := fetch_user(3)
+    
+    println("Fetched 3 users concurrently")
+}
+```
+
+## Async File I/O
+
+```zz
+import std.fs
+
+func main() {
+    // Non-blocking file operations
+    content := fs.read("large-file.txt")
+    lines := str.split(content, "\n")
+    println("Read {len(lines)} lines")
+}
+```
+
+## Async Sockets
+
+```zz
+import std.net
+
+func main() {
+    // Create async TCP connection
+    socket := net.tcp_connect("example.com", 80)
+    
+    // Send HTTP request
+    socket.send("GET / HTTP/1.1\r\nHost: example.com\r\n\r\n")
+    
+    // Receive response
+    response := socket.recv()
+    println(response)
+    
+    socket.close()
+}
+```
+
+## Pipeline with Async
+
+Combine pipeline operator with async operations:
+
+```zz
+import std.http
+import std.str
+
+func fetch_and_process(url: str) -> str {
+    url
+        |> http.get()
+        |> .body
+        |> str.trim()
+        |> str.to_upper()
+}
+
+func main() {
+    result := fetch_and_process("https://api.example.com/data")
+    println(result)
+}
+```
+
+## Error Handling in Async
+
+```zz
+import std.http
+
+func safe_fetch(url: str) -> Result<str, str> {
+    match http.get(url) {
+        .ok(response) => .ok(response.body),
+        .err(msg) => .err("Failed to fetch: {msg}")
+    }
+}
+
+func main() {
+    match safe_fetch("https://api.example.com/data") {
+        .ok(data) => println("Got data: {len(data)} bytes"),
+        .err(msg) => println("Error: {msg}")
+    }
+}
+```

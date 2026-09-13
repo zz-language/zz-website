@@ -1,0 +1,128 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "zz",
+  "scopeName": "source.zz",
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#keywords" },
+    { "include": "#types" },
+    { "include": "#strings" },
+    { "include": "#numbers" },
+    { "include": "#functions" },
+    { "include": "#operators" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.zz",
+          "match": "//.*$"
+        },
+        {
+          "name": "comment.block.zz",
+          "begin": "/\\*",
+          "end": "\\*/"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.zz",
+          "match": "\\b(if|else|for|while|return|break|continue|match|in)\\b"
+        },
+        {
+          "name": "keyword.declaration.zz",
+          "match": "\\b(func|struct|impl|import|mod|pub|use|enum|trait|type|const|mut)\\b"
+        },
+        {
+          "name": "keyword.other.zz",
+          "match": "\\b(self|true|false|null|none|some|ok|err)\\b"
+        },
+        {
+          "name": "keyword.sqlz.zz",
+          "match": "sqlz!"
+        }
+      ]
+    },
+    "types": {
+      "patterns": [
+        {
+          "name": "support.type.primitive.zz",
+          "match": "\\b(int|float|str|string|bool|char|void|auto)\\b"
+        },
+        {
+          "name": "entity.name.type.zz",
+          "match": "\\b[A-Z][a-zA-Z0-9_]*\\b"
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.zz",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.zz",
+              "match": "\\\\(n|t|r|\\\\|\"|\\{[^}]*\\})"
+            }
+          ]
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.float.zz",
+          "match": "\\b[0-9]+\\.[0-9]+\\b"
+        },
+        {
+          "name": "constant.numeric.integer.zz",
+          "match": "\\b[0-9]+\\b"
+        }
+      ]
+    },
+    "functions": {
+      "patterns": [
+        {
+          "name": "entity.name.function.zz",
+          "match": "\\b[a-z_][a-zA-Z0-9_]*(?=\\s*\\()"
+        },
+        {
+          "name": "support.function.builtin.zz",
+          "match": "\\b(println|print|input|len|range|map|filter|enumerate|zip)\\b"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.assignment.zz",
+          "match": "(:=|=)"
+        },
+        {
+          "name": "keyword.operator.comparison.zz",
+          "match": "(==|!=|<=|>=|<|>)"
+        },
+        {
+          "name": "keyword.operator.arithmetic.zz",
+          "match": "(\\+|-|\\*|/|%|\\*\\*)"
+        },
+        {
+          "name": "keyword.operator.pipe.zz",
+          "match": "\\|>"
+        },
+        {
+          "name": "keyword.operator.elvis.zz",
+          "match": "\\?\\?"
+        },
+        {
+          "name": "keyword.operator.lambda.zz",
+          "match": "\\|[^|]*\\|"
+        }
+      ]
+    }
+  }
+}

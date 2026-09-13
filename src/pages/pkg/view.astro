@@ -1,0 +1,108 @@
+---
+import CustomHeader from '../../components/header/CustomHeader.astro';
+import site from '../../config/site.json';
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Package | {site.siteName}</title>
+  </head>
+  <body class="bg-[#0F172A] text-[#F8FAFC] font-body antialiased">
+    <CustomHeader />
+
+    <main class="pt-16 min-h-screen">
+      <div class="max-w-4xl mx-auto px-4 md:px-8 py-12">
+        <a href="/pkg" class="text-[#22C55E] text-sm hover:underline mb-4 inline-block">&larr; Back to packages</a>
+
+        <div id="pkg-content" class="mt-4">
+          <div class="text-[#94A3B8]">Loading package...</div>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      const content = document.getElementById('pkg-content')!;
+      const params = new URLSearchParams(window.location.search);
+      const pkgName = params.get('name');
+
+      if (!pkgName) {
+        content.innerHTML = `
+          <div class="text-center py-12">
+            <h1 class="text-2xl font-bold text-[#F8FAFC] mb-4">No package specified</h1>
+            <p class="text-[#94A3B8] mb-6">Use the search to find a package.</p>
+            <a href="/pkg" class="px-4 py-2 bg-[#22C55E] text-[#0F172A] rounded-lg font-mono">Browse Packages</a>
+          </div>
+        `;
+      } else {
+        loadPackage(pkgName);
+      }
+
+      async function loadPackage(name: string) {
+        try {
+          const res = await fetch(`/api/pkg/${name}`);
+          if (!res.ok) throw new Error('Not found');
+          const pkg = await res.json();
+
+          document.title = `${pkg.metadata.name} | ZZ Packages`;
+
+          content.innerHTML = `
+            <div class="flex items-start justify-between mb-6">
+              <div>
+                <h1 class="text-3xl font-bold text-[#F8FAFC] font-mono">${pkg.metadata.name}</h1>
+                <p class="text-[#94A3B8] mt-2">${pkg.metadata.description || 'No description'}</p>
+              </div>
+              <span class="text-[#22C55E] font-mono text-lg">v${pkg.metadata.latest}</span>
+            </div>
+
+            <div class="bg-[#111827] rounded-xl border border-[#475569]/50 p-4 mb-6">
+              <div class="text-sm text-[#94A3B8] mb-2 font-mono">Install</div>
+              <code class="text-[#22C55E] font-mono">zz pkg add ${pkg.metadata.name}</code>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 mb-6">
+              <div class="bg-[#111827] rounded-xl border border-[#475569]/50 p-4">
+                <div class="text-sm text-[#94A3B8]">Author</div>
+                <div class="text-[#F8FAFC] font-mono">${pkg.metadata.author}</div>
+              </div>
+              <div class="bg-[#111827] rounded-xl border border-[#475569]/50 p-4">
+                <div class="text-sm text-[#94A3B8]">Version</div>
+                <div class="text-[#F8FAFC] font-mono">${pkg.metadata.latest}</div>
+              </div>
+            </div>
+
+            ${Object.keys(pkg.metadata.deps || {}).length > 0 ? `
+              <div class="mb-6">
+                <h2 class="text-lg font-semibold text-[#F8FAFC] mb-3">Dependencies</h2>
+                <div class="bg-[#111827] rounded-xl border border-[#475569]/50 p-4">
+                  ${Object.entries(pkg.metadata.deps).map(([k, v]: [string, any]) => `
+                    <div class="flex justify-between py-2 border-b border-[#475569]/30 last:border-0">
+                      <span class="text-[#F8FAFC] font-mono">${k}</span>
+                      <span class="text-[#94A3B8] font-mono">${v}</span>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            ` : ''}
+
+            <div>
+              <h2 class="text-lg font-semibold text-[#F8FAFC] mb-3">README</h2>
+              <div class="bg-[#111827] rounded-xl border border-[#475569]/50 p-6 text-[#94A3B8]">
+                ${pkg.readme || 'No README available'}
+              </div>
+            </div>
+          `;
+        } catch {
+          content.innerHTML = `
+            <div class="text-center py-12">
+              <h1 class="text-2xl font-bold text-[#F8FAFC] mb-4">Package not found</h1>
+              <p class="text-[#94A3B8] mb-6">The package "${name}" doesn't exist yet.</p>
+              <code class="px-4 py-2 bg-[#111827] border border-[#475569] rounded-lg text-[#22C55E] font-mono">zz pkg publish</code>
+            </div>
+          `;
+        }
+      }
+    </script>
+  </body>
+</html>

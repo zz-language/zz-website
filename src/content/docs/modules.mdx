@@ -1,0 +1,126 @@
+---
+title: Standard Library
+description: ZZ standard library modules and functions
+---
+
+ZZ ships with 70+ built-in functions across several modules.
+
+## Core Functions
+
+These are available everywhere without import:
+
+```zz
+println("Hello")        // print with newline
+print("Hello")          // print without newline
+len([1, 2, 3])          // 3
+range(10)                // [0, 1, 2, ..., 9]
+range(10, 15)            // [10, 11, 12, 13, 14]
+range(0, 20, 5)          // [0, 5, 10, 15]
+input("Enter name: ")    // read user input
+```
+
+## Iterators
+
+```zz
+map(range(1, 6), |x: int| x * x)      // [1, 4, 9, 16, 25]
+filter(range(1, 11), |x: int| x % 2 == 0)  // [2, 4, 6, 8, 10]
+enumerate(["a", "b", "c"])              // [[0, "a"], [1, "b"], [2, "c"]]
+zip(["alice", "bob"], [95, 87])         // [["alice", 95], ["bob", 87]]
+```
+
+## std.str — String Operations
+
+```zz
+import std.str
+
+str.join(["hello", "world"], " ")    // "hello world"
+str.trim("  spaces  ")               // "spaces"
+str.trim_start("  spaces  ")         // "spaces  "
+str.trim_end("  spaces  ")           // "  spaces"
+str.contains("Hello", "ell")         // true
+str.starts_with("Hello", "He")       // true
+str.ends_with("Hello!", "!")         // true
+str.replace("Hello", "ll", "r")      // "Hero"
+str.to_upper("hello")                // "HELLO"
+str.to_lower("HELLO")                // "hello"
+str.split("a,b,c", ",")              // ["a", "b", "c"]
+str.repeat("ab", 3)                  // "ababab"
+str.reverse("hello")                 // "olleh"
+str.pad_left("5", 3, "0")            // "005"
+str.pad_right("hi", 5, ".")          // "hi..."
+```
+
+## std.math — Math Functions
+
+```zz
+import std.math
+
+math.abs(-5)           // 5
+math.is_even(4)        // true
+math.is_odd(3)         // true
+math.min(1, 2)         // 1
+math.max(1, 2)         // 2
+math.clamp(10, 0, 5)   // 5
+math.gcd(12, 8)        // 4
+math.lcm(4, 6)         // 12
+math.factorial(5)      // 120
+math.sum([1, 2, 3])    // 6
+math.product([2, 3, 4]) // 24
+math.pow(2, 10)        // 1024
+```
+
+## std.encoding — Encoding/Decoding
+
+```zz
+import std.encoding
+
+encoding.base64_encode("hello")    // "aGVsbG8="
+encoding.base64_decode("aGVsbG8=") // "hello"
+encoding.hex_encode("ZZ")          // "5a5a"
+encoding.hex_decode("5a5a")        // "ZZ"
+encoding.url_encode("hello world") // "hello%20world"
+encoding.url_decode("hello%20world") // "hello world"
+```
+
+## std.collections — Vec Operations
+
+```zz
+import std.collections
+
+vec.push([1, 2], 3)           // [1, 2, 3]
+vec.len([1, 2, 3])           // 3
+vec.sum([1, 2, 3])           // 6
+vec.product([2, 3, 4])       // 24
+vec.min_val([3, 1, 2])       // .some(1)
+vec.max_val([3, 1, 2])       // .some(3)
+vec.index_of([10, 20, 30], 20) // 1
+vec.concat([1, 2], [3, 4])   // [1, 2, 3, 4]
+vec.flatten([[1, 2], [3]])    // [1, 2, 3]
+```
+
+## std.json — JSON Operations
+
+```zz
+import std.json
+
+data := json.parse('{"name": "Alice", "age": 30}')
+println(data.name)  // Alice
+```
+
+## std.http — HTTP Client
+
+```zz
+import std.http
+
+response := http.get("https://api.example.com/data")
+println(response.body)
+```
+
+## std.fs — File System
+
+```zz
+import std.fs
+
+content := fs.read("file.txt")
+fs.write("output.txt", "Hello, World!")
+```
