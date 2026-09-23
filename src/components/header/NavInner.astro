@@ -32,16 +32,16 @@ import site from '../../config/site.json';
   <div class="flex items-center gap-1.5">
     <button
       id="nav-search"
-      class="hidden h-9 sm:flex items-center gap-3 px-3 rounded-lg bg-slate-900/60 border border-slate-800 text-slate-300 text-xs hover:border-slate-700 hover:text-white transition"
+      class="hidden h-9 sm:flex items-center gap-3 px-3 rounded-lg bg-surface/80 border border-border text-muted text-xs hover:text-foreground hover:border-accent-border transition"
       aria-label="Search (Ctrl+K)"
     >
       <Icon name="search" size={14} />
       <span>Search</span>
-      <kbd class="font-mono text-[10px] border border-slate-700 rounded px-1">⌘K</kbd>
+      <kbd class="font-mono text-[10px] border border-border rounded px-1">⌘K</kbd>
     </button>
     <button
       id="theme-toggle"
-      class="h-9 w-9 grid place-items-center rounded-lg bg-slate-900/60 border border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white transition"
+      class="h-9 w-9 grid place-items-center rounded-lg bg-surface/80 border border-border text-muted hover:text-foreground hover:border-accent-border transition"
       aria-label="Toggle theme"
     >
       <span class="theme-icon-dark"><Icon name="sun" size={18} /></span>
@@ -50,7 +50,7 @@ import site from '../../config/site.json';
     <span id="nav-auth">
       <a
         href="/login"
-        class="flex h-9 items-center px-3 rounded-lg bg-slate-900/60 border border-slate-800 text-sm text-slate-300 hover:border-slate-700 hover:text-white transition"
+        class="flex h-9 items-center px-3 rounded-lg bg-surface/80 border border-border text-sm text-muted hover:text-foreground hover:border-accent-border transition"
       >
         Log in
       </a>
@@ -59,14 +59,14 @@ import site from '../../config/site.json';
       href={site.githubRepo}
       target="_blank"
       rel="noopener noreferrer"
-      class="h-9 w-9 grid place-items-center rounded-lg bg-slate-900/60 border border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white transition"
+      class="h-9 w-9 grid place-items-center rounded-lg bg-surface/80 border border-border text-muted hover:text-foreground hover:border-accent-border transition"
       aria-label="ZZ on GitHub"
     >
       <Icon name="github" size={18} />
     </a>
     <button
       id="nav-menu-btn"
-      class="md:hidden h-9 w-9 grid place-items-center rounded-lg bg-slate-900/60 border border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white transition"
+      class="md:hidden h-9 w-9 grid place-items-center rounded-lg bg-surface/80 border border-border text-muted hover:text-foreground hover:border-accent-border transition"
       aria-label="Open menu"
     >
       <Icon name="menu" size={18} />
