@@ -116,7 +116,7 @@ import '../../styles/global.css';
             </a>
             <div class="flex items-center justify-between mt-4 text-xs">
               <a href="/pkg/author?login=${encodeURIComponent(pkg.author || '')}" class="text-faint hover:text-accent">${esc(pkg.author)}</a>
-              <button data-copy="zz add ${esc(pkg.name)} --registry ${esc(registryApi)}" class="copy-btn text-accent font-mono hover:underline">copy install</button>
+              <button data-copy="zz add ${esc(pkg.name)}" class="copy-btn text-accent font-mono hover:underline">copy install</button>
             </div>
           </div>`,
           )
