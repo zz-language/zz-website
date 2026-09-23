@@ -219,7 +219,14 @@ button:disabled {
   --sl-nav-height: 3.5rem;
 }
 header.header {
-  display: none;
+  /* Collapse Starlight's own box to zero (the shared Navbar renders its
+     own fixed bar from inside this slot). display:none would also hide
+     our bar — a zero static box keeps offsets intact instead. */
+  position: static;
+  height: 0;
+  padding: 0;
+  border: 0;
+  overflow: visible;
 }
 
 /* ——— Active nav link ——— */
