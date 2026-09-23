@@ -1,116 +1,85 @@
 ---
 title: Async Sockets
-description: Non-blocking I/O and async operations in ZZ
+description: Non-blocking HTTP and TCP in ZZ
 ---
 
-ZZ provides non-blocking I/O through its async runtime. All I/O operations are async by default.
+ZZ I/O is non-blocking by default. This guide covers the two network surfaces:
+[HTTP](/stdlib/http) for web traffic and [TCP sockets](/stdlib/net) for
+everything else.
 
-## Async HTTP
+## Async HTTP client
+
+Client calls return `Result<Response, str>` — handle both arms:
 
 ```zz
 import std.http
 
-func main() {
-    // Non-blocking HTTP request
-    response := http.get("https://api.example.com/data")
-    println(response.body)
+match http.get("https://api.example.com/users/1", {}) {
+    .ok(res) => {
+        println(http.status(res))
+        println(http.text(res))
+    },
+    .err(e) => println("request failed: {e}"),
 }
 ```
 
-## Concurrent Requests
-
-Run multiple HTTP requests in parallel:
+Post JSON with explicit headers:
 
 ```zz
 import std.http
 import std.json
 
-func fetch_user(id: int) -> str {
-    response := http.get("https://api.example.com/users/{id}")
-    return response.body
-}
+payload := json.stringify({"name": "Ada"})
+headers := {"content-type": "application/json"}
 
-func main() {
-    // These run concurrently
-    user1 := fetch_user(1)
-    user2 := fetch_user(2)
-    user3 := fetch_user(3)
-    
-    println("Fetched 3 users concurrently")
+match http.post("https://api.example.com/users", payload, headers) {
+    .ok(res) => println("created: {http.status(res)}"),
+    .err(e) => println("request failed: {e}"),
 }
 ```
 
-## Async File I/O
+## Async HTTP server
+
+Build a route table with pipelines, then listen. Handlers take the request
+and return the response body:
 
 ```zz
-import std.fs
+import std.http
 
-func main() {
-    // Non-blocking file operations
-    content := fs.read("large-file.txt")
-    lines := str.split(content, "\n")
-    println("Read {len(lines)} lines")
-}
+server := http.server()
+    |> http.get(_, "/", |body: str| "Hello, World!")
+    |> http.post(_, "/echo", |body: str| body)
+
+http.listen(server, 8080)
 ```
 
-## Async Sockets
+Prove routes with `http.handle` before ever opening a port:
+
+```zz
+response := http.handle(server, "GET", "/", "")
+println(response)  // Hello, World!
+```
+
+## Raw TCP
+
+Drop to [std.net](/stdlib/net) when the protocol isn't HTTP. Every call
+returns a `Result`:
 
 ```zz
 import std.net
 
-func main() {
-    // Create async TCP connection
-    socket := net.tcp_connect("example.com", 80)
-    
-    // Send HTTP request
-    socket.send("GET / HTTP/1.1\r\nHost: example.com\r\n\r\n")
-    
-    // Receive response
-    response := socket.recv()
-    println(response)
-    
-    socket.close()
+match net.tcp_connect("example.com:80", 5000) {
+    .ok(stream) => {
+        net.tcp_write(stream, "GET / HTTP/1.0\r\nHost: example.com\r\n\r\n")
+        match net.tcp_readline(stream) {
+            .ok(line) => println("status: {line}"),
+            .err(e) => println("read failed: {e}"),
+        }
+        net.tcp_close(stream)
+    },
+    .err(e) => println("connect failed: {e}"),
 }
 ```
 
-## Pipeline with Async
-
-Combine pipeline operator with async operations:
-
-```zz
-import std.http
-import std.str
-
-func fetch_and_process(url: str) -> str {
-    url
-        |> http.get()
-        |> .body
-        |> str.trim()
-        |> str.to_upper()
-}
-
-func main() {
-    result := fetch_and_process("https://api.example.com/data")
-    println(result)
-}
-```
-
-## Error Handling in Async
-
-```zz
-import std.http
-
-func safe_fetch(url: str) -> Result<str, str> {
-    match http.get(url) {
-        .ok(response) => .ok(response.body),
-        .err(msg) => .err("Failed to fetch: {msg}")
-    }
-}
-
-func main() {
-    match safe_fetch("https://api.example.com/data") {
-        .ok(data) => println("Got data: {len(data)} bytes"),
-        .err(msg) => println("Error: {msg}")
-    }
-}
-```
+Serve with `tcp_listen` + `tcp_accept` in a loop, and set deadlines with
+`set_read_timeout` / `set_write_timeout` so slow peers can't hang you.

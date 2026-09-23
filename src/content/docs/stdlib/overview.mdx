@@ -1,0 +1,87 @@
+---
+title: Standard Library Overview
+description: Built-in functions, modules, method syntax and variant methods
+---
+
+70+ functions. Zero dependencies. Everything below works in both the bytecode
+VM and AOT runtimes.
+
+## Built-ins (no import needed)
+
+| Function | Signature | Description |
+|----------|-----------|-------------|
+| `print` | `print(v: T)` | Print without newline |
+| `println` | `println(v: T)` | Print with newline |
+| `input` | `input(prompt?: str) -> str` | Print a prompt and read a line |
+| `typeof` | `typeof(v: T) -> str` | Runtime type name |
+| `str` | `str(v: T) -> str` | Convert to string |
+| `int` | `int(v: T)` | Parse/convert to int (`.none` on failure) |
+| `float` | `float(v: T)` | Parse/convert to float (`.none` on failure) |
+| `len` | `len(v: T) -> int` | Length of array, string, dict or range |
+| `range` | `range(start?, stop, step?)` | Integer range |
+| `map` | `map(arr, f) -> [U]` | Apply a function to each element |
+| `filter` | `filter(arr, f) -> [T]` | Keep elements where predicate holds |
+| `enumerate` | `enumerate(arr)` | Index + value pairs |
+| `zip` | `zip(a, b)` | Pair elements from two iterables |
+
+```zz
+squares := map(range(1, 6), |x: int| x * x)
+evens := filter(range(1, 11), |x: int| x % 2 == 0)
+```
+
+## Modules
+
+| Module | Purpose | Page |
+|--------|---------|------|
+| `std.io` | Console I/O | [io](/stdlib/io) |
+| `std.str` | String manipulation | [str](/stdlib/str) |
+| `std.vec` | Array operations | [vec](/stdlib/vec) |
+| `std.json` | JSON parsing/serialization | [json](/stdlib/json) |
+| `std.http` | HTTP client + server | [http](/stdlib/http) |
+| `std.fs` | Filesystem operations | [fs](/stdlib/fs) |
+| `std.env` | Environment variables, CLI args | [env](/stdlib/env) |
+| `std.math` | Math functions | [math](/stdlib/math) |
+| `std.time` | Time and sleep | [time](/stdlib/time) |
+| `std.encoding` | Base64, hex, URL encoding | [encoding](/stdlib/encoding) |
+| `std.net` | TCP networking | [net](/stdlib/net) |
+
+```zz
+import std.str
+import std.math
+```
+
+## Method syntax
+
+`str` and `vec` functions double as methods on values:
+
+```zz
+import std.str
+import std.vec
+
+"  hello  ".trim()        // "hello"
+"hello".to_upper()        // "HELLO"
+[3, 1, 2].sort()          // [1, 2, 3]
+["a", "b"].join(", ")     // "a, b"
+```
+
+## Option / Result methods
+
+Available on every variant value:
+
+| Method | Description |
+|--------|-------------|
+| `.unwrap()` | Unwrap or panic |
+| `.unwrap_or(default)` | Unwrap or use default |
+| `.expect(msg)` | Unwrap or panic with message |
+
+```zz
+x := .some(42)
+x.unwrap()           // 42
+x.unwrap_or(0)       // 42
+
+y: Option<int> = .none
+y.unwrap_or(0)       // 0
+
+ok_val := .ok(42)
+ok_val.unwrap_or(0)  // 42
+```

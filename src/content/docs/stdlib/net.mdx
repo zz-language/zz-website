@@ -1,0 +1,44 @@
+---
+title: std.net
+description: Blocking-style TCP client and server sockets
+---
+
+```zz
+import std.net
+```
+
+Every operation returns a `Result`, so network code reads like
+[error handling](/error-handling) with sockets.
+
+| Function | Signature | Description |
+|----------|-----------|-------------|
+| `net.tcp_connect` | `net.tcp_connect(addr: str, timeout_ms: int)` | Connect (yields a stream) |
+| `net.tcp_listen` | `net.tcp_listen(addr: str)` | Bind a listener |
+| `net.tcp_accept` | `net.tcp_accept(listener)` | Accept one connection |
+| `net.tcp_write` | `net.tcp_write(stream, data: str)` | Write bytes (count) |
+| `net.tcp_read` | `net.tcp_read(stream, max_bytes: int)` | Read up to N bytes |
+| `net.tcp_readline` | `net.tcp_readline(stream)` | Read one line |
+| `net.tcp_close` | `net.tcp_close(stream) -> bool` | Close the stream |
+| `net.peer_addr` | `net.peer_addr(stream)` | Remote address |
+| `net.local_addr` | `net.local_addr(stream)` | Local address |
+| `net.set_read_timeout` | `net.set_read_timeout(stream, ms: int) -> bool` | Read deadline |
+| `net.set_write_timeout` | `net.set_write_timeout(stream, ms: int) -> bool` | Write deadline |
+
+```zz
+import std.net
+
+match net.tcp_connect("example.com:80", 5000) {
+    .ok(stream) => {
+        net.tcp_write(stream, "GET / HTTP/1.0\r\nHost: example.com\r\n\r\n")
+        match net.tcp_read(stream, 4096) {
+            .ok(body) => println(body),
+            .err(e) => println("read failed: {e}"),
+        }
+        net.tcp_close(stream)
+    },
+    .err(e) => println("connect failed: {e}"),
+}
+```
+
+For HTTP-shaped traffic prefer [std.http](/stdlib/http) — raw sockets are for
+protocols the standard library doesn't speak yet.

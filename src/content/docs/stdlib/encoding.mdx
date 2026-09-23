@@ -1,0 +1,32 @@
+---
+title: std.encoding
+description: Base64, hex and URL encoding
+---
+
+```zz
+import std.encoding
+```
+
+| Function | Signature | Description |
+|----------|-----------|-------------|
+| `encoding.base64_encode` | `encoding.base64_encode(s: str) -> str` | Encode to Base64 |
+| `encoding.base64_decode` | `encoding.base64_decode(s: str)` | Decode (`Result`: `.err` on bad input) |
+| `encoding.hex_encode` | `encoding.hex_encode(s: str) -> str` | Encode to hex |
+| `encoding.hex_decode` | `encoding.hex_decode(s: str)` | Decode (`Result`) |
+| `encoding.url_encode` | `encoding.url_encode(s: str) -> str` | Percent-encode |
+| `encoding.url_decode` | `encoding.url_decode(s: str)` | Decode (`Result`) |
+
+```zz
+import std.encoding
+
+encoded := encoding.base64_encode("hello")
+println(encoded)  // aGVsbG8=
+
+match encoding.base64_decode(encoded) {
+    .ok(text) => println("decoded: {text}"),
+    .err(e) => println("decode failed: {e}"),
+}
+
+println(encoding.hex_encode("ZZ"))  // 5a5a
+println(encoding.url_encode("hello world & foo=bar"))
+```

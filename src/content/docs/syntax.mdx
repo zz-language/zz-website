@@ -1,24 +1,27 @@
 ---
-title: ZZ Syntax
-description: Complete syntax reference for the ZZ programming language
+title: Syntax
+description: Declarations, functions, structs, control flow and the core operators
 ---
 
-ZZ combines Rust-like safety with Python-like simplicity and async-native SQL.
+## Declarations
 
-## Variables
-
-ZZ uses `:=` for inferred declarations and explicit type annotations:
+`:=` infers the type; `: Type =` declares it explicitly:
 
 ```zz
-x := 10              // inferred as int
-name := "ZZ"         // inferred as str
-count: int = 0       // explicit type annotation
-pi: float = 3.14     // explicit float
+x := 10              // inferred: int
+name := "ZZ"         // inferred: str
+pi := 3.14           // inferred: float
+count: int = 0       // explicit
+names: [str] = ["Ada", "Grace"]
+```
+
+`const` marks a binding immutable — reassigning it is an error:
+
+```zz
+const LIMIT = 100
 ```
 
 ## Functions
-
-Functions use `func` with typed parameters and return types:
 
 ```zz
 func add(a: int, b: int) -> int {
@@ -26,84 +29,111 @@ func add(a: int, b: int) -> int {
 }
 
 func main() {
-    result := add(3, 4)
-    println(result)  // 7
+    println(add(3, 4))  // 7
 }
 main()
 ```
 
-Functions can have default parameters:
+The return type can be omitted — it is inferred from the body. Parameters can
+have defaults and types can be generic (see [Language Reference](/language-reference)):
 
 ```zz
 func squareArea(a: int, b: int = 2) {
     return math.pow(a, b)
 }
 
-println(squareArea(2, 2))  // 4
-println(squareArea(2))     // 4 (uses default b=2)
+println(squareArea(2, 2))  // 1024.0
+println(squareArea(2))     // uses default b = 2
 ```
 
 ## Structs
 
-Define structs with named fields:
-
 ```zz
 struct User {id: int, name: str, email: str}
-```
 
-Create instances and access fields:
-
-```zz
-users:[User] = []
-users.append(User{id: 1, name: "Alice", email: "alice@example.com"})
+users: [User] = []
+users.append(User{id: 1, name: "Ada", email: "ada@example.com"})
 
 for user in users {
-    println("{user.name} ({user.email})")
+    println("{user.name} <{user.email}>")
 }
 ```
 
-## Pattern Matching
-
-`match` with exhaustive patterns:
+Methods live in `impl` blocks and take `self` first:
 
 ```zz
-match bad {
-    .ok(_) => println("should not happen")
-    .err(msg) => println("error: {msg}")
+struct Rectangle {width: int, height: int}
+
+impl Rectangle {
+    func area(self) -> int {
+        return self.width * self.height
+    }
 }
+
+rect := Rectangle{width: 3, height: 4}
+println(rect.area())  // 12
 ```
 
-## Control Flow
+## Control flow
 
 ```zz
-if condition {
-    // ...
+if temp > 30 {
+    println("hot")
 } else {
-    // ...
+    println("fine")
 }
 
 for i in range(10) {
     println("Hello")
 }
 
-while running {
-    // loop body
+n := 3
+while n > 0 {
+    println(n)
+    n = n - 1
 }
 ```
 
-## Iterators & Closures
-
-Range, map, filter, zip — all built-in:
+`if` is also an expression — each branch yields a value:
 
 ```zz
-squares := map(range(1, 6), |x: int| x * x)
-evens := filter(range(1, 11), |x: int| x % 2 == 0)
-paired := zip(["alice", "bob"], [95, 87])
+func factorial(n: int) -> int {
+    if n <= 1 { 1 } else { n * factorial(n - 1) }
+}
 ```
 
-## Pipeline Operator
+## Match
 
-Chain functions with `|>`:
+```zz
+func describe(x: int) -> str {
+    match x {
+        0 => "zero",
+        1 => "one",
+        _ => "many"
+    }
+}
+```
+
+`match` works on `Option` and `Result` variants too:
+
+```zz
+match int("42") {
+    .some(v) => println("parsed: {v}"),
+    .none => println("not a number"),
+}
+```
+
+## Closures and iterators
+
+```zz
+squares := map(range(1, 6), |x: int| x * x)          // [1, 4, 9, 16, 25]
+evens := filter(range(1, 11), |x: int| x % 2 == 0)   // [2, 4, 6, 8, 10]
+pairs := zip(["alice", "bob"], [95, 87])
+```
+
+## Pipeline operator
+
+`a |> f(b)` desugars to `f(a, b)`, and works across lines:
 
 ```zz
 func double(x: int) -> int { x * 2 }
@@ -113,46 +143,53 @@ result := 5 |> add_one |> double
 println(result)  // 12
 ```
 
-## String Interpolation
+Use `_` to choose the argument position:
 
-Embed variables and format specs:
+```zz
+server := http.server()
+    |> http.get(_, "/", |body: str| "Hello, World!")
+```
+
+## Elvis operator
+
+`??` unwraps an `Option`, or falls back — non-`Option` values pass through:
+
+```zz
+name := .some("Ada")
+println(name ?? "stranger")   // Ada
+println(42 ?? 0)              // 42
+```
+
+## String interpolation
 
 ```zz
 name := "ZZ"
-version := 42
 pi := 3.14159
+n := 255
 
-println("Hello, {name}!")           // Hello, ZZ!
+println("Hello, {name}!")
 println("{pi:.2f}")                 // 3.14
-println("{version:x}")             // 2a
-println("{name} is {version * 2}") // ZZ is 84
+println("{n:x} {n:o} {n:b}")        // ff 377 11111111
+println("{name} is {40 + 2}")       // ZZ is 42
 ```
 
-## Elvis Operator
-
-Unwrap with fallback using `??`:
-
-```zz
-name := .some("Alice")
-greeting := name ?? "stranger"
-println(greeting)  // Alice
-
-val := 42 ?? 0
-println(val)  // 42
-```
-
-## Imports
-
-```zz
-import std.str
-import std.math
-import std.encoding
-```
-
-## List Comprehensions
+## List comprehensions
 
 ```zz
 squared := [i ** 2 for i in range(0, 6)]
 odd := [i for i in range(21) if i % 2 != 0]
-double := [x * 2 for x in [1, 2, 3, 4, 5, 6, 7, 8] if x < 8]
+```
+
+## Imports and comments
+
+```zz
+import std.str
+import std.math
+
+// line comment
+/* block
+   comment */
+
+number1: int = 2
+number2 := 2
 ```

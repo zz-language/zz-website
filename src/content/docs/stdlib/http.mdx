@@ -1,0 +1,71 @@
+---
+title: std.http
+description: HTTP client requests and route-based servers
+---
+
+```zz
+import std.http
+```
+
+## Client
+
+Every client call takes headers and returns `Result<Response, str>`:
+
+| Function | Signature | Description |
+|----------|-----------|-------------|
+| `http.get` | `http.get(url: str, headers: {str: str}) -> Result<Response, str>` | GET request |
+| `http.post` | `http.post(url: str, body: str, headers: {str: str}) -> Result<Response, str>` | POST request |
+| `http.put` | `http.put(url: str, body: str, headers: {str: str}) -> Result<Response, str>` | PUT request |
+| `http.delete` | `http.delete(url: str, headers: {str: str}) -> Result<Response, str>` | DELETE request |
+
+Read responses with:
+
+| Function | Signature | Description |
+|----------|-----------|-------------|
+| `http.status` | `http.status(res: Response) -> int` | Status code |
+| `http.text` | `http.text(res: Response) -> str` | Body as text |
+| `http.json` | `http.json(res: Response) -> json` | Body parsed as JSON |
+| `http.headers` | `http.headers(res: Response) -> {str: str}` | Response headers |
+
+```zz
+import std.http
+
+match http.get("https://api.example.com/users/1", {}) {
+    .ok(res) => {
+        println(http.status(res))  // 200
+        println(http.text(res))
+    },
+    .err(e) => println("request failed: {e}"),
+}
+```
+
+## Server
+
+Register routes on a server handle — handlers take the request and return the
+body — then listen:
+
+| Function | Signature | Description |
+|----------|-----------|-------------|
+| `http.server` | `http.server() -> http.server` | Create a server handle |
+| `http.get` | `http.get(server, path: str, handler) -> http.server` | Register a GET route |
+| `http.post` | `http.post(server, path: str, handler) -> http.server` | Register a POST route |
+| `http.serve_dir` | `http.serve_dir(server, dir: str) -> http.server` | Serve static files |
+| `http.handle` | `http.handle(server, method: str, path: str, body: str) -> str` | Dispatch without listening |
+| `http.listen` | `http.listen(server, port: int)` | Start the blocking server |
+
+```zz
+import std.http
+
+server := http.server()
+    |> http.get(_, "/", |body: str| "Hello, World!")
+    |> http.post(_, "/echo", |body: str| body)
+
+println("Serving on :8080")
+http.listen(server, 8080)
+```
+
+Test handlers without opening a port:
+
+```zz
+response := http.handle(server, "GET", "/", "")  // "Hello, World!"
+```

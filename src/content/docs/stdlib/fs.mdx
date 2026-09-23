@@ -1,0 +1,35 @@
+---
+title: std.fs
+description: Read, write and probe the filesystem
+---
+
+```zz
+import std.fs
+```
+
+| Function | Signature | Description |
+|----------|-----------|-------------|
+| `fs.read_file` | `fs.read_file(path: str)` | Read file contents (`Result`) |
+| `fs.write_file` | `fs.write_file(path: str, contents: str)` | Write file (`Result`) |
+| `fs.exists` | `fs.exists(path: str) -> bool` | Existence test |
+
+```zz
+import std.fs
+
+match fs.read_file("data.txt") {
+    .ok(content) => println(content),
+    .err(e) => println("Error: {e}"),
+}
+
+match fs.write_file("out.txt", "Hello World") {
+    .ok(_) => println("Written"),
+    .err(e) => println("Error: {e}"),
+}
+
+if fs.exists("config.toml") {
+    println("config found")
+}
+```
+
+Reads and writes return `Result`, so the [error handling](/error-handling)
+patterns (`match`, `??`, `unwrap_or`) apply directly.

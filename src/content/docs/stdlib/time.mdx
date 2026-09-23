@@ -1,0 +1,22 @@
+---
+title: std.time
+description: Wall-clock time and sleeping
+---
+
+```zz
+import std.time
+```
+
+| Function | Signature | Description |
+|----------|-----------|-------------|
+| `time.now_ms` | `time.now_ms() -> int` | Milliseconds since the Unix epoch |
+| `time.sleep_ms` | `time.sleep_ms(ms: int)` | Sleep for N milliseconds |
+
+```zz
+import std.time
+
+start := time.now_ms()
+time.sleep_ms(1000)
+elapsed := time.now_ms() - start
+println("Slept for {elapsed}ms")
+```

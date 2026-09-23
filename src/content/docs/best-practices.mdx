@@ -1,0 +1,94 @@
+---
+title: Best Practices
+description: Idiomatic ZZ — inference, pipelines, errors and performance
+---
+
+## Let inference work
+
+Prefer `:=` and save annotations for boundaries — public function signatures,
+struct fields and places where the type is the documentation:
+
+```zz
+// Good: inference carries obvious types
+names := ["Ada", "Grace"]
+total := math.sum(scores)
+
+// Good: annotations at the boundary
+func price(count: int, each: float) -> float {
+    count * each
+}
+```
+
+## Pipeline data, don't nest it
+
+```zz
+// Hard to scan
+println(str.to_upper(str.trim(input("Name: "))))
+
+// Reads top to bottom
+name := input("Name: ")
+    |> str.trim()
+    |> str.to_upper()
+println(name)
+```
+
+Name single-use closures instead of nesting `map`/`filter` three deep.
+
+## Match instead of if-chains
+
+```zz
+// Fragile: silent fallthrough on new variants
+// Exhaustive: the compiler checks you
+match code {
+    0 => "ok",
+    1 => "retry",
+    _ => "fail",
+}
+```
+
+## Propagate errors with values, not panic
+
+```zz
+// Good: caller decides
+func load(path: str) -> Result<str, str> {
+    match fs.read_file(path) {
+        .ok(text) => .ok(text),
+        .err(e) => .err("load {path}: {e}"),
+    }
+}
+
+// At the edge: unwrap once, loudly
+config := load("app.conf").expect("app.conf is required")
+```
+
+## Reach for the stdlib first
+
+String munging, math aggregation and encoding are already written, tested and
+shared by both runtimes:
+
+```zz
+import std.str
+import std.math
+
+slug := title
+    |> str.replace(_, " ", "-")
+    |> str.to_lower()
+best := math.max_arr(scores).unwrap_or(0)
+token := encoding.base64_encode(session)
+```
+
+Browse the [standard library](/stdlib/overview) before writing a helper.
+
+## Keep hot loops allocation-free
+
+Prefer index loops and reuse buffers over chained temporaries in tight code,
+then confirm with the benchmark harness in `bench/` — ZZ beats Go most
+clearly on allocation-heavy and concurrent workloads.
+
+## Iterate interpreted, ship compiled
+
+```bash
+zz run app.zz                 # fast feedback
+zz check app.zz && zz fmt -c  # gate in CI (exit 1 on issues)
+zz build -p app.zz            # optimized native binary
+```

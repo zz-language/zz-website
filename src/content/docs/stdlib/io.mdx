@@ -1,0 +1,27 @@
+---
+title: std.io
+description: Console input and output
+---
+
+Console I/O for prompts, output and line reads.
+
+```zz
+import std.io
+```
+
+| Function | Signature | Description |
+|----------|-----------|-------------|
+| `io.printz` | `io.printz(v: T)` | Print without newline |
+| `io.println` | `io.println(v: T)` | Print with newline |
+| `io.read_line` | `io.read_line() -> str` | Read a line from stdin |
+
+```zz
+import std.io
+
+io.printz("Enter name: ")
+name := io.read_line()
+io.println("Hello, {name}")
+```
+
+The global `print`, `println` and `input` built-ins cover the same ground
+without an import — reach for `std.io` when you want the namespace explicit.

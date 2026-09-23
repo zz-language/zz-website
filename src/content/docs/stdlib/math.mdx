@@ -1,0 +1,46 @@
+---
+title: std.math
+description: Scalar math, aggregation, statistics and number theory
+---
+
+```zz
+import std.math
+```
+
+| Function | Signature | Description |
+|----------|-----------|-------------|
+| `math.abs` | `math.abs(v: T) -> T` | Absolute value |
+| `math.signum` | `math.signum(n: int) -> int` | `-1`, `0` or `1` |
+| `math.is_even` | `math.is_even(n: int) -> bool` | Parity test |
+| `math.is_odd` | `math.is_odd(n: int) -> bool` | Parity test |
+| `math.min` / `math.max` | `math.min<T: Ord>(a: T, b: T) -> T` | Generic min/max |
+| `math.clamp` | `math.clamp<T: Ord>(v: T, lo: T, hi: T) -> T` | Clamp to range |
+| `math.floor` | `math.floor(v: float) -> int` | Round down |
+| `math.ceil` | `math.ceil(v: float) -> int` | Round up |
+| `math.sqrt` | `math.sqrt(v: T) -> float` | Square root |
+| `math.pow` | `math.pow(base: T, exp: T) -> float` | Power |
+| `math.random` | `math.random() -> float` | Random in `[0, 1)` |
+| `math.sum` / `math.product` | `math.sum(arr: [int]) -> int` | Integer aggregation |
+| `math.count` | `math.count(arr: [int], x: int) -> int` | Occurrence count |
+| `math.sum_f` / `math.product_f` | `math.sum_f(arr: [float]) -> float` | Float aggregation (`sum_f` uses Kahan summation) |
+| `math.min_arr` / `math.max_arr` | `math.min_arr<T: Ord>(arr: [T]) -> Option<T>` | Array extremes (`.none` when empty) |
+| `math.mean_f` | `math.mean_f(arr: [float]) -> Result<float, str>` | Mean, or empty-list error |
+| `math.median_f` | `math.median_f(arr: [float]) -> Result<float, str>` | Median, or empty-list error |
+| `math.gcd` | `math.gcd(a: int, b: int) -> int` | Greatest common divisor |
+| `math.lcm` | `math.lcm(a: int, b: int) -> int` | Least common multiple |
+| `math.factorial` | `math.factorial(n: int) -> int` | Factorial |
+
+```zz
+import std.math
+
+println(math.abs(-5))        // 5
+println(math.floor(3.7))     // 3
+println(math.gcd(12, 8))     // 4
+println(math.factorial(5))   // 120
+println(math.clamp(10, 0, 5))  // 5
+
+match math.mean_f([1.0, 2.0, 3.0]) {
+    .ok(m) => println("mean: {m}"),
+    .err(e) => println(e),
+}
+```

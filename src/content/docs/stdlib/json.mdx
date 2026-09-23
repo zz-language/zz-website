@@ -1,0 +1,40 @@
+---
+title: std.json
+description: Parse, query and serialize JSON
+---
+
+```zz
+import std.json
+```
+
+| Function | Signature | Description |
+|----------|-----------|-------------|
+| `json.parse` | `json.parse(s: str) -> json` | Parse a JSON document |
+| `json.parse_or` | `json.parse_or(s: str, fallback: json) -> json` | Parse, or use fallback |
+| `json.stringify` | `json.stringify(v: T) -> str` | Compact serialization |
+| `json.pretty` | `json.pretty(v: T) -> str` | Indented serialization |
+| `json.get` | `json.get(j: json, key: str) -> json` | Object field |
+| `json.has` | `json.has(j: json, key: str) -> bool` | Field presence |
+| `json.keys` | `json.keys(j: json) -> [str]` | Object keys |
+| `json.len` | `json.len(j: json) -> int` | Array/object length |
+| `json.type` | `json.type(j: json) -> str` | Value kind |
+| `json.as_str` | `json.as_str(j: json) -> str` | Extract string |
+| `json.as_int` | `json.as_int(j: json) -> int` | Extract integer |
+| `json.as_float` | `json.as_float(j: json) -> float` | Extract float |
+| `json.as_bool` | `json.as_bool(j: json) -> bool` | Extract boolean |
+| `json.merge` | `json.merge(a: json, b: json) -> json` | Merge two objects |
+| `json.is_null` / `is_bool` / `is_number` / `is_string` / `is_array` / `is_object` | `json.is_*(j: json) -> bool` | Type predicates |
+
+```zz
+import std.json
+
+data := json.parse("{\"name\": \"Ada\", \"age\": 36}")
+name := json.as_str(json.get(data, "name"))
+age := json.as_int(json.get(data, "age"))
+println("{name} is {age}")  // Ada is 36
+
+if json.has(data, "email") {
+    println("has email")
+}
+println(json.type(data))  // object
+```

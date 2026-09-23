@@ -1,30 +1,34 @@
 ---
-title: Getting Started with ZZ
-description: Install and run your first ZZ program
+title: Getting Started
+description: Install ZZ and run your first program
 ---
 
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-ZZ is a statically-typed language with inferred declarations, pipeline operators, and rich diagnostics.
-
 ## Install
 
 <Tabs>
-  <TabItem label="macOS / Linux">
-  ```bash
-  curl -fsSL https://zz-lang.pages.dev/install.sh | sh
-  ```
+  <TabItem label="Install script">
+    ```bash
+    curl -fsSL https://zz-lang.pages.dev/install.sh | sh
+    ```
   </TabItem>
-  <TabItem label="From Source">
-  ```bash
-  git clone https://github.com/zaidejjo/zz
-  cd zz
-  cargo install --path crates/zz_cli
-  ```
+  <TabItem label="From source">
+    ```bash
+    git clone https://github.com/zaidejjo/zz
+    cd zz
+    cargo install --path crates/zz_cli
+    ```
   </TabItem>
 </Tabs>
 
-## Hello World
+Verify the install:
+
+```bash
+zz --version
+```
+
+## Hello world
 
 Create `hello.zz`:
 
@@ -39,24 +43,26 @@ Run it:
 zz run hello.zz
 ```
 
-## REPL
+## The REPL
 
-Start an interactive session:
+Start an interactive session with bare `zz`:
 
-```bash
-zz
+```
+ZZ 0.1.0 — type-based language
+Type expressions to evaluate. :help for commands.
+zz> x := 42
+42
+zz> x + 1
+43
+zz> func add(a: int, b: int) -> int { a + b }
+<func add>
+zz> add(3, 4)
+7
 ```
 
-```zz
-> let x = 42
-> x * 2
-84
-> :quit
-```
+Useful REPL commands: `:help`, `:type expr` to show a type, `:clear` to reset bindings, `:quit` to exit.
 
-## Your First Program
-
-A more complete example with functions and string interpolation:
+## Your first real program
 
 ```zz
 func factorial(n: int) -> int {
@@ -66,14 +72,24 @@ func factorial(n: int) -> int {
 println("5! = {factorial(5)}")
 ```
 
-Output:
-
 ```
 5! = 120
 ```
 
-## Next Steps
+## Check, fix, format
 
-- [Syntax Guide](/docs/syntax) — Learn ZZ syntax
-- [Modules](/docs/modules) — Standard library
-- [Playground](/playground) — Try ZZ in the browser
+ZZ ships its diagnostics as commands:
+
+```bash
+zz check src/     # report errors and warnings
+zz fix src/       # apply safe auto-fixes
+zz fmt src/       # format files in place
+zz eval "1 + 2"   # evaluate one expression → 3
+```
+
+## Next steps
+
+- [Syntax](/syntax) — declarations, functions, control flow
+- [Language Reference](/language-reference) — the full type system and semantics
+- [Standard Library](/stdlib/overview) — built-ins and modules
+- [Playground](/playground) — run ZZ in your browser, no install needed

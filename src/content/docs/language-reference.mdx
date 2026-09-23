@@ -1,0 +1,165 @@
+---
+title: Language Reference
+description: Types, inference rules, generics, closures and operator semantics
+---
+
+The complete semantics behind the [Syntax](/syntax) tour.
+
+## Primitive types
+
+| Type | Description | Example |
+|------|-------------|---------|
+| `int` | 64-bit signed integer | `42`, `-1` |
+| `float` | 64-bit IEEE 754 float | `3.14`, `-0.5` |
+| `bool` | Boolean | `true`, `false` |
+| `str` | UTF-8 string | `"hello"` |
+| `unit` | Empty tuple / void | `()` |
+
+## Compound types
+
+Homogeneous, dynamically-sized arrays and insertion-ordered dicts:
+
+```zz
+nums: [int] = [1, 2, 3]
+names: [str] = ["Ada", "Grace"]
+ages: {str: int} = {"Ada": 36, "Grace": 85}
+```
+
+Structs are named records with typed fields and field access:
+
+```zz
+struct Point { x: int, y: int }
+struct Rect { origin: Point, w: int, h: int }
+
+p := Point{ x: 1, y: 2 }
+r := Rect{ origin: p, w: 10, h: 20 }
+println(p.x)  // 1
+```
+
+Fields are mutable through the binding, and structs compose across modules:
+
+```zz
+p := Point{ x: 1, y: 2 }
+p.x = 10
+```
+
+## Variants: Option and Result
+
+Two built-in variant types use dot-prefixed literals:
+
+```zz
+x := .some(42)
+y := .none
+a := .ok("success")
+b := .err("failed")
+```
+
+`int()` and `float()` parse strings into `Option` (`.none` on failure):
+
+```zz
+count := input("How many? ") |> int() ?? 1
+```
+
+## Inference rules
+
+`:=` infers from the right-hand side; `: Type =` checks against it:
+
+```zz
+x := 42              // int
+pi := 3.14           // float
+y: int = 42          // OK
+// y: int = 3.14     // ERROR: expected int, found float
+```
+
+Return types are inferred from the body when omitted, and generic parameters
+are inferred at the call site:
+
+```zz
+func add(a: int, b: int) { a + b }   // -> int, inferred
+
+func identity<T>(x: T) -> T { x }
+result := identity(42)               // T = int
+```
+
+## Generics with bounds
+
+```zz
+func min<T: Ord>(a: T, b: T) -> T {
+    if a < b { a } else { b }
+}
+
+println(min(3, 5))      // 3
+println(min(2.5, 1.5))  // 1.5
+```
+
+The standard library builds on this — `vec.min_val`, `math.clamp` and
+`math.min_arr` are all generic over ordered types.
+
+## Closures
+
+Closures capture their environment:
+
+```zz
+mult := 3
+triple := |x: int| x * mult
+println(map(range(1, 4), triple))  // [3, 6, 9]
+```
+
+Parameter types can be omitted when inference can see through:
+
+```zz
+zz eval "range(1, 6) |> map(|x| x * 2) |> str"
+```
+
+```
+[2, 4, 6, 8, 10]
+```
+
+## Operator semantics
+
+| Operator | Operands | Result |
+|----------|----------|--------|
+| `+ - * / %` | `int`, `int` | `int` (division truncates: `7 / 2 == 3`) |
+| `+ - * /` | `float`, `float` | `float` |
+| `+` | `int`, `float` | `float` |
+| `+` | `str`, `str` | `str` (concatenation) |
+| `+` | `[T]`, `[T]` | `[T]` (concatenation) |
+| `**` | `int`, `int` | `int` (power) |
+| `==` `!=` | any, same type | `bool` |
+| `<` `>` `<=` `>=` | numbers | `bool` |
+| `&&` `\|\|` | `bool` | `bool` |
+| `??` | any, `T` | `T` — unwraps `Option`, passes anything else through |
+| `\|>` | `a`, `f` | `f(a)` — with `_` choosing the slot |
+
+Ranges come from `range()` in one-, two- and three-argument form, including
+negative steps:
+
+```zz
+range(5)         // [0, 1, 2, 3, 4]
+range(10, 15)    // [10, 11, 12, 13, 14]
+range(0, 20, 5)  // [0, 5, 10, 15]
+range(10, 0, -2) // [10, 8, 6, 4, 2]
+```
+
+## Truthiness
+
+Only `false` and `.none` are falsy — `0`, `""` and `[]` are truthy, so compare
+them explicitly:
+
+```zz
+if count == 0 {
+    println("empty")
+}
+```
+
+## Type errors don't cascade
+
+When the checker hits a type error it marks the value instead of spraying
+follow-on errors:
+
+```zz
+x := undefined_var   // ERROR: undefined variable `undefined_var`
+y := x + 1           // no additional error
+```
+
+See [Error Handling](/error-handling) for turning these into great diagnostics.

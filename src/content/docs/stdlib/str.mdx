@@ -1,0 +1,51 @@
+---
+title: std.str
+description: String inspection, trimming, casing, splitting and padding
+---
+
+```zz
+import std.str
+```
+
+| Function | Signature | Description |
+|----------|-----------|-------------|
+| `str.length` | `str.length(s: str) -> int` | Character count |
+| `str.split` | `str.split(s: str, sep: str) -> [str]` | Split by separator (`""` splits chars) |
+| `str.contains` | `str.contains(s: str, sub: str) -> bool` | Substring test |
+| `str.trim` | `str.trim(s: str) -> str` | Trim both ends |
+| `str.trim_start` | `str.trim_start(s: str) -> str` | Trim leading whitespace |
+| `str.trim_end` | `str.trim_end(s: str) -> str` | Trim trailing whitespace |
+| `str.to_upper` | `str.to_upper(s: str) -> str` | Uppercase |
+| `str.to_lower` | `str.to_lower(s: str) -> str` | Lowercase |
+| `str.replace` | `str.replace(s: str, old: str, new: str) -> str` | Replace all occurrences |
+| `str.starts_with` | `str.starts_with(s: str, prefix: str) -> bool` | Prefix test |
+| `str.ends_with` | `str.ends_with(s: str, suffix: str) -> bool` | Suffix test |
+| `str.join` | `str.join(arr: [str], sep: str) -> str` | Join with separator |
+| `str.repeat` | `str.repeat(s: str, n: int) -> str` | Repeat `n` times |
+| `str.count` | `str.count(s: str, sub: str) -> int` | Count occurrences |
+| `str.is_empty` | `str.is_empty(s: str) -> bool` | Empty test |
+| `str.reverse` | `str.reverse(s: str) -> str` | Reversed string |
+| `str.pad_left` | `str.pad_left(s: str, len: int, pad: str) -> str` | Left-pad to length |
+| `str.pad_right` | `str.pad_right(s: str, len: int, pad: str) -> str` | Right-pad to length |
+
+```zz
+import std.str
+
+words := ["hello", "world"]
+sentence := str.join(words, " ")
+println(sentence)  // hello world
+
+messy := "  spaces  "
+println(str.trim(messy))        // spaces
+println(str.pad_left("5", 3, "0"))  // 005
+```
+
+Every function also works as a method on the string:
+
+```zz
+import std.str
+
+"  hello  ".trim()                    // "hello"
+"hello world".replace("world", "ZZ")  // "hello ZZ"
+"hello".starts_with("he")             // true
+```

@@ -1,0 +1,53 @@
+---
+title: std.vec
+description: Array transforms, queries and aggregation
+---
+
+```zz
+import std.vec
+```
+
+| Function | Signature | Description |
+|----------|-----------|-------------|
+| `vec.len` | `vec.len(v: [T]) -> int` | Length |
+| `vec.push` | `vec.push(v: [T], x: T) -> [T]` | New array with `x` appended |
+| `vec.append` | `vec.append(v: [T], x: T) -> [T]` | New array with `x` appended |
+| `vec.pop` | `vec.pop(v: [T]) -> [T]` | New array without the last element |
+| `vec.reverse` | `vec.reverse(v: [T]) -> [T]` | Reversed copy |
+| `vec.join` | `vec.join(v: [T], sep: str) -> str` | Join as string |
+| `vec.contains` | `vec.contains(v: [T], x: T) -> bool` | Membership test |
+| `vec.sort` | `vec.sort(v: [T]) -> [T]` | Sorted copy |
+| `vec.insert` | `vec.insert(v: [T], idx: int, x: T) -> [T]` | Insert at index |
+| `vec.remove` | `vec.remove(v: [T], idx: int) -> [T]` | Remove at index |
+| `vec.concat` | `vec.concat(a: [int], b: [int]) -> [int]` | Concatenate |
+| `vec.flatten` | `vec.flatten(v: [[int]]) -> [int]` | Flatten one level |
+| `vec.index_of` | `vec.index_of(v: [int], x: int) -> int` | First index, or `-1` |
+| `vec.last_index_of` | `vec.last_index_of(v: [int], x: int) -> int` | Last index, or `-1` |
+| `vec.sum` | `vec.sum(v: [int]) -> int` | Total |
+| `vec.product` | `vec.product(v: [int]) -> int` | Product |
+| `vec.fold` | `vec.fold(v: [int], init: int) -> int` | Left fold with seed |
+| `vec.min_val` | `vec.min_val(v: [T]) -> Option<T>` | Minimum (`.none` when empty) |
+| `vec.max_val` | `vec.max_val(v: [T]) -> Option<T>` | Maximum (`.none` when empty) |
+| `vec.sum_f` | `vec.sum_f(v: [float]) -> float` | Kahan-compensated total |
+
+```zz
+import std.vec
+
+nums := [3, 1, 2]
+println(vec.sort(nums))       // [1, 2, 3]
+println(vec.push(nums, 4))    // [3, 1, 2, 4]
+println(vec.sum(nums))        // 6
+println(vec.min_val(nums))    // .some(1)
+println(vec.index_of(nums, 1))  // 1
+```
+
+Method syntax works on any array, and plain `.append` mutates in place:
+
+```zz
+scores := [10, 20]
+scores.append(30)
+println(scores)  // [10, 20, 30]
+```
+
+Higher-order work (`map`, `filter`, `enumerate`, `zip`) lives in the
+[built-ins](/stdlib/overview) — they pair naturally with `vec` aggregation.

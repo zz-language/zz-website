@@ -1,0 +1,120 @@
+---
+title: Error Handling
+description: Option, Result, match, fallbacks and compiler diagnostics
+---
+
+ZZ has no exceptions. Fallible operations return `Option` or `Result`
+variants, and the compiler helps you handle every case.
+
+## Option: a value or nothing
+
+Parsing, lookups and decodes return `Option`:
+
+```zz
+count := input("How many users? ") |> int() ?? 1
+```
+
+`??` unwraps `.some(v)` to `v` and substitutes the fallback for `.none`.
+Match when you need to branch instead:
+
+```zz
+match env.get_var("HOME") {
+    .some(home) => println("Home: {home}"),
+    .none => println("HOME not set"),
+}
+```
+
+## Result: success or context
+
+Filesystem, network and JSON operations return `Result`:
+
+```zz
+import std.fs
+
+match fs.read_file("data.txt") {
+    .ok(content) => println(content),
+    .err(e) => println("Error: {e}"),
+}
+```
+
+## Unwrap with intent
+
+Three methods document how much you care:
+
+```zz
+x := .some(42)
+x.unwrap()           // 42 — panics on .none, use when impossible
+x.unwrap_or(0)       // 42 — the common default
+x.expect("missing")  // 42 — panics with YOUR message
+
+y: Option<int> = .none
+y.unwrap_or(0)       // 0
+```
+
+Prefer `unwrap_or` and `??` in normal code; reserve `unwrap` for invariants
+and `expect` for messages a future debugger will thank you for.
+
+## Exhaustive match
+
+The compiler wants every case covered — `_` is your catch-all:
+
+```zz
+match status {
+    .ok(data) => render(data),
+    .err(e) => log(e),
+}
+```
+
+An uncovered value is a compile error, not a runtime surprise.
+
+## Diagnostics that teach
+
+Typos get Levenshtein suggestions instead of a shrug:
+
+```
+error: undefined variable `printn`
+  = did you mean `println`?
+
+error: struct `Point` has no field `xz`
+  = did you mean field `x`?
+```
+
+Warnings catch dead weight — unused imports and variables:
+
+```
+warning: unused import `pkg`
+warning: unused variable `unused_var`
+```
+
+Every error carries a code, a span and a fix hint:
+
+```
+error[E001]: type mismatch
+  --> src/main.zz:5:12
+   |
+ 5 |     x: int = "hello"
+   |     ----   ^^^^^^^^ expected int, found str
+   |
+   = help: cast string to int with `int()` function
+```
+
+## Fix at machine speed
+
+```bash
+zz check src/     # report everything
+zz fix src/       # apply safe auto-fixes
+zz fix --hard     # apply ambiguous fixes too, no prompts
+```
+
+A typical auto-fix renames to suppress a warning:
+
+```
+warning[W001]: unused variable
+  --> src/main.zz:3:5
+   |
+ 3 |     x := 42
+   |     ^^^^^^^
+   |
+   = help: prefix with `_` to suppress: `_x := 42`
+   = fix: `_x := 42`
+```

@@ -1,29 +1,11 @@
 ---
 title: Advanced Features
-description: Generics, impl, error handling, and advanced ZZ patterns
+description: Impl blocks, generics, variants, closures and native builds
 ---
 
-## Generics
+## Impl blocks
 
-ZZ supports generic type parameters with constraints:
-
-```zz
-func min<T: Ord>(a: T, b: T) -> T {
-    if a < b { a } else { b }
-}
-
-func max<T: Ord>(a: T, b: T) -> T {
-    if a > b { a } else { b }
-}
-
-// Works with int, float, str — anything comparable
-println(min(3, 5))      // 3
-println(max("a", "z"))  // z
-```
-
-## Impl Blocks
-
-Add methods to structs:
+Methods attach to structs with `self` first:
 
 ```zz
 struct Rectangle {width: int, height: int}
@@ -42,97 +24,75 @@ println(rect.area())       // 12
 println(rect.perimeter())  // 14
 ```
 
-## Error Handling
-
-ZZ uses Result types for error handling:
+## Generics
 
 ```zz
-func parse(s: str) -> Result<int, str> {
-    match s.parse() {
-        .ok(n) => .ok(n),
-        .err(e) => .err("parse error: {e}")
-    }
+func min<T: Ord>(a: T, b: T) -> T {
+    if a < b { a } else { b }
 }
 
-func main() {
-    match parse("42") {
-        .ok(n) => println("Parsed: {n}"),
-        .err(msg) => println("Error: {msg}")
-    }
-}
+println(min(3, 5))  // 3
 ```
 
-## Pattern Matching
+Bounds like `Ord` unlock comparisons; inference fills the parameters at each
+call site. See [Language Reference](/language-reference) for the full rules.
 
-Exhaustive pattern matching with variants:
+## Variants as control flow
 
-```zz
-func describe(value: int) -> str {
-    match value {
-        0 => "zero",
-        1 => "one",
-        2 => "two",
-        _ => "many"
-    }
-}
-```
-
-## Option Types
-
-Safe nullable values:
+`Option` and `Result` compose with `match`, `??` and the `unwrap_*` family
+instead of branching on nulls:
 
 ```zz
-func find_user(id: int) -> Option<User> {
+func find_name(id: int) -> Option<str> {
     if id == 1 {
-        .some(User{id: 1, name: "Alice"})
+        .some("Ada")
     } else {
         .none
     }
 }
 
-func main() {
-    match find_user(1) {
-        .some(user) => println("Found: {user.name}"),
-        .none => println("User not found")
-    }
+match find_name(1) {
+    .some(name) => println("Found: {name}"),
+    .none => println("Unknown id"),
 }
 ```
 
-## Closures
-
-First-class functions with captured environment:
+## Closures over shared state
 
 ```zz
-func main() {
-    multiplier := 3
-    triple := |x: int| x * multiplier
-    
-    result := map(range(1, 6), triple)
-    println(result)  // [3, 6, 9, 12, 15]
-}
+mult := 3
+scaled := map(range(1, 6), |x: int| x * mult)
+println(scaled)  // [3, 6, 9, 12, 15]
 ```
 
-## AOT vs VM
+## Native builds
 
-ZZ supports two runtime modes:
+`zz run` type-checks and executes through the VM — ideal for iteration.
+`zz build` emits a native binary instead:
 
 ```bash
-# Bytecode VM (development)
-zz run file.zz
-
-# Ahead-of-time compilation (production)
-zz build file.zz -o output
+zz build app.zz              # dev binary next to the source
+zz build -p app.zz           # optimized release binary
+zz build --static app.zz     # static binary
+zz build --pgo app.zz        # profile-guided build
 ```
 
-Both modes produce identical results. AOT is faster for production, VM is faster for development iteration.
+Both runtimes share the pure-ZZ standard library, so library code behaves
+identically either way.
 
-## Multi-Threaded AOT
+## Modules and imports
 
-For CPU-intensive workloads, ZZ AOT supports multi-threaded execution:
+Imports resolve relative to the source file; `std.*` loads the built-ins:
 
-```bash
-# Compile with multi-threading
-zz build file.zz --threads 4 -o output
+```zz
+import std.math
+import std.json
+import utils.helper
 ```
 
-Benchmark results show ZZ AOT MT matching or beating Rust in concurrent workloads.
+```
+project/
+├── main.zz
+└── utils/
+    └── helper.zz
+```
