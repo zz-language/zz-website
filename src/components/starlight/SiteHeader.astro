@@ -1,0 +1,66 @@
+---
+/**
+ * Starlight `Header` override: the docs chrome carries the exact same bar
+ * as the main site (height, blur, borders, controls) instead of Starlight's
+ * default header. Starlight's own Pagefind `Search` stays mounted so
+ * full-text docs search keeps working next to the global palette.
+ */
+import Search from '@astrojs/starlight/components/Search.astro';
+import Icon from '../icons/Icon.astro';
+import SearchPalette from '../SearchPalette.astro';
+import site from '../../config/site.json';
+---
+
+<div class="sl-flex w-full items-center justify-between gap-1">
+  <a href="/" class="flex items-center gap-2 text-foreground font-mono font-semibold">
+    <img src="/500-500-logo.png" alt="ZZ logo" width="26" height="26" class="rounded-md" />
+    <span class="hidden sm:inline text-sm">ZZ Language</span>
+  </a>
+
+  <div class="hidden md:flex items-center gap-1 text-sm">
+    <a href={site.docsPath} class="px-3 py-1.5 rounded-md text-muted hover:text-foreground hover:bg-raised">
+      Docs
+    </a>
+    <a href="/playground" class="px-3 py-1.5 rounded-md text-muted hover:text-foreground hover:bg-raised">
+      Playground
+    </a>
+    <a href={site.pkgRegistryPath} class="px-3 py-1.5 rounded-md text-muted hover:text-foreground hover:bg-raised">
+      Packages
+    </a>
+  </div>
+
+  <div class="sl-flex items-center gap-1">
+    <Search />
+    <button
+      id="nav-search"
+      class="hidden sm:flex items-center gap-2 px-2.5 py-1.5 rounded-md border border-border text-xs text-faint hover:text-muted hover:border-accent-border"
+      aria-label="Search (Ctrl+K)"
+    >
+      <Icon name="search" size={14} />
+      <kbd class="font-mono text-[10px] border border-border rounded px-1">⌘K</kbd>
+    </button>
+    <button
+      id="theme-toggle"
+      class="p-2 rounded-md text-muted hover:text-foreground hover:bg-raised"
+      aria-label="Toggle theme"
+    >
+      <span class="theme-icon-dark"><Icon name="sun" size={18} /></span>
+      <span class="theme-icon-light hidden"><Icon name="moon" size={18} /></span>
+    </button>
+    <span id="nav-auth">
+      <a
+        href="/login"
+        class="px-3 py-1.5 rounded-md text-sm text-muted hover:text-foreground hover:bg-raised"
+      >
+        Log in
+      </a>
+    </span>
+  </div>
+</div>
+
+<SearchPalette />
+
+<script>
+  import { initHeader } from '../../lib/header-client';
+  initHeader();
+</script>

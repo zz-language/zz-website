@@ -46,6 +46,10 @@ export default defineConfig({
     react(),
     starlight({
       title: site.siteName,
+      // Docs chrome reuses the main-site bar (same height, blur, controls).
+      components: {
+        Header: './src/components/starlight/SiteHeader.astro',
+      },
       social: [
         { icon: 'github', label: 'GitHub', href: site.githubRepo },
       ],

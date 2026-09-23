@@ -23,7 +23,7 @@ import '../../styles/global.css';
       <div class="max-w-6xl mx-auto px-4 md:px-6 py-10 md:py-14">
         <p class="text-sm font-mono text-accent mb-2">Registry</p>
         <h1 class="text-2xl md:text-3xl font-semibold tracking-tight">Packages</h1>
-        <p class="text-muted mt-2 mb-8">Discover and install ZZ packages.</p>
+        <p class="text-muted mt-2 mb-8">Libraries for ZZ. <code class="font-mono text-sm text-foreground">zz add &lt;name&gt;</code> to install.</p>
 
         <div class="flex flex-wrap items-center gap-3 max-w-xl mb-8">
           <div class="relative flex-1 min-w-52">
@@ -43,15 +43,20 @@ import '../../styles/global.css';
             />
             <div id="pkg-suggest" class="hidden absolute left-0 right-0 top-full mt-1 rounded-lg border border-border bg-surface shadow-xl overflow-hidden z-10" role="listbox"></div>
           </div>
-          <label for="pkg-author" class="sr-only">Filter by author</label>
-          <select id="pkg-author" class={inputClasses + ' w-auto'}>
-            <option value="">All authors</option>
-          </select>
-          <label for="pkg-sort" class="sr-only">Sort packages</label>
-          <select id="pkg-sort" class={inputClasses + ' w-auto'}>
-            <option value="recent">Recently updated</option>
-            <option value="name">Name A–Z</option>
-          </select>
+          <div class="relative">
+            <button id="pkg-author-btn" class="flex items-center gap-2 px-3 py-2 rounded-md border border-border bg-surface text-sm text-muted hover:text-foreground hover:border-accent-border" aria-haspopup="listbox" aria-expanded="false">
+              <span id="pkg-author-label">All authors</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div id="pkg-author-menu" class="hidden absolute left-0 top-[calc(100%+6px)] min-w-44 max-h-64 overflow-y-auto rounded-lg border border-border bg-surface shadow-2xl shadow-black/50 p-1 z-20" role="listbox" aria-label="Filter by author"></div>
+          </div>
+          <div class="relative">
+            <button id="pkg-sort-btn" class="flex items-center gap-2 px-3 py-2 rounded-md border border-border bg-surface text-sm text-muted hover:text-foreground hover:border-accent-border" aria-haspopup="listbox" aria-expanded="false">
+              <span id="pkg-sort-label">Recently updated</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div id="pkg-sort-menu" class="hidden absolute left-0 top-[calc(100%+6px)] min-w-44 rounded-lg border border-border bg-surface shadow-2xl shadow-black/50 p-1 z-20" role="listbox" aria-label="Sort packages"></div>
+          </div>
         </div>
 
         <div id="pkg-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -64,10 +69,20 @@ import '../../styles/global.css';
 
     <script define:vars={{ registryApi: site.registryApi }}>
       const searchInput = document.getElementById('pkg-search');
-      const authorSelect = document.getElementById('pkg-author');
-      const sortSelect = document.getElementById('pkg-sort');
+      const authorBtn = document.getElementById('pkg-author-btn');
+      const authorLabel = document.getElementById('pkg-author-label');
+      const authorMenu = document.getElementById('pkg-author-menu');
+      const sortBtn = document.getElementById('pkg-sort-btn');
+      const sortLabel = document.getElementById('pkg-sort-label');
+      const sortMenu = document.getElementById('pkg-sort-menu');
       const pkgList = document.getElementById('pkg-list');
       let allPackages = [];
+      let authorFilter = '';
+      let sortMode = 'recent';
+      const SORTS = [
+        ['recent', 'Recently updated'],
+        ['name', 'Name A–Z'],
+      ];
 
       async function fetchPackages(query) {
         try {
@@ -88,19 +103,81 @@ import '../../styles/global.css';
       // Author filter options derive from the result set: the search API
       // has no author query, so filtering happens client-side.
       function refreshAuthors() {
-        const current = authorSelect.value;
         const authors = [...new Set(allPackages.map((p) => p.author).filter(Boolean))].sort();
-        authorSelect.innerHTML =
-          '<option value="">All authors</option>' +
-          authors.map((a) => `<option value="${esc(a)}">${esc(a)}</option>`).join('');
-        if (authors.includes(current)) authorSelect.value = current;
+        if (authorFilter && !authors.includes(authorFilter)) {
+          authorFilter = '';
+          authorLabel.textContent = 'All authors';
+        }
+        authorMenu.innerHTML =
+          `<button data-author="" role="option" class="filter-item">All authors${authorFilter === '' ? checkMark() : ''}</button>` +
+          authors
+            .map(
+              (a) =>
+                `<button data-author="${esc(a)}" role="option" class="filter-item">${esc(a)}${authorFilter === a ? checkMark() : ''}</button>`,
+            )
+            .join('');
+        authorMenu.querySelectorAll('[data-author]').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            authorFilter = btn.dataset.author;
+            authorLabel.textContent = authorFilter || 'All authors';
+            closeMenus();
+            renderPackages();
+          });
+        });
       }
 
+      function checkMark() {
+        return '<svg class="ml-auto" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
+      }
+
+      function closeMenus() {
+        authorMenu.classList.add('hidden');
+        sortMenu.classList.add('hidden');
+        authorBtn.setAttribute('aria-expanded', 'false');
+        sortBtn.setAttribute('aria-expanded', 'false');
+      }
+
+      function toggleMenu(menu, btn) {
+        const open = menu.classList.contains('hidden');
+        closeMenus();
+        if (open) {
+          menu.classList.remove('hidden');
+          btn.setAttribute('aria-expanded', 'true');
+        }
+      }
+
+      authorBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleMenu(authorMenu, authorBtn);
+      });
+      sortBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleMenu(sortMenu, sortBtn);
+      });
+      document.addEventListener('click', (e) => {
+        if (!authorMenu.contains(e.target) && !sortMenu.contains(e.target)) closeMenus();
+      });
+      sortMenu.innerHTML = SORTS.map(
+        ([v, label]) =>
+          `<button data-sort="${v}" role="option" class="filter-item">${label}${sortMode === v ? checkMark() : ''}</button>`,
+      ).join('');
+      sortMenu.querySelectorAll('[data-sort]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          sortMode = btn.dataset.sort;
+          sortLabel.textContent = SORTS.find(([v]) => v === sortMode)[1];
+          sortMenu.querySelectorAll('[data-sort]').forEach((b) => {
+            const on = b.dataset.sort === sortMode;
+            b.querySelector('svg')?.remove();
+            if (on) b.insertAdjacentHTML('beforeend', checkMark());
+          });
+          closeMenus();
+          renderPackages();
+        });
+      });
+
       function visiblePackages() {
-        const author = authorSelect.value;
-        const sort = sortSelect.value;
-        let list = author ? allPackages.filter((p) => p.author === author) : allPackages.slice();
-        if (sort === 'name') list.sort((a, b) => String(a.name).localeCompare(String(b.name)));
+        let list = authorFilter ? allPackages.filter((p) => p.author === authorFilter) : allPackages.slice();
+        if (sortMode === 'name') list.sort((a, b) => String(a.name).localeCompare(String(b.name)));
         return list;
       }
 
@@ -113,7 +190,7 @@ import '../../styles/global.css';
         pkgList.innerHTML = packages
           .map(
             (pkg) => `
-          <div class="rounded-lg border border-border bg-surface p-5">
+          <div class="rounded-lg border border-border bg-surface p-5 transition-colors hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-950/30">
             <a href="/pkg/view?name=${encodeURIComponent(pkg.name)}" class="block hover:border-accent-border">
               <div class="flex items-start justify-between gap-3">
                 <h3 class="font-mono font-medium text-foreground">${esc(pkg.name)}</h3>
@@ -189,8 +266,6 @@ import '../../styles/global.css';
         setTimeout(() => suggestBox.classList.add('hidden'), 150);
       });
       searchInput.addEventListener('focus', (e) => renderSuggest(e.target.value.trim()));
-      authorSelect.addEventListener('change', renderPackages);
-      sortSelect.addEventListener('change', renderPackages);
 
       fetchPackages('');
     </script>
