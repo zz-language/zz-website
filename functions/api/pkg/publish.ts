@@ -31,7 +31,17 @@ export async function onRequestPost(context: any) {
 
   // Parse body
   const body = await request.json();
-  const { name, version, tarball_b64, readme_md, deps, description, repo } = body;
+  const {
+    name,
+    version,
+    tarball_b64,
+    readme_md,
+    deps,
+    description,
+    repo,
+    license,
+    tarball_sha256,
+  } = body;
 
   // Validate name
   if (!/^[a-z0-9-_]+$/.test(name)) {
@@ -49,9 +59,63 @@ export async function onRequestPost(context: any) {
     });
   }
 
+  // Validate tarball payload
+  if (!tarball_b64 || typeof tarball_b64 !== 'string') {
+    return new Response(JSON.stringify({ error: 'Missing tarball' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  // Validate client-claimed content hash when provided (hex SHA-256).
+  if (
+    tarball_sha256 !== undefined &&
+    (typeof tarball_sha256 !== 'string' || !/^[0-9a-f]{64}$/.test(tarball_sha256))
+  ) {
+    return new Response(JSON.stringify({ error: 'Invalid tarball_sha256 (want hex SHA-256)' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  // License is a short SPDX identifier (e.g. "MIT"). Free-form but bounded
+  // so it cannot be abused as a second README.
+  if (license !== undefined && (typeof license !== 'string' || license.length > 64)) {
+    return new Response(JSON.stringify({ error: 'Invalid license (max 64 chars)' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   try {
-    // Upload tarball to R2
+    // Decode + verify the tarball before storing anything.
     const tarballBytes = Uint8Array.from(atob(tarball_b64), c => c.charCodeAt(0));
+    const digest = await crypto.subtle.digest('SHA-256', tarballBytes);
+    const actualSha256 = Array.from(new Uint8Array(digest))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+    if (tarball_sha256 && tarball_sha256 !== actualSha256) {
+      return new Response(JSON.stringify({ error: 'Tarball hash mismatch' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Tarballs are immutable: republishing an existing version is a
+    // conflict, never a silent overwrite.
+    const existing = await env.DB.prepare(
+      'SELECT version FROM versions WHERE pkg = ? AND version = ?'
+    )
+      .bind(name, version)
+      .first();
+    if (existing) {
+      return new Response(JSON.stringify({ error: 'Version already published' }), {
+        status: 409,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Upload tarball to R2
     const tarballKey = `pkgs/${name}/${version}.tgz`;
     await env.PKGS.put(tarballKey, tarballBytes);
 
@@ -63,15 +127,15 @@ export async function onRequestPost(context: any) {
 
     // Upsert package metadata in D1
     await env.DB.prepare(
-      'INSERT OR REPLACE INTO packages (name, latest, author, repo, description, updated_at) VALUES (?, ?, ?, ?, ?, ?)'
-    ).bind(name, version, userRow.github_login, repo || '', description || '', Date.now()).run();
+      'INSERT OR REPLACE INTO packages (name, latest, author, repo, description, license, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    ).bind(name, version, userRow.github_login, repo || '', description || '', license || '', Date.now()).run();
 
     // Insert version record
     await env.DB.prepare(
-      'INSERT OR IGNORE INTO versions (pkg, version, tarball_key, readme_key, deps, published_at) VALUES (?, ?, ?, ?, ?, ?)'
-    ).bind(name, version, tarballKey, readme_md ? `readmes/${name}/${version}.md` : null, JSON.stringify(deps || {}), Date.now()).run();
+      'INSERT INTO versions (pkg, version, tarball_key, tarball_sha256, readme_key, deps, license, published_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+    ).bind(name, version, tarballKey, actualSha256, readme_md ? `readmes/${name}/${version}.md` : null, JSON.stringify(deps || {}), license || '', Date.now()).run();
 
-    return new Response(JSON.stringify({ ok: true, url: `/pkg/${name}` }), {
+    return new Response(JSON.stringify({ ok: true, url: `/pkg/${name}`, sha256: actualSha256 }), {
       status: 201,
       headers: { 'Content-Type': 'application/json' },
     });

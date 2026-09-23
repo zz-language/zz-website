@@ -7,7 +7,7 @@ export async function onRequestGet(context: any) {
 
   // Verify state from cookie
   const cookies = Object.fromEntries(
-    request.headers.get('Cookie')?.split(';').map(c => c.trim().split('=')) || []
+    request.headers.get('Cookie')?.split(';').map((c: string) => c.trim().split('=')) || []
   );
 
   if (state !== cookies.oauth_state) {

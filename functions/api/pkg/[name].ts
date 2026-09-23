@@ -18,7 +18,7 @@ export async function onRequestGet(context: any) {
 
     // Get all versions
     const versions = await env.DB.prepare(
-      'SELECT version, deps, published_at FROM versions WHERE pkg = ? ORDER BY published_at DESC'
+      'SELECT version, deps, license, tarball_sha256, published_at FROM versions WHERE pkg = ? ORDER BY published_at DESC'
     ).bind(name).all();
 
     // Get latest version details
@@ -46,8 +46,21 @@ export async function onRequestGet(context: any) {
         author: pkg.author,
         repo: pkg.repo,
         description: pkg.description,
+        license: pkg.license || latestVersion?.license || '',
         versions: versions.results?.map((v: any) => v.version) || [],
+        // Per-version integrity + license map so installers can verify
+        // any pinned version, not just `latest`.
+        version_details:
+          versions.results?.reduce((acc: any, v: any) => {
+            acc[v.version] = {
+              sha256: v.tarball_sha256 || '',
+              license: v.license || '',
+            };
+            return acc;
+          }, {}) || {},
         deps: latestVersion?.deps ? JSON.parse(latestVersion.deps) : {},
+        tarball_sha256: latestVersion?.tarball_sha256 || '',
+        download_url: `/api/pkg/${pkg.name}/${pkg.latest}.tgz`,
       },
       readme,
     }), {
