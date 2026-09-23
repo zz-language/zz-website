@@ -83,12 +83,15 @@ import '../../styles/global.css';
             </div>
             <div class="rounded-lg border border-border bg-surface p-4 mb-4">
               <div class="text-xs text-faint font-mono mb-1.5">Install</div>
-              <code class="text-accent font-mono text-sm">zz pkg add ${esc(md.name)}</code>
+              <div class="flex items-center justify-between gap-3">
+                <code class="text-accent font-mono text-sm break-all">zz add ${esc(md.name)} --registry ${esc(registryApi)}</code>
+                <button data-copy="zz add ${esc(md.name)} --registry ${esc(registryApi)}" class="copy-btn shrink-0 text-xs text-muted hover:text-accent font-mono border border-border rounded-md px-2.5 py-1.5">copy</button>
+              </div>
             </div>
             <div class="grid grid-cols-2 gap-4 mb-4">
               <div class="rounded-lg border border-border bg-surface p-4">
                 <div class="text-xs text-faint mb-1">Author</div>
-                <div class="font-mono text-sm">${esc(md.author)}</div>
+                <a href="/pkg/author?login=${encodeURIComponent(md.author || '')}" class="font-mono text-sm text-accent hover:underline">${esc(md.author)}</a>
               </div>
               <div class="rounded-lg border border-border bg-surface p-4">
                 <div class="text-xs text-faint mb-1">Version</div>
@@ -110,12 +113,24 @@ import '../../styles/global.css';
               <h2 class="font-medium mb-2">README</h2>
               <div class="rounded-lg border border-border bg-surface p-5 text-sm text-muted whitespace-pre-wrap">${esc(pkg.readme) || 'No README available.'}</div>
             </div>`;
+          const copyBtn = content.querySelector('.copy-btn');
+          if (copyBtn) {
+            copyBtn.addEventListener('click', async () => {
+              try {
+                await navigator.clipboard.writeText(copyBtn.dataset.copy);
+                copyBtn.textContent = 'copied!';
+                setTimeout(() => (copyBtn.textContent = 'copy'), 1500);
+              } catch {
+                copyBtn.textContent = 'copy failed';
+              }
+            });
+          }
         } catch {
           content.innerHTML = `
             <div class="text-center py-12">
               <h1 class="text-xl font-semibold mb-2">Package not found</h1>
               <p class="text-muted text-sm mb-6">The package "${esc(name)}" does not exist yet.</p>
-              <code class="px-4 py-2 bg-surface border border-border rounded-lg text-accent font-mono text-sm">zz pkg publish</code>
+              <code class="px-4 py-2 bg-surface border border-border rounded-lg text-accent font-mono text-sm">zz publish</code>
             </div>`;
         }
       }
