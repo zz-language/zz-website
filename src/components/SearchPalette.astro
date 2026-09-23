@@ -38,24 +38,24 @@ const DOCS: DocEntry[] = [
   aria-label="Quick search"
 >
   <div id="zz-palette-backdrop" class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
-  <div class="absolute left-1/2 top-[12vh] w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 overflow-hidden rounded-xl border border-border bg-surface shadow-2xl shadow-black/60">
-    <div class="flex items-center gap-2 border-b border-border px-4">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="text-faint shrink-0" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+  <div class="absolute left-1/2 top-[12vh] w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 overflow-hidden rounded-xl border border-slate-800 bg-slate-900/95 shadow-2xl shadow-black/60 backdrop-blur-md">
+    <div class="flex items-center gap-2 border-b border-slate-800 px-4">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="text-slate-400 shrink-0" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <label for="zz-palette-input" class="sr-only">Search docs, packages and actions</label>
       <input
         id="zz-palette-input"
         type="text"
-        placeholder="Search docs, packages, actions…"
+        placeholder="Type a command or search..."
         autocomplete="off"
-        class="w-full bg-transparent py-3.5 text-sm text-foreground placeholder:text-faint focus:outline-none"
+        class="w-full bg-transparent py-3.5 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none"
       />
-      <kbd class="font-mono text-[10px] text-faint border border-border rounded px-1.5 py-0.5">esc</kbd>
+      <kbd class="font-mono text-xs text-slate-400 bg-slate-800 border border-slate-700 rounded px-1.5 py-0.5">esc</kbd>
     </div>
     <div id="zz-palette-results" class="max-h-[50vh] overflow-y-auto p-1.5" role="listbox"></div>
-    <div class="flex items-center gap-4 border-t border-border px-4 py-2 text-[11px] text-faint">
-      <span><kbd class="font-mono border border-border rounded px-1">↑↓</kbd> navigate</span>
-      <span><kbd class="font-mono border border-border rounded px-1">↵</kbd> open</span>
-      <span><kbd class="font-mono border border-border rounded px-1">esc</kbd> close</span>
+    <div class="flex items-center gap-4 border-t border-slate-800 px-4 py-2.5 text-xs text-slate-400">
+      <span><kbd class="font-mono bg-slate-800 border border-slate-700 rounded px-1.5 py-0.5 text-xs">↑↓</kbd> navigate</span>
+      <span><kbd class="font-mono bg-slate-800 border border-slate-700 rounded px-1.5 py-0.5 text-xs">↵</kbd> select</span>
+      <span><kbd class="font-mono bg-slate-800 border border-slate-700 rounded px-1.5 py-0.5 text-xs">esc</kbd> close</span>
     </div>
   </div>
 </div>
@@ -160,7 +160,7 @@ const DOCS: DocEntry[] = [
     items = list;
     active = 0;
     if (list.length === 0) {
-      results.innerHTML = '<div class="px-3 py-6 text-center text-sm text-faint">No matches</div>';
+      results.innerHTML = '<div class="px-3 py-6 text-center text-sm text-slate-500">No matches</div>';
       return;
     }
     let lastGroup = '';
@@ -168,10 +168,10 @@ const DOCS: DocEntry[] = [
       .map((it, i) => {
         const head =
           it.group && it.group !== lastGroup
-            ? `<div class="px-3 pt-2 pb-1 text-[11px] font-mono uppercase tracking-wider text-faint">${esc(it.group)}</div>`
+            ? `<div class="px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">${esc(it.group)}</div>`
             : '';
         lastGroup = it.group || lastGroup;
-        return `${head}<button data-idx="${i}" role="option" aria-selected="${i === 0}" class="palette-item flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-sm text-left hover:bg-raised"><span class="font-medium text-foreground">${esc(it.title)}</span><span class="shrink-0 text-xs text-faint">${esc(it.sub || it.hint || '')}</span></button>`;
+        return `${head}<button data-idx="${i}" role="option" aria-selected="${i === 0}" class="palette-item flex w-full items-center justify-between gap-3 rounded-lg mx-2 px-3 py-2.5 text-sm text-left" style="width: calc(100% - 1rem)"><span class="font-medium text-slate-200">${esc(it.title)}</span><span class="shrink-0 text-xs text-slate-500">${esc(it.sub || it.hint || '')}</span></button>`;
       })
       .join('');
     highlight();
@@ -183,7 +183,7 @@ const DOCS: DocEntry[] = [
   function highlight() {
     results.querySelectorAll('.palette-item').forEach((btn, i) => {
       const on = i === active;
-      btn.classList.toggle('bg-raised', on);
+      btn.classList.toggle('palette-active', on);
       btn.setAttribute('aria-selected', on ? 'true' : 'false');
       if (on) btn.scrollIntoView({ block: 'nearest' });
     });

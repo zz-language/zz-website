@@ -212,6 +212,18 @@ button:disabled {
   background: rgba(148, 163, 184, 0.1);
 }
 
+/* ——— Command palette selection ——— */
+.palette-item:hover {
+  background: rgba(0, 128, 255, 0.08);
+}
+.palette-item.palette-active {
+  background: rgba(0, 128, 255, 0.1);
+  color: #60a5fa;
+}
+.palette-item.palette-active span:first-child {
+  color: #93c5fd;
+}
+
 /* ——— Filter dropdown items (pkg) ——— */
 .filter-item {
   display: flex;
