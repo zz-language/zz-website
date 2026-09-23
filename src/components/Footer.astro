@@ -1,0 +1,37 @@
+---
+import Icon from './icons/Icon.astro';
+import site from '../config/site.json';
+
+const year = new Date().getFullYear();
+---
+
+<footer class="border-t border-border bg-surface/40">
+  <div class="max-w-6xl mx-auto px-4 md:px-6 py-10 grid grid-cols-1 md:grid-cols-3 gap-8">
+    <div>
+      <div class="flex items-center gap-2 font-mono font-semibold text-sm mb-2">
+        <span class="flex items-center justify-center w-6 h-6 rounded-md bg-accent-soft border border-accent-border text-accent font-bold text-sm">z</span>
+        ZZ Language
+      </div>
+      <p class="text-muted text-sm leading-relaxed">Fast systems language with SQL built in.</p>
+      <p class="text-faint text-xs mt-3">© {year} ZZ Language. MIT License.</p>
+    </div>
+    <nav aria-label="Footer" class="flex flex-col gap-1 text-sm">
+      <span class="text-faint text-xs font-mono uppercase tracking-wider mb-1">Site</span>
+      <a href={site.docsPath} class="w-fit px-2 -mx-2 py-1 rounded-md text-muted hover:text-foreground hover:bg-raised">Documentation</a>
+      <a href="/playground" class="w-fit px-2 -mx-2 py-1 rounded-md text-muted hover:text-foreground hover:bg-raised">Playground</a>
+      <a href={site.pkgRegistryPath} class="w-fit px-2 -mx-2 py-1 rounded-md text-muted hover:text-foreground hover:bg-raised">Packages</a>
+    </nav>
+    <div class="flex flex-col gap-1 text-sm">
+      <span class="text-faint text-xs font-mono uppercase tracking-wider mb-1">Project</span>
+      <a
+        href={site.githubRepo}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="inline-flex w-fit items-center gap-2 px-2 -mx-2 py-1 rounded-md text-muted hover:text-foreground hover:bg-raised"
+      >
+        <Icon name="github" size={16} />
+        GitHub repository
+      </a>
+    </div>
+  </div>
+</footer>
