@@ -1,5 +1,7 @@
 {
   "extends": "astro/tsconfigs/strict",
   "include": [".astro/types.d.ts", "**/*"],
-  "exclude": ["dist"]
+  // Bun-only test files import `bun:test`, which `tsc` cannot resolve.
+  // They run under `bun test` (no typecheck); keep them out of `tsc --noEmit`.
+  "exclude": ["dist", "**/*.test.ts"]
 }
