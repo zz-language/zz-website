@@ -46,6 +46,10 @@ export function applyThemeSetting(setting: string): void {
   document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
   try {
     localStorage.setItem('zz-theme', setting);
+    // Starlight reads `starlight-theme` in <head> on docs routes (before
+    // our bundle runs). Mirror the choice there so docs never disagree:
+    // our "system" is Starlight's "auto".
+    localStorage.setItem('starlight-theme', setting === 'system' ? 'auto' : setting);
   } catch {}
   syncThemeIcons();
 }
@@ -137,8 +141,25 @@ function markActiveNav(): void {
   });
 }
 
+/** One-time migration: an older `zz-theme` choice without a matching
+ * `starlight-theme` makes docs render Starlight's default (dark). Repair
+ * it on first load so both keys agree from then on. */
+function migrateStarlightTheme(): void {
+  try {
+    const ours = localStorage.getItem('zz-theme');
+    if (!ours) return;
+    const theirs = localStorage.getItem('starlight-theme');
+    const want = ours === 'system' ? 'auto' : ours;
+    if (theirs !== want) {
+      localStorage.setItem('starlight-theme', want);
+      applyThemeSetting(ours);
+    }
+  } catch {}
+}
+
 /** Wire header controls. Safe to call once per page (idempotent listeners). */
 export function initHeader(): void {
+  migrateStarlightTheme();
   renderAuth();
   syncThemeIcons();
   markActiveNav();
