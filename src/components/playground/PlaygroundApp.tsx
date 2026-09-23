@@ -208,7 +208,7 @@ export default function PlaygroundApp() {
       pendingRef.current = null;
       if (res.ok) {
         pushLine('sys', `— done in ${ms}ms · ${res.steps} steps —`);
-        setStatus(`done · ${ms}ms`);
+        setStatus(`✓ ${ms}ms · ${res.steps} steps`);
       } else if (res.error && (res.error.message === 'execution stopped' || abortRef.current)) {
         pushLine('sys', '— stopped —');
         setStatus('stopped');

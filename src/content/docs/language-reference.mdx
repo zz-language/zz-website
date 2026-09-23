@@ -5,6 +5,19 @@ description: Types, inference rules, generics, closures and operator semantics
 
 The complete semantics behind the [Syntax](/syntax) tour.
 
+## Core built-ins
+
+No import needed. `print` writes without a newline, `println` adds one,
+`input` prints an optional prompt and reads a line (empty string on EOF).
+
+```zz
+print("name: ")
+name := input()
+println("Hello, {name}!")
+
+answer := input("Continue? (y/n) ")
+```
+
 ## Primitive types
 
 | Type | Description | Example |

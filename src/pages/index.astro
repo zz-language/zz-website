@@ -1,5 +1,6 @@
 ---
 import CustomHeader from '../components/header/CustomHeader.astro';
+import ThemeInit from '../components/ThemeInit.astro';
 import Footer from '../components/Footer.astro';
 import InstallWidget from '../components/hero/InstallWidget.astro';
 import Icon from '../components/icons/Icon.astro';
@@ -9,24 +10,24 @@ import '../styles/global.css';
 
 const features = [
   {
-    icon: 'database',
-    title: 'Universal SQL engine',
-    body: 'One API for your database. Query results map straight into structs — no ORM, no boilerplate.',
+    icon: 'cpu',
+    title: 'Native AOT compilation',
+    body: 'zz build emits optimized native binaries via Clang. Iterate with zz run, ship machine code.',
   },
   {
     icon: 'zap',
-    title: 'Zero-alloc structs',
-    body: 'Rows decode directly into typed structs. Small RSS, no GC pauses, predictable performance.',
+    title: 'Green-thread concurrency',
+    body: 'Lightweight tasks with channels and sub-millisecond round-trips. No OS threads, no async coloring.',
   },
   {
-    icon: 'refresh',
-    title: 'Pure async I/O',
-    body: 'HTTP, sockets and files are non-blocking by default. Concurrency without callback gymnastics.',
+    icon: 'layers',
+    title: 'Go-style struct embedding',
+    body: 'Compose structs by embedding, promote fields and methods. Zero-alloc layouts, no GC pauses.',
   },
   {
-    icon: 'cpu',
-    title: 'AOT and VM runtimes',
-    body: 'Iterate with zz run, ship native binaries with zz build. Same code, both targets.',
+    icon: 'package',
+    title: 'Built-in package registry',
+    body: 'zz add grabs versioned deps into vendor/ with a zz.lock. Publish with zz publish.',
   },
   {
     icon: 'terminal',
@@ -34,27 +35,61 @@ const features = [
     body: 'Did-you-mean suggestions, fix-it hints and zz check --fix. Errors tell you how to fix them.',
   },
   {
-    icon: 'package',
-    title: 'Batteries included',
-    body: '70+ stdlib functions: JSON, HTTP, math, encoding, time. Plus a package registry at /pkg.',
+    icon: 'database',
+    title: 'Universal SQL access',
+    body: 'One query API across SQLite, Postgres and MySQL. Rows decode straight into typed structs.',
   },
 ] as const;
 
 const bench = [
+  { name: 'Channel ping-pong (round-trip)', zz: '~300ns', go: '~1050ns', rust: '~320ns' },
   { name: 'CPU intensive', zz: '17ms', go: '71ms', rust: '15ms' },
   { name: 'Concurrency stress', zz: '240ms', go: '812ms', rust: '254ms' },
   { name: 'Memory alloc', zz: '174ms', go: '271ms', rust: '268ms' },
   { name: 'HTTP throughput', zz: '56,236 rps', go: '52,780 rps', rust: '49,085 rps' },
 ];
 
+const possible = [
+  {
+    icon: 'server',
+    title: 'CLIs & dev tools',
+    body: 'Single-file native binaries with fast startup. Argument parsing, fs and env in stdlib.',
+  },
+  {
+    icon: 'globe',
+    title: 'HTTP services & APIs',
+    body: 'Non-blocking server, JSON in one call, connection pooling. From prototype to prod binary.',
+  },
+  {
+    icon: 'refresh',
+    title: 'Concurrent pipelines',
+    body: 'Fan-out work across green threads, stream results through channels with backpressure.',
+  },
+  {
+    icon: 'database',
+    title: 'Data scripts & ETL',
+    body: 'Query SQLite/Postgres/MySQL with the same code, map rows into structs, write JSON out.',
+  },
+  {
+    icon: 'package',
+    title: 'Shareable libraries',
+    body: 'Version, publish and depend on packages through the built-in registry. No external toolchain.',
+  },
+  {
+    icon: 'gauge',
+    title: 'Benchmarks & perf toys',
+    body: 'AOT binaries with predictable latency. Measure channel round-trips in the hundreds of nanos.',
+  },
+] as const;
+
 // Static highlight: kept as data so `{...}` in ZZ code isn't parsed as template exprs.
-const codeHtml = `<span class="text-violet-400">struct</span> <span class="text-zinc-100">User</span> <span class="text-zinc-500">{</span><span class="text-zinc-300">id: </span><span class="text-violet-300">int</span><span class="text-zinc-500">,</span><span class="text-zinc-300"> name: </span><span class="text-violet-300">str</span><span class="text-zinc-500">,</span><span class="text-zinc-300"> email: </span><span class="text-violet-300">str</span><span class="text-zinc-500">}</span>
+const codeHtml = `<span class="text-blue-400">struct</span> <span class="text-zinc-100">User</span> <span class="text-zinc-500">{</span><span class="text-zinc-300">id: </span><span class="text-blue-300">int</span><span class="text-zinc-500">,</span><span class="text-zinc-300"> name: </span><span class="text-blue-300">str</span><span class="text-zinc-500">,</span><span class="text-zinc-300"> email: </span><span class="text-blue-300">str</span><span class="text-zinc-500">}</span>
 
 <span class="text-zinc-300">users: [User] = []</span>
 <span class="text-zinc-300">users.append(User{id: </span><span class="text-amber-300">1</span><span class="text-zinc-500">,</span><span class="text-zinc-300"> name: </span><span class="text-emerald-300">"Ada"</span><span class="text-zinc-500">,</span><span class="text-zinc-300"> email: </span><span class="text-emerald-300">"ada@example.com"</span><span class="text-zinc-300">})</span>
 <span class="text-zinc-300">users.append(User{id: </span><span class="text-amber-300">2</span><span class="text-zinc-500">,</span><span class="text-zinc-300"> name: </span><span class="text-emerald-300">"Grace"</span><span class="text-zinc-500">,</span><span class="text-zinc-300"> email: </span><span class="text-emerald-300">"grace@example.com"</span><span class="text-zinc-300">})</span>
 
-<span class="text-violet-400">for</span><span class="text-zinc-300"> user </span><span class="text-violet-400">in</span><span class="text-zinc-300"> users {</span>
+<span class="text-blue-400">for</span><span class="text-zinc-300"> user </span><span class="text-blue-400">in</span><span class="text-zinc-300"> users {</span>
     <span class="text-zinc-100">println</span><span class="text-zinc-300">(</span><span class="text-emerald-300">"{user.id}. {user.name} &lt;{user.email}&gt;"</span><span class="text-zinc-300">)</span>
 <span class="text-zinc-300">}</span>`;
 ---
@@ -63,9 +98,10 @@ const codeHtml = `<span class="text-violet-400">struct</span> <span class="text-
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{site.siteName} — Fast systems language with SQL built in</title>
+    <title>{site.siteName} — Fast systems language with native AOT</title>
     <meta name="description" content={site.tagline} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <ThemeInit />
     <script
       type="application/ld+json"
       set:html={JSON.stringify({
@@ -87,17 +123,13 @@ const codeHtml = `<span class="text-violet-400">struct</span> <span class="text-
       {/* ——— Hero ——— */}
       <section class="relative border-b border-border overflow-hidden">
         <div aria-hidden="true" class="pointer-events-none absolute inset-0">
-          <div class="absolute -top-48 left-1/2 h-[28rem] w-[46rem] -translate-x-1/2 rounded-full bg-violet-600/15 blur-3xl"></div>
-          <div class="absolute top-1/2 -right-40 h-72 w-72 rounded-full bg-violet-600/10 blur-3xl"></div>
+          <div class="absolute -top-48 left-1/2 h-[28rem] w-[46rem] -translate-x-1/2 rounded-full bg-blue-600/20 blur-3xl"></div>
+          <div class="absolute top-1/2 -right-40 h-72 w-72 rounded-full bg-blue-600/10 blur-3xl"></div>
         </div>
         <div class="relative max-w-6xl mx-auto px-4 md:px-6 py-16 md:py-24 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div>
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-accent-border bg-accent-soft text-accent text-xs font-mono mb-6">
-              <span class="w-1.5 h-1.5 rounded-full bg-accent"></span>
-              v0.1.0 — AOT compilation stable
-            </div>
             <h1 class="text-4xl md:text-5xl font-semibold tracking-tight leading-[1.1] mb-5">
-              A fast systems language with SQL built in.
+              Enterprise systems language for extreme concurrency &amp; native speed.
             </h1>
             <p class="text-lg text-muted leading-relaxed mb-8 max-w-lg">
               Inferred types, pipelines and pattern matching — plus a universal
@@ -120,10 +152,10 @@ const codeHtml = `<span class="text-violet-400">struct</span> <span class="text-
           {/* ——— Animated terminal ——— */}
           <div class="rounded-lg border border-border bg-surface overflow-hidden shadow-2xl shadow-black/60" role="img" aria-label="Terminal showing ZZ commands and output">
             <div class="flex items-center gap-1.5 px-4 py-3 border-b border-border">
-              <span class="w-2.5 h-2.5 rounded-full bg-border"></span>
-              <span class="w-2.5 h-2.5 rounded-full bg-border"></span>
-              <span class="w-2.5 h-2.5 rounded-full bg-border"></span>
-              <span class="ml-2 text-faint text-xs font-mono">terminal</span>
+              <span class="w-3 h-3 rounded-full bg-[#ff5f57]"></span>
+              <span class="w-3 h-3 rounded-full bg-[#febc2e]"></span>
+              <span class="w-3 h-3 rounded-full bg-[#28c840]"></span>
+              <span class="ml-2 text-faint text-xs font-mono">terminal — zz</span>
             </div>
             <div class="p-5 font-mono text-sm leading-7 min-h-[220px] overflow-hidden">
               <div id="term-lines"></div>
@@ -141,7 +173,7 @@ const codeHtml = `<span class="text-violet-400">struct</span> <span class="text-
             Systems performance, scripting ergonomics.
           </h2>
           <p class="text-muted max-w-2xl mb-12">
-            One language from quick script to native binary — with a database story most systems languages lack.
+            One language from quick script to native binary — concurrency, structs and packages included.
           </p>
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {features.map((f) => (
@@ -175,11 +207,15 @@ const codeHtml = `<span class="text-violet-400">struct</span> <span class="text-
             </a>
           </div>
           <div class="rounded-lg border border-border bg-surface overflow-hidden shadow-xl shadow-black/40">
-            <div class="flex items-center px-4 py-3 border-b border-border">
-              <Icon name="file" size={14} class="text-faint" />
-              <span class="ml-2 text-faint text-xs font-mono">users.zz</span>
+            <div class="flex items-center gap-1.5 px-4 py-3 border-b border-border">
+              <span class="w-3 h-3 rounded-full bg-[#ff5f57]"></span>
+              <span class="w-3 h-3 rounded-full bg-[#febc2e]"></span>
+              <span class="w-3 h-3 rounded-full bg-[#28c840]"></span>
+              <Icon name="file" size={14} class="text-faint ml-2" />
+              <span class="ml-1 text-faint text-xs font-mono">users.zz</span>
+              <button id="code-copy" class="ml-auto text-xs text-faint hover:text-accent font-mono border border-border rounded-md px-2 py-1">copy</button>
             </div>
-            <pre class="p-5 text-sm leading-7 overflow-x-auto"><code set:html={codeHtml}></code></pre>
+            <pre id="users-code" class="p-5 text-sm leading-7 overflow-x-auto"><code set:html={codeHtml}></code></pre>
             <div class="px-5 py-3 border-t border-border font-mono text-xs text-faint">
               <div>1. Ada &lt;ada@example.com&gt;</div>
               <div>2. Grace &lt;grace@example.com&gt;</div>
@@ -199,7 +235,7 @@ const codeHtml = `<span class="text-violet-400">struct</span> <span class="text-
           </div>
           <h2 class="text-2xl md:text-3xl font-semibold tracking-tight mb-4">Keeps up with Rust. Leaves Go behind.</h2>
           <p class="text-muted max-w-2xl mb-8">
-            Head-to-head AOT runs from <code class="font-mono text-sm text-foreground">bench/performance_check</code> in the ZZ repo. Lower is better, except throughput.
+            Channel round-trips and head-to-head AOT runs from <code class="font-mono text-sm text-foreground">bench/performance_check</code> in the ZZ repo. Lower is better, except throughput.
           </p>
           <div class="rounded-lg border border-border bg-surface overflow-hidden overflow-x-auto shadow-xl shadow-black/40">
             <table class="w-full text-sm min-w-[560px]">
@@ -222,6 +258,30 @@ const codeHtml = `<span class="text-violet-400">struct</span> <span class="text-
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      </section>
+
+      {/* ——— What's possible ——— */}
+      <section class="border-b border-border bg-surface/50">
+        <div class="max-w-6xl mx-auto px-4 md:px-6 py-16 md:py-24">
+          <p class="text-sm font-mono text-accent mb-3">What's possible</p>
+          <h2 class="text-2xl md:text-3xl font-semibold tracking-tight mb-4">
+            One language, weekend to production.
+          </h2>
+          <p class="text-muted max-w-2xl mb-12">
+            From throwaway scripts to shipped services — the same toolchain covers the whole arc.
+          </p>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {possible.map((f) => (
+              <div class="rounded-lg border border-border bg-surface p-6 shadow-sm shadow-black/30 hover:border-accent-border hover:shadow-lg hover:shadow-black/40">
+                <div class="flex items-center justify-center w-10 h-10 rounded-lg border border-accent-border bg-accent-soft text-accent mb-4">
+                  <Icon name={f.icon} size={20} />
+                </div>
+                <h3 class="font-medium mb-2">{f.title}</h3>
+                <p class="text-sm text-muted leading-relaxed">{f.body}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -253,6 +313,16 @@ const codeHtml = `<span class="text-violet-400">struct</span> <span class="text-
     <Footer />
 
     <script>
+      document.getElementById('code-copy')?.addEventListener('click', async (e) => {
+        const btn = e.currentTarget;
+        try {
+          await navigator.clipboard.writeText(document.querySelector('#users-code code')?.textContent ?? '');
+          btn.textContent = 'copied!';
+          setTimeout(() => (btn.textContent = 'copy'), 1500);
+        } catch {
+          btn.textContent = 'copy failed';
+        }
+      });
       // Animated terminal. Single-flight: a generation counter kills stale
       // loops (e.g. re-executed scripts under HMR), which used to overlap text.
       (function () {
@@ -263,8 +333,8 @@ const codeHtml = `<span class="text-violet-400">struct</span> <span class="text-
         var LINES = [
           { text: '$ zz run hello.zz', cls: 'text-zinc-100', type: true },
           { text: 'Hello, Ada!', cls: 'text-muted', type: false },
-          { text: '$ zz eval "range(1, 6) |> map(|x| x * 2) |> str"', cls: 'text-zinc-100', type: true },
-          { text: '[2, 4, 6, 8, 10]', cls: 'text-muted', type: false },
+          { text: '$ zz add hellopkg', cls: 'text-zinc-100', type: true },
+          { text: 'added hellopkg ^0.1.1 · vendor/ + zz.lock', cls: 'text-muted', type: false },
         ];
         var box = document.getElementById('term-lines');
         var caret = document.getElementById('term-caret');

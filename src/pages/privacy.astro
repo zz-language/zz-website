@@ -1,0 +1,56 @@
+---
+import CustomHeader from '../components/header/CustomHeader.astro';
+import ThemeInit from '../components/ThemeInit.astro';
+import Footer from '../components/Footer.astro';
+import site from '../config/site.json';
+import '../styles/global.css';
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Privacy Policy | {site.siteName}</title>
+    <meta name="description" content="ZZ Language website privacy policy" />
+    <ThemeInit />
+  </head>
+  <body class="bg-background text-foreground font-sans antialiased">
+    <CustomHeader />
+    <main class="pt-14">
+      <div class="max-w-3xl mx-auto px-4 md:px-6 py-10 md:py-14">
+        <p class="text-sm font-mono text-accent mb-2">Legal</p>
+        <h1 class="text-2xl md:text-3xl font-semibold tracking-tight mb-6">Privacy Policy</h1>
+        <div class="flex flex-col gap-4 text-sm text-muted leading-relaxed">
+          <p>
+            This website sets no tracking cookies and runs no third-party
+            analytics. Theme preference and registry credentials stay in your
+            browser's local storage and never leave your device except to the
+            services they belong to.
+          </p>
+          <p>
+            When you sign in with GitHub, the registry stores your GitHub
+            login, avatar URL, and salted hashes of your API tokens — the
+            minimum needed to attribute packages and authenticate publishes.
+            Raw tokens are shown once at creation and never stored.
+          </p>
+          <p>
+            Package tarballs you publish are stored as public GitHub release
+            assets and are downloadable by anyone. Do not publish secrets.
+          </p>
+          <p>
+            Hosting providers (Cloudflare Pages, Render) process standard
+            connection metadata as part of serving the site. Questions:
+            open an issue on the
+            <a
+              href={`${site.githubRepo}/issues`}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-accent hover:underline"
+            >GitHub repository</a>.
+          </p>
+        </div>
+      </div>
+    </main>
+    <Footer />
+  </body>
+</html>

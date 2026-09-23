@@ -1,0 +1,167 @@
+---
+import CustomHeader from '../components/header/CustomHeader.astro';
+import ThemeInit from '../components/ThemeInit.astro';
+import Footer from '../components/Footer.astro';
+import Icon from '../components/icons/Icon.astro';
+import site from '../config/site.json';
+import '../styles/global.css';
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Home | {site.siteName}</title>
+    <meta name="description" content="Your ZZ developer dashboard" />
+    <ThemeInit />
+  </head>
+  <body class="bg-background text-foreground font-sans antialiased">
+    <CustomHeader />
+
+    <main class="pt-14">
+      <div class="max-w-6xl mx-auto px-4 md:px-6 py-10 md:py-14">
+        <div id="home-login" class="hidden text-center py-12">
+          <h1 class="text-xl font-semibold mb-2">Log in to continue</h1>
+          <p class="text-muted text-sm mb-6">Your dashboard needs a registry session.</p>
+          <a href="/login?next=/home" class="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium">Log in</a>
+        </div>
+
+        <div id="home-app" class="hidden">
+          <p class="text-sm font-mono text-accent mb-2">Home</p>
+          <h1 class="text-2xl md:text-3xl font-semibold tracking-tight mb-8">
+            Welcome back, <span id="home-user" class="font-mono"></span>
+          </h1>
+
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div class="rounded-xl border border-border bg-surface p-4 shadow-lg">
+              <div class="text-xs text-faint mb-1">Published packages</div>
+              <div id="stat-pkgs" class="font-mono text-2xl text-foreground">–</div>
+            </div>
+            <div class="rounded-xl border border-border bg-surface p-4 shadow-lg">
+              <div class="text-xs text-faint mb-1">Active API tokens</div>
+              <div id="stat-tokens" class="font-mono text-2xl text-foreground">–</div>
+            </div>
+            <div class="rounded-xl border border-border bg-surface p-4 shadow-lg">
+              <div class="text-xs text-faint mb-1">Latest update</div>
+              <div id="stat-latest" class="font-mono text-sm text-foreground truncate">–</div>
+            </div>
+            <div class="rounded-xl border border-border bg-surface p-4 shadow-lg">
+              <div class="text-xs text-faint mb-1">Registry</div>
+              <div class="font-mono text-sm text-success">● online</div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div class="lg:col-span-2 rounded-xl border border-border bg-surface p-5">
+              <div class="flex items-center justify-between mb-3">
+                <h2 class="font-medium">My packages</h2>
+                <a id="home-all-pkgs" href="/pkg/author" class="text-xs text-accent hover:underline">View all →</a>
+              </div>
+              <div id="home-pkgs"><div class="text-muted text-sm">Loading…</div></div>
+            </div>
+
+            <div class="rounded-xl border border-border bg-surface p-5">
+              <h2 class="font-medium mb-3">Quick actions</h2>
+              <div class="flex flex-col gap-2 text-sm">
+                <a href="/pkg/tokens" class="flex items-center gap-2 px-3 py-2 rounded-md text-muted hover:text-foreground hover:bg-raised">
+                  <Icon name="key" size={16} /> Manage API tokens
+                </a>
+                <a href="/pkg" class="flex items-center gap-2 px-3 py-2 rounded-md text-muted hover:text-foreground hover:bg-raised">
+                  <Icon name="package" size={16} /> Browse registry
+                </a>
+                <a href="/playground" class="flex items-center gap-2 px-3 py-2 rounded-md text-muted hover:text-foreground hover:bg-raised">
+                  <Icon name="play" size={16} /> Open playground
+                </a>
+                <a href={site.docsPath} class="flex items-center gap-2 px-3 py-2 rounded-md text-muted hover:text-foreground hover:bg-raised">
+                  <Icon name="book" size={16} /> Read the docs
+                </a>
+              </div>
+              <div class="mt-4 rounded-lg border border-border bg-background p-3">
+                <div class="text-xs text-faint font-mono mb-1.5">Publish a package</div>
+                <code class="text-accent font-mono text-xs break-all">zz publish</code>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <Footer />
+
+    <script define:vars={{ registryApi: site.registryApi }}>
+      const loginPane = document.getElementById('home-login');
+      const appPane = document.getElementById('home-app');
+
+      function esc(s) {
+        return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
+
+      function session() {
+        try {
+          const login = localStorage.getItem('zz_login') || '';
+          const token = localStorage.getItem('zz_token') || '';
+          return login && token ? { login, token } : null;
+        } catch {
+          return null;
+        }
+      }
+
+      const s = session();
+      if (!s) {
+        loginPane.classList.remove('hidden');
+      } else {
+        appPane.classList.remove('hidden');
+        document.getElementById('home-user').textContent = s.login;
+        document.getElementById('home-all-pkgs').setAttribute('href', `/pkg/author?login=${encodeURIComponent(s.login)}`);
+        loadDashboard(s);
+      }
+
+      async function loadDashboard(s) {
+        try {
+          const [pkgsRes, toksRes] = await Promise.all([
+            fetch(`${registryApi}/api/pkg/search?q=`),
+            fetch(`${registryApi}/api/tokens`, { headers: { Authorization: `Bearer ${s.token}` } }),
+          ]);
+          if (toksRes.status === 401) {
+            try {
+              localStorage.removeItem('zz_token');
+              localStorage.removeItem('zz_login');
+            } catch {}
+            window.dispatchEvent(new Event('zz-session-change'));
+            window.location.href = '/login?next=/home';
+            return;
+          }
+          const all = await pkgsRes.json();
+          const mine = (Array.isArray(all) ? all : []).filter((p) => p.author === s.login);
+          const toks = await toksRes.json();
+
+          document.getElementById('stat-pkgs').textContent = mine.length;
+          document.getElementById('stat-tokens').textContent = Array.isArray(toks) ? toks.length : '–';
+          const box = document.getElementById('home-pkgs');
+          if (mine.length === 0) {
+            document.getElementById('stat-latest').textContent = '—';
+            box.innerHTML = '<div class="text-muted text-sm py-4">Nothing published yet. <code class="font-mono text-xs text-accent">zz publish</code> to ship your first package.</div>';
+            return;
+          }
+          document.getElementById('stat-latest').textContent = `${mine[0].name} v${mine[0].latest}`;
+          box.innerHTML = mine
+            .slice(0, 6)
+            .map(
+              (pkg) => `
+            <a href="/pkg/view?name=${encodeURIComponent(pkg.name)}" class="flex items-center justify-between gap-3 py-2.5 border-b border-border last:border-0 group">
+              <div class="min-w-0">
+                <div class="font-mono text-sm text-foreground group-hover:text-blue-400 truncate">${esc(pkg.name)}</div>
+                <div class="text-xs text-faint truncate">${esc(pkg.description) || 'No description'}</div>
+              </div>
+              <span class="shrink-0 bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 text-xs rounded-full font-mono">v${esc(pkg.latest)}</span>
+            </a>`,
+            )
+            .join('');
+        } catch {
+          document.getElementById('home-pkgs').innerHTML =
+            '<div class="text-muted text-sm py-4">Could not reach the registry. Try again in a moment.</div>';
+        }
+      }
+    </script>
+  </body>
+</html>

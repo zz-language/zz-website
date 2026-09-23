@@ -6,36 +6,37 @@
 @import 'tailwindcss/theme.css' layer(theme);
 @import 'tailwindcss/utilities.css' layer(utilities);
 
-/* ——— ZZ design tokens: premium near-black, single violet accent ——— */
+/* ——— ZZ design tokens: deep black default, soft light alternative ——— */
 @theme {
-  --color-background: #0a0a0a;
-  --color-surface: #0d0d0f;
-  --color-raised: #141417;
-  --color-border: #232329;
-  --color-foreground: #fafafa;
-  --color-muted: #a1a1aa;
-  --color-faint: #63636b;
+  --color-background: #0b0f17;
+  --color-surface: #0f172a;
+  --color-raised: #16213a;
+  --color-border: #1e293b;
+  --color-foreground: #f1f5f9;
+  --color-muted: #94a3b8;
+  --color-faint: #64748b;
 
-  --color-accent: #8b5cf6;
-  --color-accent-hover: #7c3aed;
-  --color-accent-soft: rgba(139, 92, 246, 0.12);
-  --color-accent-border: rgba(139, 92, 246, 0.35);
+  /* Electric Blue brand (#0080FF / #0969DA) */
+  --color-accent: #0080ff;
+  --color-accent-hover: #33a0ff;
+  --color-accent-soft: rgba(0, 128, 255, 0.12);
+  --color-accent-border: rgba(0, 128, 255, 0.35);
 
   --color-success: #34d399;
   --color-danger: #f87171;
   --color-warn: #fbbf24;
 
   /* shadcn semantic aliases over the same palette */
-  --color-primary: #8b5cf6;
+  --color-primary: #0080ff;
   --color-primary-foreground: #ffffff;
-  --color-secondary: #141417;
-  --color-secondary-foreground: #fafafa;
-  --color-muted-bg: #141417;
-  --color-muted-foreground: #a1a1aa;
+  --color-secondary: #16213a;
+  --color-secondary-foreground: #f1f5f9;
+  --color-muted-bg: #16213a;
+  --color-muted-foreground: #94a3b8;
   --color-destructive: #f87171;
   --color-destructive-foreground: #fafafa;
-  --color-input: #232329;
-  --color-ring: #8b5cf6;
+  --color-input: #1e293b;
+  --color-ring: #0080ff;
 
   --radius: 0.5rem;
 
@@ -43,21 +44,56 @@
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 }
 
+/* ——— Soft light theme: warm gray, never blinding ——— */
+:root[data-theme='light'] {
+  --color-background: #f4f5f7;
+  --color-surface: #ffffff;
+  --color-raised: #eceef1;
+  --color-border: #e2e4e9;
+  --color-foreground: #18181b;
+  --color-muted: #52525b;
+  --color-faint: #a1a1aa;
+
+  --color-accent: #0c57f7;
+  --color-accent-hover: #1e8ffb;
+  --color-accent-soft: rgba(12, 87, 247, 0.08);
+  --color-accent-border: rgba(12, 87, 247, 0.3);
+
+  --color-primary: #0c57f7;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #eceef1;
+  --color-secondary-foreground: #18181b;
+  --color-muted-bg: #eceef1;
+  --color-muted-foreground: #52525b;
+  --color-input: #e2e4e9;
+  --color-ring: #0c57f7;
+
+  --sl-color-accent: #0c57f7;
+  --sl-color-accent-high: #083fae;
+  --sl-color-accent-low: #dbeafe;
+  color-scheme: light;
+}
+
+:root,
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+
 /* ——— Starlight chrome aligned to the same system ——— */
 :root {
   --sl-font: 'Inter', system-ui, -apple-system, sans-serif;
   --sl-font-mono: 'JetBrains Mono', ui-monospace, monospace;
-  --sl-color-accent: #7c3aed;
-  --sl-color-accent-high: #6d28d9;
-  --sl-color-accent-low: #ede9fe;
+  --sl-color-accent: #0c57f7;
+  --sl-color-accent-high: #1e8ffb;
+  --sl-color-accent-low: #dbeafe;
 }
 :root[data-theme='dark'] {
-  --sl-color-accent: #a78bfa;
-  --sl-color-accent-high: #c4b5fd;
-  --sl-color-accent-low: #2e1065;
-  --sl-color-black: #0a0a0a;
-  --sl-color-gray-6: #0d0d0f;
-  --sl-color-gray-5: #141417;
+  --sl-color-accent: #0080ff;
+  --sl-color-accent-high: #33a0ff;
+  --sl-color-accent-low: #0a2547;
+  --sl-color-black: #0b0f17;
+  --sl-color-gray-6: #0f172a;
+  --sl-color-gray-5: #16213a;
 }
 
 /* ——— Base ——— */
@@ -73,7 +109,7 @@ code {
 }
 
 ::selection {
-  background: rgba(139, 92, 246, 0.35);
+  background: rgba(0, 128, 255, 0.35);
 }
 
 :focus-visible {
@@ -138,6 +174,94 @@ button:disabled {
   border: 0;
   padding: 0;
   pointer-events: none;
+}
+
+/* ——— User menu popover ——— */
+.user-menu {
+  transform-origin: top right;
+}
+.user-menu:not(.hidden) {
+  animation: zz-menu-in 140ms ease-out;
+}
+@keyframes zz-menu-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+.user-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  text-align: left;
+  color: #e2e8f0;
+  transition:
+    color 150ms ease,
+    background-color 150ms ease;
+}
+.user-menu-item:hover {
+  color: #f8fafc;
+  background: rgba(148, 163, 184, 0.1);
+}
+
+/* ——— Starlight docs header: hidden — the shared Navbar renders its own
+   fixed bar (see SiteHeader override), so both routes share one identical
+   tree. Offsets below still key off --sl-nav-height (3.5rem). ——— */
+:root {
+  --sl-nav-height: 3.5rem;
+}
+header.header {
+  /* Collapse Starlight's own box to zero (the shared Navbar renders its
+     own fixed bar from inside this slot). display:none would also hide
+     our bar — a zero static box keeps offsets intact instead. */
+  position: static;
+  height: 0;
+  padding: 0;
+  border: 0;
+  overflow: visible;
+}
+
+/* ——— Active nav link ——— */
+.nav-link-active {
+  color: var(--color-foreground) !important;
+  box-shadow: inset 0 -2px 0 var(--color-accent);
+}
+
+/* ——— Command palette selection ——— */
+.palette-item:hover {
+  background: rgba(0, 128, 255, 0.08);
+}
+.palette-item.palette-active {
+  background: rgba(0, 128, 255, 0.1);
+  color: #60a5fa;
+}
+.palette-item.palette-active span:first-child {
+  color: #93c5fd;
+}
+
+/* ——— Filter dropdown items (pkg) ——— */
+.filter-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--color-muted);
+  text-align: left;
+}
+.filter-item:hover {
+  color: var(--color-foreground);
+  background: var(--color-raised);
 }
 
 /* ——— Reduced motion ——— */

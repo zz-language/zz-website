@@ -1,34 +1,7 @@
 ---
-import Icon from '../icons/Icon.astro';
-import site from '../../config/site.json';
+import NavInner from './NavInner.astro';
 ---
 
 <header class="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
-  <nav class="max-w-6xl mx-auto px-4 md:px-6 h-14 flex items-center justify-between" aria-label="Main">
-    <a href="/" class="flex items-center gap-2 text-foreground font-mono font-semibold hover:text-accent">
-      <span class="flex items-center justify-center w-6 h-6 rounded-md bg-accent-soft border border-accent-border text-accent font-bold text-sm">z</span>
-      <span class="hidden sm:inline text-sm">ZZ Language</span>
-    </a>
-
-    <div class="flex items-center gap-1 text-sm">
-      <a href={site.docsPath} class="px-3 py-1.5 rounded-md text-muted hover:text-foreground hover:bg-raised">
-        Docs
-      </a>
-      <a href="/playground" class="px-3 py-1.5 rounded-md text-muted hover:text-foreground hover:bg-raised">
-        Playground
-      </a>
-      <a href={site.pkgRegistryPath} class="px-3 py-1.5 rounded-md text-muted hover:text-foreground hover:bg-raised">
-        Packages
-      </a>
-      <a
-        href={site.githubRepo}
-        target="_blank"
-        rel="noopener noreferrer"
-        class="ml-1 p-2 rounded-md text-muted hover:text-foreground hover:bg-raised"
-        aria-label="ZZ on GitHub"
-      >
-        <Icon name="github" size={18} />
-      </a>
-    </div>
-  </nav>
+  <NavInner />
 </header>

@@ -31,9 +31,11 @@ evens := filter(range(1, 11), |x: int| x % 2 == 0)
 
 ## Modules
 
+Console output needs no import: `print`, `println` and `input` are core
+built-ins (see [Language Reference](/language-reference)).
+
 | Module | Purpose | Page |
 |--------|---------|------|
-| `std.io` | Console I/O | [io](/stdlib/io) |
 | `std.str` | String manipulation | [str](/stdlib/str) |
 | `std.vec` | Array operations | [vec](/stdlib/vec) |
 | `std.json` | JSON parsing/serialization | [json](/stdlib/json) |

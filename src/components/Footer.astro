@@ -3,23 +3,26 @@ import Icon from './icons/Icon.astro';
 import site from '../config/site.json';
 
 const year = new Date().getFullYear();
+const issuesUrl = `${site.githubRepo}/issues`;
 ---
 
 <footer class="border-t border-border bg-surface/40">
-  <div class="max-w-6xl mx-auto px-4 md:px-6 py-10 grid grid-cols-1 md:grid-cols-3 gap-8">
-    <div>
+  <div class="max-w-6xl mx-auto px-4 md:px-6 py-10 grid grid-cols-2 md:grid-cols-4 gap-8">
+    <div class="col-span-2 md:col-span-1">
       <div class="flex items-center gap-2 font-mono font-semibold text-sm mb-2">
-        <span class="flex items-center justify-center w-6 h-6 rounded-md bg-accent-soft border border-accent-border text-accent font-bold text-sm">z</span>
+        <img src="/500-500-logo.png" alt="ZZ logo" width="24" height="24" class="rounded-md" />
         ZZ Language
       </div>
-      <p class="text-muted text-sm leading-relaxed">Fast systems language with SQL built in.</p>
-      <p class="text-faint text-xs mt-3">© {year} ZZ Language. MIT License.</p>
+      <p class="text-muted text-sm leading-relaxed">
+        A fast systems language with native AOT compilation.
+      </p>
     </div>
     <nav aria-label="Footer" class="flex flex-col gap-1 text-sm">
       <span class="text-faint text-xs font-mono uppercase tracking-wider mb-1">Site</span>
       <a href={site.docsPath} class="w-fit px-2 -mx-2 py-1 rounded-md text-muted hover:text-foreground hover:bg-raised">Documentation</a>
       <a href="/playground" class="w-fit px-2 -mx-2 py-1 rounded-md text-muted hover:text-foreground hover:bg-raised">Playground</a>
       <a href={site.pkgRegistryPath} class="w-fit px-2 -mx-2 py-1 rounded-md text-muted hover:text-foreground hover:bg-raised">Packages</a>
+      <a href="/login" class="w-fit px-2 -mx-2 py-1 rounded-md text-muted hover:text-foreground hover:bg-raised">Log in</a>
     </nav>
     <div class="flex flex-col gap-1 text-sm">
       <span class="text-faint text-xs font-mono uppercase tracking-wider mb-1">Project</span>
@@ -32,6 +35,56 @@ const year = new Date().getFullYear();
         <Icon name="github" size={16} />
         GitHub repository
       </a>
+      <a href={issuesUrl} target="_blank" rel="noopener noreferrer" class="w-fit px-2 -mx-2 py-1 rounded-md text-muted hover:text-foreground hover:bg-raised">
+        Report an Issue
+      </a>
+    </div>
+    <div class="flex flex-col gap-1 text-sm">
+      <span class="text-faint text-xs font-mono uppercase tracking-wider mb-1">Legal</span>
+      <a href="/terms" class="w-fit px-2 -mx-2 py-1 rounded-md text-muted hover:text-foreground hover:bg-raised">Terms of Service</a>
+      <a href="/privacy" class="w-fit px-2 -mx-2 py-1 rounded-md text-muted hover:text-foreground hover:bg-raised">Privacy Policy</a>
+    </div>
+  </div>
+
+  <div class="border-t border-border">
+    <div class="max-w-6xl mx-auto px-4 md:px-6 py-4 flex flex-wrap items-center justify-between gap-3 text-xs text-faint">
+      <span>© {year} ZZ Language. MIT License.</span>
+      <div class="flex items-center gap-1" role="group" aria-label="Theme">
+        <Icon name="monitor" size={14} />
+        <span class="mr-1">System theme</span>
+        <button data-theme-set="light" class="px-2 py-1 rounded-md hover:text-foreground hover:bg-raised">Light</button>
+        <button data-theme-set="dark" class="px-2 py-1 rounded-md hover:text-foreground hover:bg-raised">Dark</button>
+        <button data-theme-set="system" class="px-2 py-1 rounded-md hover:text-foreground hover:bg-raised">System</button>
+      </div>
     </div>
   </div>
 </footer>
+
+<script>
+  function markActiveTheme() {
+    let saved = 'system';
+    try {
+      saved = localStorage.getItem('zz-theme') || 'system';
+    } catch {}
+    document.querySelectorAll('[data-theme-set]').forEach((btn) => {
+      const active = btn.getAttribute('data-theme-set') === saved;
+      btn.classList.toggle('text-foreground', active);
+      btn.classList.toggle('bg-raised', active);
+    });
+  }
+  document.querySelectorAll('[data-theme-set]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const setting = btn.getAttribute('data-theme-set');
+      const dark =
+        setting === 'dark' ||
+        (setting !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+      try {
+        localStorage.setItem('zz-theme', setting);
+      } catch {}
+      window.dispatchEvent(new CustomEvent('zz-theme-change', { detail: setting }));
+      markActiveTheme();
+    });
+  });
+  markActiveTheme();
+</script>

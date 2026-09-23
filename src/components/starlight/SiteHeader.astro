@@ -1,0 +1,14 @@
+---
+/**
+ * Starlight `Header` override: renders the single shared Navbar as its own
+ * fixed bar — byte-identical tree to the main site — instead of living
+ * inside Starlight's header container (whose desktop grid/padding squeezes
+ * foreign content into the title column). Starlight's own header element
+ * is hidden via CSS; layout offsets still come from --sl-nav-height.
+ */
+import NavInner from '../header/NavInner.astro';
+---
+
+<div class="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border h-14">
+  <NavInner />
+</div>
