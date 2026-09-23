@@ -1,0 +1,92 @@
+---
+import CustomHeader from '../components/header/CustomHeader.astro';
+import ThemeInit from '../components/ThemeInit.astro';
+import Footer from '../components/Footer.astro';
+import Icon from '../components/icons/Icon.astro';
+import site from '../config/site.json';
+import '../styles/global.css';
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Log in | {site.siteName}</title>
+    <meta name="description" content="Log in to ZZ with GitHub" />
+    <ThemeInit />
+  </head>
+  <body class="bg-background text-foreground font-sans antialiased">
+    <CustomHeader />
+
+    <main class="pt-14">
+      <div class="max-w-md mx-auto px-4 py-16 md:py-24">
+        <div class="text-center mb-8">
+          <img src="/500-500-logo.png" alt="ZZ logo" width="56" height="56" class="rounded-xl mx-auto mb-5" />
+          <h1 class="text-2xl font-semibold tracking-tight">Log in to ZZ</h1>
+          <p class="text-muted text-sm mt-2">Publish packages and manage API tokens.</p>
+        </div>
+
+        <div class="rounded-xl border border-border bg-surface p-6">
+          <div id="login-error" class="hidden mb-4 text-sm text-danger"></div>
+          <button
+            id="github-login"
+            class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90"
+          >
+            <Icon name="github" size={18} />
+            Continue with GitHub
+          </button>
+          <p class="text-faint text-xs text-center mt-4 leading-relaxed">
+            GitHub is currently the only sign-in method — it links your registry
+            identity for package ownership. More providers on request.
+          </p>
+        </div>
+
+        <p class="text-faint text-xs text-center mt-6">
+          Protected from token-planting: this page only accepts credentials
+          posted by the registry itself.
+        </p>
+      </div>
+    </main>
+
+    <Footer />
+
+    <script define:vars={{ registryApi: site.registryApi }}>
+      const errPane = document.getElementById('login-error');
+
+      function fail(msg) {
+        errPane.textContent = msg;
+        errPane.classList.remove('hidden');
+      }
+
+      document.getElementById('github-login').addEventListener('click', () => {
+        errPane.classList.add('hidden');
+        const popup = window.open(`${registryApi}/api/auth/github`, 'zz_oauth', 'width=640,height=720');
+        if (!popup) fail('Popup blocked — allow popups for this site and try again.');
+      });
+
+      window.addEventListener('message', (e) => {
+        // Only accept credentials from the registry itself — a hostile frame
+        // could otherwise plant its own token in this browser.
+        try {
+          if (e.origin !== new URL(registryApi).origin) return;
+        } catch {
+          return;
+        }
+        // Registry posts "zz_pat_…|login" (pipe-delimited, no JSON).
+        if (typeof e.data !== 'string' || !e.data.startsWith('zz_pat_')) return;
+        const sep = e.data.indexOf('|');
+        if (sep < 0) return;
+        try {
+          localStorage.setItem('zz_token', e.data.slice(0, sep));
+          localStorage.setItem('zz_login', e.data.slice(sep + 1));
+        } catch {
+          fail('Browser storage is unavailable — login cannot persist.');
+          return;
+        }
+        window.dispatchEvent(new Event('zz-session-change'));
+        const next = new URLSearchParams(window.location.search).get('next') || '/pkg/tokens';
+        window.location.href = next.startsWith('/') ? next : '/pkg/tokens';
+      });
+    </script>
+  </body>
+</html>

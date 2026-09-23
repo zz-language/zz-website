@@ -1,5 +1,6 @@
 ---
 import CustomHeader from '../../components/header/CustomHeader.astro';
+import ThemeInit from '../../components/ThemeInit.astro';
 import Footer from '../../components/Footer.astro';
 import site from '../../config/site.json';
 import '../../styles/global.css';
@@ -7,6 +8,7 @@ import '../../styles/global.css';
 
 <html lang="en">
   <head>
+    <ThemeInit />
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>API Tokens | {site.siteName}</title>
@@ -169,7 +171,9 @@ import '../../styles/global.css';
         if (!token) return;
         try {
           localStorage.setItem('zz_token', token);
+          if (login) localStorage.setItem('zz_login', login);
         } catch {}
+        window.dispatchEvent(new Event('zz-session-change'));
         document.getElementById('new-token-value').textContent = token;
         document.getElementById('new-token-login').textContent = login || '';
         newPane.classList.remove('hidden');
@@ -187,7 +191,9 @@ import '../../styles/global.css';
       document.getElementById('sign-out').addEventListener('click', () => {
         try {
           localStorage.removeItem('zz_token');
+          localStorage.removeItem('zz_login');
         } catch {}
+        window.dispatchEvent(new Event('zz-session-change'));
         newPane.classList.add('hidden');
         showLogin();
       });
