@@ -1,6 +1,6 @@
 {
   "siteName": "ZZ Programming Language",
-  "tagline": "Universal SQL. Zero-alloc structs. Pure async.",
+  "tagline": "Fast systems language: native AOT, green threads, zero GC pauses.",
   "domain": "https://zz-lang.pages.dev",
   "githubRepo": "https://github.com/zaidejjo/zz",
   "docsPath": "/docs",

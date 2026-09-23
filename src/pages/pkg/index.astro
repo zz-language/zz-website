@@ -1,5 +1,6 @@
 ---
 import CustomHeader from '../../components/header/CustomHeader.astro';
+import ThemeInit from '../../components/ThemeInit.astro';
 import Footer from '../../components/Footer.astro';
 import Icon from '../../components/icons/Icon.astro';
 import { inputClasses } from '../../components/ui/input';
@@ -9,6 +10,7 @@ import '../../styles/global.css';
 
 <html lang="en">
   <head>
+    <ThemeInit />
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Packages | {site.siteName}</title>
@@ -34,8 +36,12 @@ import '../../styles/global.css';
               type="text"
               placeholder="Search packages..."
               autocomplete="off"
+              role="combobox"
+              aria-expanded="false"
+              aria-controls="pkg-suggest"
               class={inputClasses + ' pl-10'}
             />
+            <div id="pkg-suggest" class="hidden absolute left-0 right-0 top-full mt-1 rounded-lg border border-border bg-surface shadow-xl overflow-hidden z-10" role="listbox"></div>
           </div>
           <label for="pkg-author" class="sr-only">Filter by author</label>
           <select id="pkg-author" class={inputClasses + ' w-auto'}>
@@ -73,6 +79,7 @@ import '../../styles/global.css';
           allPackages = Array.isArray(data) ? data : [];
           refreshAuthors();
           renderPackages();
+          renderSuggest(searchInput.value.trim());
         } catch {
           renderEmpty('Could not reach the registry. Try again in a moment.');
         }
@@ -148,10 +155,37 @@ import '../../styles/global.css';
       }
 
       let timeout;
+      const suggestBox = document.getElementById('pkg-suggest');
+
+      function renderSuggest(query) {
+        const q = query.toLowerCase();
+        const hits = q
+          ? allPackages.filter((p) => String(p.name).toLowerCase().includes(q)).slice(0, 6)
+          : [];
+        if (hits.length === 0) {
+          suggestBox.classList.add('hidden');
+          searchInput.setAttribute('aria-expanded', 'false');
+          return;
+        }
+        suggestBox.innerHTML = hits
+          .map(
+            (p) => `<a href="/pkg/view?name=${encodeURIComponent(p.name)}" role="option" class="flex items-center justify-between gap-3 px-3 py-2 text-sm hover:bg-raised"><span class="font-mono text-foreground">${esc(p.name)}</span><span class="font-mono text-xs text-faint">v${esc(p.latest)}</span></a>`,
+          )
+          .join('');
+        suggestBox.classList.remove('hidden');
+        searchInput.setAttribute('aria-expanded', 'true');
+      }
+
       searchInput.addEventListener('input', (e) => {
+        const q = e.target.value.trim();
+        renderSuggest(q);
         clearTimeout(timeout);
-        timeout = setTimeout(() => fetchPackages(e.target.value.trim()), 300);
+        timeout = setTimeout(() => fetchPackages(q), 300);
       });
+      searchInput.addEventListener('blur', () => {
+        setTimeout(() => suggestBox.classList.add('hidden'), 150);
+      });
+      searchInput.addEventListener('focus', (e) => renderSuggest(e.target.value.trim()));
       authorSelect.addEventListener('change', renderPackages);
       sortSelect.addEventListener('change', renderPackages);
 
