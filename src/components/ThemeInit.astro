@@ -1,0 +1,19 @@
+---
+// ThemeInit: pre-hydration theme application (no FOUC).
+// Reads `zz-theme` ("dark" | "light" | "system") and sets
+// <html data-theme> before first paint. Defaults to dark.
+---
+
+<script is:inline>
+  (function () {
+    try {
+      var saved = localStorage.getItem('zz-theme') || 'system';
+      var dark =
+        saved === 'dark' ||
+        (saved !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    } catch {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  })();
+</script>

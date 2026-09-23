@@ -6,36 +6,37 @@
 @import 'tailwindcss/theme.css' layer(theme);
 @import 'tailwindcss/utilities.css' layer(utilities);
 
-/* ——— ZZ design tokens: premium near-black, single violet accent ——— */
+/* ——— ZZ design tokens: deep black default, soft light alternative ——— */
 @theme {
-  --color-background: #0a0a0a;
-  --color-surface: #0d0d0f;
-  --color-raised: #141417;
+  --color-background: #030712;
+  --color-surface: #09090b;
+  --color-raised: #101014;
   --color-border: #232329;
   --color-foreground: #fafafa;
   --color-muted: #a1a1aa;
   --color-faint: #63636b;
 
-  --color-accent: #8b5cf6;
-  --color-accent-hover: #7c3aed;
-  --color-accent-soft: rgba(139, 92, 246, 0.12);
-  --color-accent-border: rgba(139, 92, 246, 0.35);
+  /* Electric blue from the official logo gradient (#0c57f7 → #3fd8fe) */
+  --color-accent: #38bdf8;
+  --color-accent-hover: #7dd3fc;
+  --color-accent-soft: rgba(56, 189, 248, 0.12);
+  --color-accent-border: rgba(56, 189, 248, 0.35);
 
   --color-success: #34d399;
   --color-danger: #f87171;
   --color-warn: #fbbf24;
 
   /* shadcn semantic aliases over the same palette */
-  --color-primary: #8b5cf6;
-  --color-primary-foreground: #ffffff;
-  --color-secondary: #141417;
+  --color-primary: #38bdf8;
+  --color-primary-foreground: #030712;
+  --color-secondary: #101014;
   --color-secondary-foreground: #fafafa;
-  --color-muted-bg: #141417;
+  --color-muted-bg: #101014;
   --color-muted-foreground: #a1a1aa;
   --color-destructive: #f87171;
   --color-destructive-foreground: #fafafa;
   --color-input: #232329;
-  --color-ring: #8b5cf6;
+  --color-ring: #38bdf8;
 
   --radius: 0.5rem;
 
@@ -43,21 +44,56 @@
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 }
 
+/* ——— Soft light theme: warm gray, never blinding ——— */
+:root[data-theme='light'] {
+  --color-background: #f4f5f7;
+  --color-surface: #ffffff;
+  --color-raised: #eceef1;
+  --color-border: #e2e4e9;
+  --color-foreground: #18181b;
+  --color-muted: #52525b;
+  --color-faint: #a1a1aa;
+
+  --color-accent: #0c57f7;
+  --color-accent-hover: #1e8ffb;
+  --color-accent-soft: rgba(12, 87, 247, 0.08);
+  --color-accent-border: rgba(12, 87, 247, 0.3);
+
+  --color-primary: #0c57f7;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #eceef1;
+  --color-secondary-foreground: #18181b;
+  --color-muted-bg: #eceef1;
+  --color-muted-foreground: #52525b;
+  --color-input: #e2e4e9;
+  --color-ring: #0c57f7;
+
+  --sl-color-accent: #0c57f7;
+  --sl-color-accent-high: #083fae;
+  --sl-color-accent-low: #dbeafe;
+  color-scheme: light;
+}
+
+:root,
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+
 /* ——— Starlight chrome aligned to the same system ——— */
 :root {
   --sl-font: 'Inter', system-ui, -apple-system, sans-serif;
   --sl-font-mono: 'JetBrains Mono', ui-monospace, monospace;
-  --sl-color-accent: #7c3aed;
-  --sl-color-accent-high: #6d28d9;
-  --sl-color-accent-low: #ede9fe;
+  --sl-color-accent: #0c57f7;
+  --sl-color-accent-high: #1e8ffb;
+  --sl-color-accent-low: #dbeafe;
 }
 :root[data-theme='dark'] {
-  --sl-color-accent: #a78bfa;
-  --sl-color-accent-high: #c4b5fd;
-  --sl-color-accent-low: #2e1065;
-  --sl-color-black: #0a0a0a;
-  --sl-color-gray-6: #0d0d0f;
-  --sl-color-gray-5: #141417;
+  --sl-color-accent: #38bdf8;
+  --sl-color-accent-high: #7dd3fc;
+  --sl-color-accent-low: #0c2440;
+  --sl-color-black: #030712;
+  --sl-color-gray-6: #09090b;
+  --sl-color-gray-5: #101014;
 }
 
 /* ——— Base ——— */
@@ -73,7 +109,7 @@ code {
 }
 
 ::selection {
-  background: rgba(139, 92, 246, 0.35);
+  background: rgba(56, 189, 248, 0.35);
 }
 
 :focus-visible {
