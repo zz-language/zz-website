@@ -198,21 +198,18 @@ button:disabled {
   align-items: center;
   gap: 0.5rem;
   width: 100%;
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.5rem;
-  color: var(--color-muted);
+  padding: 0.5rem;
+  border-radius: 0.375rem;
   font-size: 0.875rem;
+  text-align: left;
+  color: #e2e8f0;
+  transition:
+    color 150ms ease,
+    background-color 150ms ease;
 }
 .user-menu-item:hover {
-  color: var(--color-foreground);
-  background: var(--color-raised);
-}
-.user-menu-danger {
-  color: #ef4444;
-}
-.user-menu-danger:hover {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
+  color: #f8fafc;
+  background: rgba(148, 163, 184, 0.1);
 }
 
 /* ——— Filter dropdown items (pkg) ——— */
