@@ -65,6 +65,8 @@ export function renderAuth(): void {
   const slot = document.getElementById('nav-auth');
   if (!slot) return;
   const session = zzSession();
+  const homeLink = document.getElementById('nav-home');
+  if (homeLink) homeLink.classList.toggle('hidden', !session);
   if (!session) {
     slot.innerHTML =
       '<a href="/login" class="px-3 py-1.5 rounded-md text-sm text-muted hover:text-foreground hover:bg-raised">Log in</a>';
@@ -128,6 +130,7 @@ function markActiveNav(): void {
   const section =
     path.startsWith('/playground') ? 'playground'
     : path.startsWith('/pkg') ? 'packages'
+    : path === '/home' ? 'home'
     : path === '/login' || path === '/terms' || path === '/privacy' || path === '/' ? '' : 'docs';
   document.querySelectorAll('[data-nav]').forEach((a) => {
     if ((a as HTMLElement).dataset.nav === section) a.classList.add('nav-link-active');
