@@ -122,10 +122,23 @@ function focusSearch(): boolean {
   return false;
 }
 
+/** Highlight the nav link matching the current route. */
+function markActiveNav(): void {
+  const path = window.location.pathname;
+  const section =
+    path.startsWith('/playground') ? 'playground'
+    : path.startsWith('/pkg') ? 'packages'
+    : path === '/login' || path === '/terms' || path === '/privacy' || path === '/' ? '' : 'docs';
+  document.querySelectorAll('[data-nav]').forEach((a) => {
+    if ((a as HTMLElement).dataset.nav === section) a.classList.add('nav-link-active');
+  });
+}
+
 /** Wire header controls. Safe to call once per page (idempotent listeners). */
 export function initHeader(): void {
   renderAuth();
   syncThemeIcons();
+  markActiveNav();
 
   document.getElementById('theme-toggle')?.addEventListener('click', () => {
     const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';

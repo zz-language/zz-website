@@ -212,6 +212,36 @@ button:disabled {
   background: rgba(148, 163, 184, 0.1);
 }
 
+/* ——— Starlight docs header: identical bar to the main site ——— */
+:root {
+  --sl-nav-height: 3.5rem;
+}
+header.header {
+  background: rgba(11, 15, 23, 0.8);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(30, 41, 59, 0.8);
+  height: 3.5rem;
+  padding-inline: 0;
+}
+header.header > div {
+  max-width: 72rem;
+  margin-inline: auto;
+  padding-inline: 1rem;
+  height: 100%;
+}
+@media (min-width: 768px) {
+  header.header > div {
+    padding-inline: 1.5rem;
+  }
+}
+
+/* ——— Active nav link ——— */
+.nav-link-active {
+  color: var(--color-foreground) !important;
+  box-shadow: inset 0 -2px 0 var(--color-accent);
+}
+
 /* ——— Command palette selection ——— */
 .palette-item:hover {
   background: rgba(0, 128, 255, 0.08);
