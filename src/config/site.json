@@ -5,6 +5,7 @@
   "githubRepo": "https://github.com/zaidejjo/zz",
   "docsPath": "/docs",
   "pkgRegistryPath": "/pkg",
+  "registryApi": "https://zz.onrender.com",
   "installScript": "https://zz-lang.pages.dev/install.sh",
   "ogImage": "/og-default.png"
 }

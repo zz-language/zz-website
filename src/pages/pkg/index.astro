@@ -1,6 +1,10 @@
 ---
 import CustomHeader from '../../components/header/CustomHeader.astro';
+import Footer from '../../components/Footer.astro';
+import Icon from '../../components/icons/Icon.astro';
+import { inputClasses } from '../../components/ui/input';
 import site from '../../config/site.json';
+import '../../styles/global.css';
 ---
 
 <html lang="en">
@@ -8,110 +12,100 @@ import site from '../../config/site.json';
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Packages | {site.siteName}</title>
-    <meta name="description" content="Browse ZZ packages" />
+    <meta name="description" content="Discover and install ZZ packages" />
   </head>
-  <body class="bg-[#0F172A] text-[#F8FAFC] font-body antialiased">
+  <body class="bg-background text-foreground font-sans antialiased">
     <CustomHeader />
 
-    <main class="pt-16 min-h-screen">
-      <div class="max-w-7xl mx-auto px-4 md:px-8 py-12">
-        <div class="flex items-center justify-between mb-8">
-          <div>
-            <h1 class="text-3xl font-bold text-[#F8FAFC] font-mono">Packages</h1>
-            <p class="text-[#94A3B8] mt-2">Discover and install ZZ packages</p>
-          </div>
+    <main class="pt-14">
+      <div class="max-w-6xl mx-auto px-4 md:px-6 py-10 md:py-14">
+        <p class="text-sm font-mono text-accent mb-2">Registry</p>
+        <h1 class="text-2xl md:text-3xl font-semibold tracking-tight">Packages</h1>
+        <p class="text-muted mt-2 mb-8">Discover and install ZZ packages.</p>
+
+        <div class="relative max-w-xl mb-8">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-faint">
+            <Icon name="search" size={16} />
+          </span>
+          <label for="pkg-search" class="sr-only">Search packages</label>
+          <input
+            id="pkg-search"
+            type="text"
+            placeholder="Search packages..."
+            autocomplete="off"
+            class={inputClasses + ' pl-10'}
+          />
         </div>
 
-        {/* Search */}
-        <div class="mb-8">
-          <div class="relative max-w-xl">
-            <input
-              id="pkg-search"
-              type="text"
-              placeholder="Search packages..."
-              class="w-full bg-[#111827] border border-[#475569] text-[#F8FAFC] rounded-xl px-4 py-3 pl-10 text-sm font-mono focus:border-[#22C55E] focus:outline-none transition-colors"
-            />
-            <svg class="absolute left-3 top-3.5 w-4 h-4 text-[#94A3B8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-            </svg>
-          </div>
-        </div>
-
-        {/* Package list */}
         <div id="pkg-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div class="bg-[#111827] rounded-xl border border-[#475569]/50 p-6 text-center text-[#94A3B8]">
-            Loading packages...
-          </div>
+          <div class="rounded-lg border border-border bg-surface p-6 text-muted text-sm">Loading packages…</div>
         </div>
       </div>
     </main>
 
-    <script>
-      const searchInput = document.getElementById('pkg-search') as HTMLInputElement;
-      const pkgList = document.getElementById('pkg-list')!;
+    <Footer />
 
-      let allPackages: any[] = [];
+    <script define:vars={{ registryApi: site.registryApi }}>
+      const searchInput = document.getElementById('pkg-search');
+      const pkgList = document.getElementById('pkg-list');
 
-      async function fetchPackages(query = '') {
+      async function fetchPackages(query) {
         try {
-          const url = query ? `/api/pkg/search?q=${encodeURIComponent(query)}` : '/api/pkg/search?q=';
+          const url = query
+            ? `${registryApi}/api/pkg/search?q=${encodeURIComponent(query)}`
+            : `${registryApi}/api/pkg/search?q=`;
+          const res = await fetch(url);
           const res = await fetch(url);
           const data = await res.json();
-          allPackages = data;
-          renderPackages(data);
+          renderPackages(Array.isArray(data) ? data : []);
         } catch {
-          // Show empty state for demo
-          pkgList.innerHTML = `
-            <div class="bg-[#111827] rounded-xl border border-[#475569]/50 p-6 text-center">
-              <p class="text-[#94A3B8] mb-2">No packages found</p>
-              <p class="text-[#475569] text-sm">Be the first to publish a package!</p>
-              <code class="inline-block mt-4 px-3 py-1 bg-[#0F172A] rounded text-[#22C55E] text-sm font-mono">zz pkg publish</code>
-            </div>
-          `;
+          renderEmpty('Could not reach the registry. Try again in a moment.');
         }
       }
 
-      function renderPackages(packages: any[]) {
+      function renderEmpty(note) {
+        pkgList.innerHTML = `
+          <div class="rounded-lg border border-border bg-surface p-8 text-center md:col-span-2 lg:col-span-3">
+            <p class="text-foreground font-medium mb-1">No packages found</p>
+            <p class="text-muted text-sm mb-4">${note || 'Be the first to publish a package.'}</p>
+            <code class="inline-block px-3 py-1.5 bg-background border border-border rounded-md text-accent text-sm font-mono">zz pkg publish</code>
+          </div>`;
+      }
+
+      function esc(s) {
+        return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
+
+      function renderPackages(packages) {
         if (packages.length === 0) {
-          pkgList.innerHTML = `
-            <div class="bg-[#111827] rounded-xl border border-[#475569]/50 p-6 text-center">
-              <p class="text-[#94A3B8] mb-2">No packages found</p>
-              <p class="text-[#475569] text-sm">Be the first to publish a package!</p>
-            </div>
-          `;
+          renderEmpty();
           return;
         }
-
-        pkgList.innerHTML = packages.map((pkg: any) => `
-          <a href="/pkg/view?name=${pkg.name}" class="block bg-[#111827] rounded-xl border border-[#475569]/50 p-6 hover:border-[#22C55E]/30 transition-colors">
-            <div class="flex items-start justify-between">
-              <div>
-                <h3 class="text-[#F8FAFC] font-mono font-semibold">${pkg.name}</h3>
-                <p class="text-[#94A3B8] text-sm mt-1">${pkg.description || 'No description'}</p>
-              </div>
-              <span class="text-[#22C55E] text-sm font-mono">v${pkg.latest}</span>
+        pkgList.innerHTML = packages
+          .map(
+            (pkg) => `
+          <a href="/pkg/view?name=${encodeURIComponent(pkg.name)}" class="block rounded-lg border border-border bg-surface p-5 hover:border-accent-border">
+            <div class="flex items-start justify-between gap-3">
+              <h3 class="font-mono font-medium text-foreground">${esc(pkg.name)}</h3>
+              <span class="shrink-0 text-accent text-sm font-mono">v${esc(pkg.latest)}</span>
             </div>
-            <div class="flex items-center gap-4 mt-4 text-xs text-[#475569]">
-              <span>${pkg.author}</span>
-              <span class="flex items-center gap-1">
-                <code class="text-[#22C55E]">zz pkg add ${pkg.name}</code>
-              </span>
+            <p class="text-muted text-sm mt-1.5 leading-relaxed">${esc(pkg.description) || 'No description'}</p>
+            <div class="flex items-center justify-between mt-4 text-xs">
+              <span class="text-faint">${esc(pkg.author)}</span>
+              <code class="text-accent font-mono">zz pkg add ${esc(pkg.name)}</code>
             </div>
-          </a>
-        `).join('');
+          </a>`,
+          )
+          .join('');
       }
 
-      // Debounced search
-      let timeout: ReturnType<typeof setTimeout>;
-      searchInput?.addEventListener('input', (e) => {
+      let timeout;
+      searchInput.addEventListener('input', (e) => {
         clearTimeout(timeout);
-        timeout = setTimeout(() => {
-          fetchPackages((e.target as HTMLInputElement).value);
-        }, 300);
+        timeout = setTimeout(() => fetchPackages(e.target.value.trim()), 300);
       });
 
-      // Initial load
-      fetchPackages();
+      fetchPackages('');
     </script>
   </body>
 </html>

@@ -1,6 +1,9 @@
 ---
 import CustomHeader from '../../components/header/CustomHeader.astro';
+import Footer from '../../components/Footer.astro';
+import Icon from '../../components/icons/Icon.astro';
 import site from '../../config/site.json';
+import '../../styles/global.css';
 ---
 
 <html lang="en">
@@ -9,98 +12,111 @@ import site from '../../config/site.json';
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Package | {site.siteName}</title>
   </head>
-  <body class="bg-[#0F172A] text-[#F8FAFC] font-body antialiased">
+  <body class="bg-background text-foreground font-sans antialiased">
     <CustomHeader />
 
-    <main class="pt-16 min-h-screen">
-      <div class="max-w-4xl mx-auto px-4 md:px-8 py-12">
-        <a href="/pkg" class="text-[#22C55E] text-sm hover:underline mb-4 inline-block">&larr; Back to packages</a>
-
-        <div id="pkg-content" class="mt-4">
-          <div class="text-[#94A3B8]">Loading package...</div>
+    <main class="pt-14">
+      <div class="max-w-4xl mx-auto px-4 md:px-6 py-10 md:py-14">
+        <a href="/pkg" class="inline-flex items-center gap-1.5 text-sm text-accent hover:underline mb-6">
+          <Icon name="chevron-right" size={16} class="rotate-180" />
+          Back to packages
+        </a>
+        <div id="pkg-content">
+          <div class="text-muted text-sm">Loading package…</div>
         </div>
       </div>
     </main>
 
-    <script>
-      const content = document.getElementById('pkg-content')!;
-      const params = new URLSearchParams(window.location.search);
-      const pkgName = params.get('name');
+    <Footer />
+
+    <script define:vars={{ registryApi: site.registryApi }}>
+      const content = document.getElementById('pkg-content');
+      const pkgName = new URLSearchParams(window.location.search).get('name');
+
+      function esc(s) {
+        return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
+
+      function versionsHtml(md) {
+        const versions = Array.isArray(md.versions) ? md.versions : [];
+        if (versions.length === 0) return '';
+        const details =
+          md.version_details && typeof md.version_details === 'object' ? md.version_details : {};
+        const rows = versions
+          .map((v) => {
+            const d = details[v] || {};
+            const sha = typeof d.sha256 === 'string' ? d.sha256.slice(0, 12) : '';
+            const lic = d.license || md.license || '';
+            const tag = v === md.latest ? ' <span class="text-accent">latest</span>' : '';
+            return `<div class="flex items-center justify-between gap-3 py-2.5 border-b border-border last:border-0 font-mono text-sm"><span>v${esc(v)}${tag}</span><span class="text-faint text-xs">${esc(lic)}${sha ? ` · <span title="${esc(d.sha256 || '')}">${esc(sha)}</span>` : ''}</span></div>`;
+          })
+          .join('');
+        return `<div class="mb-4"><h2 class="font-medium mb-2">Versions</h2><div class="rounded-lg border border-border bg-surface px-4">${rows}</div></div>`;
+      }
 
       if (!pkgName) {
         content.innerHTML = `
           <div class="text-center py-12">
-            <h1 class="text-2xl font-bold text-[#F8FAFC] mb-4">No package specified</h1>
-            <p class="text-[#94A3B8] mb-6">Use the search to find a package.</p>
-            <a href="/pkg" class="px-4 py-2 bg-[#22C55E] text-[#0F172A] rounded-lg font-mono">Browse Packages</a>
-          </div>
-        `;
+            <h1 class="text-xl font-semibold mb-2">No package specified</h1>
+            <p class="text-muted text-sm mb-6">Use search to find a package.</p>
+            <a href="/pkg" class="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium">Browse packages</a>
+          </div>`;
       } else {
         loadPackage(pkgName);
       }
 
-      async function loadPackage(name: string) {
+      async function loadPackage(name) {
         try {
-          const res = await fetch(`/api/pkg/${name}`);
-          if (!res.ok) throw new Error('Not found');
+          const res = await fetch(`${registryApi}/api/pkg/${encodeURIComponent(name)}`);
+          if (!res.ok) throw new Error('not found');
           const pkg = await res.json();
-
-          document.title = `${pkg.metadata.name} | ZZ Packages`;
-
+          const md = pkg.metadata;
+          document.title = `${md.name} | ZZ Packages`;
+          const deps = md.deps && typeof md.deps === 'object' ? Object.entries(md.deps) : [];
           content.innerHTML = `
-            <div class="flex items-start justify-between mb-6">
+            <div class="flex items-start justify-between gap-4 mb-6">
               <div>
-                <h1 class="text-3xl font-bold text-[#F8FAFC] font-mono">${pkg.metadata.name}</h1>
-                <p class="text-[#94A3B8] mt-2">${pkg.metadata.description || 'No description'}</p>
+                <h1 class="text-2xl md:text-3xl font-semibold tracking-tight font-mono">${esc(md.name)}</h1>
+                <p class="text-muted mt-2">${esc(md.description) || 'No description'}</p>
               </div>
-              <span class="text-[#22C55E] font-mono text-lg">v${pkg.metadata.latest}</span>
+              <span class="shrink-0 text-accent font-mono">v${esc(md.latest)}</span>
             </div>
-
-            <div class="bg-[#111827] rounded-xl border border-[#475569]/50 p-4 mb-6">
-              <div class="text-sm text-[#94A3B8] mb-2 font-mono">Install</div>
-              <code class="text-[#22C55E] font-mono">zz pkg add ${pkg.metadata.name}</code>
+            <div class="rounded-lg border border-border bg-surface p-4 mb-4">
+              <div class="text-xs text-faint font-mono mb-1.5">Install</div>
+              <code class="text-accent font-mono text-sm">zz pkg add ${esc(md.name)}</code>
             </div>
-
-            <div class="grid grid-cols-2 gap-4 mb-6">
-              <div class="bg-[#111827] rounded-xl border border-[#475569]/50 p-4">
-                <div class="text-sm text-[#94A3B8]">Author</div>
-                <div class="text-[#F8FAFC] font-mono">${pkg.metadata.author}</div>
+            <div class="grid grid-cols-2 gap-4 mb-4">
+              <div class="rounded-lg border border-border bg-surface p-4">
+                <div class="text-xs text-faint mb-1">Author</div>
+                <div class="font-mono text-sm">${esc(md.author)}</div>
               </div>
-              <div class="bg-[#111827] rounded-xl border border-[#475569]/50 p-4">
-                <div class="text-sm text-[#94A3B8]">Version</div>
-                <div class="text-[#F8FAFC] font-mono">${pkg.metadata.latest}</div>
+              <div class="rounded-lg border border-border bg-surface p-4">
+                <div class="text-xs text-faint mb-1">Version</div>
+                <div class="font-mono text-sm">${esc(md.latest)}</div>
               </div>
             </div>
-
-            ${Object.keys(pkg.metadata.deps || {}).length > 0 ? `
-              <div class="mb-6">
-                <h2 class="text-lg font-semibold text-[#F8FAFC] mb-3">Dependencies</h2>
-                <div class="bg-[#111827] rounded-xl border border-[#475569]/50 p-4">
-                  ${Object.entries(pkg.metadata.deps).map(([k, v]: [string, any]) => `
-                    <div class="flex justify-between py-2 border-b border-[#475569]/30 last:border-0">
-                      <span class="text-[#F8FAFC] font-mono">${k}</span>
-                      <span class="text-[#94A3B8] font-mono">${v}</span>
-                    </div>
-                  `).join('')}
+            ${versionsHtml(md)}
+            ${
+              deps.length > 0
+                ? `<div class="mb-4">
+                <h2 class="font-medium mb-2">Dependencies</h2>
+                <div class="rounded-lg border border-border bg-surface px-4">
+                  ${deps.map(([k, v]) => `<div class="flex justify-between py-2.5 border-b border-border last:border-0 font-mono text-sm"><span>${esc(k)}</span><span class="text-muted">${esc(v)}</span></div>`).join('')}
                 </div>
-              </div>
-            ` : ''}
-
+              </div>`
+                : ''
+            }
             <div>
-              <h2 class="text-lg font-semibold text-[#F8FAFC] mb-3">README</h2>
-              <div class="bg-[#111827] rounded-xl border border-[#475569]/50 p-6 text-[#94A3B8]">
-                ${pkg.readme || 'No README available'}
-              </div>
-            </div>
-          `;
+              <h2 class="font-medium mb-2">README</h2>
+              <div class="rounded-lg border border-border bg-surface p-5 text-sm text-muted whitespace-pre-wrap">${esc(pkg.readme) || 'No README available.'}</div>
+            </div>`;
         } catch {
           content.innerHTML = `
             <div class="text-center py-12">
-              <h1 class="text-2xl font-bold text-[#F8FAFC] mb-4">Package not found</h1>
-              <p class="text-[#94A3B8] mb-6">The package "${name}" doesn't exist yet.</p>
-              <code class="px-4 py-2 bg-[#111827] border border-[#475569] rounded-lg text-[#22C55E] font-mono">zz pkg publish</code>
-            </div>
-          `;
+              <h1 class="text-xl font-semibold mb-2">Package not found</h1>
+              <p class="text-muted text-sm mb-6">The package "${esc(name)}" does not exist yet.</p>
+              <code class="px-4 py-2 bg-surface border border-border rounded-lg text-accent font-mono text-sm">zz pkg publish</code>
+            </div>`;
         }
       }
     </script>

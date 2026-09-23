@@ -1,0 +1,226 @@
+---
+import CustomHeader from '../../components/header/CustomHeader.astro';
+import Footer from '../../components/Footer.astro';
+import site from '../../config/site.json';
+import '../../styles/global.css';
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>API Tokens | {site.siteName}</title>
+    <meta name="description" content="Manage ZZ registry API tokens" />
+  </head>
+  <body class="bg-background text-foreground font-sans antialiased">
+    <CustomHeader />
+
+    <main class="pt-14">
+      <div class="max-w-2xl mx-auto px-4 md:px-6 py-10 md:py-14">
+        <p class="text-sm font-mono text-accent mb-2">Registry</p>
+        <h1 class="text-2xl md:text-3xl font-semibold tracking-tight">API Tokens</h1>
+        <p class="text-muted mt-2 mb-8">
+          Tokens authenticate <code class="font-mono text-accent text-sm">zz pkg publish</code>.
+          They are shown once — store them somewhere safe.
+        </p>
+
+        <div id="tokens-login" class="rounded-lg border border-border bg-surface p-6 text-center">
+          <p class="text-muted text-sm mb-4">Sign in with GitHub to create a token.</p>
+          <button
+            id="github-login"
+            class="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:opacity-90"
+          >
+            Sign in with GitHub
+          </button>
+        </div>
+
+        <div id="tokens-app" class="hidden">
+          <div
+            id="new-token"
+            class="hidden rounded-lg border border-accent-border bg-surface p-5 mb-4"
+          >
+            <div class="text-xs text-faint font-mono mb-1.5">New token (shown once)</div>
+            <div class="flex items-center gap-2">
+              <code id="new-token-value" class="flex-1 font-mono text-sm text-accent break-all"></code>
+              <button
+                id="copy-token"
+                class="shrink-0 px-3 py-1.5 rounded-md border border-border text-sm hover:border-accent-border"
+              >
+                Copy
+              </button>
+            </div>
+            <div class="mt-3 text-xs text-muted">
+              Login: <span id="new-token-login" class="font-mono"></span>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="font-medium">Your tokens</h2>
+            <div class="flex gap-2">
+              <button
+                id="create-token"
+                class="px-3 py-1.5 rounded-lg bg-accent text-white text-sm font-medium hover:opacity-90"
+              >
+                New token
+              </button>
+              <button
+                id="sign-out"
+                class="px-3 py-1.5 rounded-lg border border-border text-sm hover:border-accent-border"
+              >
+                Sign out
+              </button>
+            </div>
+          </div>
+
+          <div id="tokens-list" class="rounded-lg border border-border bg-surface px-4">
+            <div class="text-muted text-sm py-4">Loading…</div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <Footer />
+
+    <script define:vars={{ registryApi: site.registryApi }}>
+      const loginPane = document.getElementById('tokens-login');
+      const appPane = document.getElementById('tokens-app');
+      const listPane = document.getElementById('tokens-list');
+      const newPane = document.getElementById('new-token');
+
+      function esc(s) {
+        return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
+
+      function savedToken() {
+        try {
+          return localStorage.getItem('zz_token') || '';
+        } catch {
+          return '';
+        }
+      }
+
+      function showApp() {
+        loginPane.classList.add('hidden');
+        appPane.classList.remove('hidden');
+        refreshList();
+      }
+
+      function showLogin() {
+        appPane.classList.add('hidden');
+        loginPane.classList.remove('hidden');
+      }
+
+      async function refreshList() {
+        const token = savedToken();
+        if (!token) {
+          showLogin();
+          return;
+        }
+        try {
+          const res = await fetch(`${registryApi}/api/tokens`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (res.status === 401) {
+            try {
+              localStorage.removeItem('zz_token');
+            } catch {}
+            showLogin();
+            return;
+          }
+          const tokens = await res.json();
+          if (!Array.isArray(tokens) || tokens.length === 0) {
+            listPane.innerHTML = '<div class="text-muted text-sm py-4">No tokens yet — create one above.</div>';
+            return;
+          }
+          listPane.innerHTML = tokens
+            .map(
+              (t) => `
+            <div class="flex items-center justify-between gap-3 py-2.5 border-b border-border last:border-0">
+              <div>
+                <div class="font-mono text-sm">${esc(t.prefix)}…</div>
+                <div class="text-xs text-faint">${esc(t.created_at || '')}</div>
+              </div>
+              <button data-revoke="${esc(t.prefix)}" class="shrink-0 px-3 py-1 rounded-md border border-border text-xs hover:border-accent-border">Revoke</button>
+            </div>`,
+            )
+            .join('');
+          listPane.querySelectorAll('[data-revoke]').forEach((btn) => {
+            btn.addEventListener('click', () => revokeToken(btn.getAttribute('data-revoke')));
+          });
+        } catch {
+          listPane.innerHTML = '<div class="text-muted text-sm py-4">Could not reach the registry.</div>';
+        }
+      }
+
+      async function revokeToken(prefix) {
+        const token = savedToken();
+        if (!token || !prefix) return;
+        try {
+          await fetch(`${registryApi}/api/tokens/revoke`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ prefix }),
+          });
+        } catch {}
+        refreshList();
+      }
+
+      function receiveToken(token, login) {
+        if (!token) return;
+        try {
+          localStorage.setItem('zz_token', token);
+        } catch {}
+        document.getElementById('new-token-value').textContent = token;
+        document.getElementById('new-token-login').textContent = login || '';
+        newPane.classList.remove('hidden');
+        showApp();
+      }
+
+      document.getElementById('github-login').addEventListener('click', () => {
+        window.open(`${registryApi}/api/auth/github`, 'zz_oauth', 'width=640,height=720');
+      });
+
+      document.getElementById('create-token').addEventListener('click', () => {
+        window.open(`${registryApi}/api/auth/github`, 'zz_oauth', 'width=640,height=720');
+      });
+
+      document.getElementById('sign-out').addEventListener('click', () => {
+        try {
+          localStorage.removeItem('zz_token');
+        } catch {}
+        newPane.classList.add('hidden');
+        showLogin();
+      });
+
+      document.getElementById('copy-token').addEventListener('click', async (e) => {
+        const v = document.getElementById('new-token-value').textContent;
+        try {
+          await navigator.clipboard.writeText(v);
+          e.target.textContent = 'Copied';
+        } catch {
+          e.target.textContent = 'Select + copy';
+        }
+      });
+
+      window.addEventListener('message', (e) => {
+        // Only accept tokens from the registry itself — a hostile frame
+        // could otherwise plant its own token in this browser.
+        try {
+          if (e.origin !== new URL(registryApi).origin) return;
+        } catch {
+          return;
+        }
+        // Registry posts "zz_pat_…|login" (pipe-delimited, no JSON).
+        if (typeof e.data !== 'string') return;
+        if (!e.data.startsWith('zz_pat_')) return;
+        const sep = e.data.indexOf('|');
+        if (sep < 0) return;
+        receiveToken(e.data.slice(0, sep), e.data.slice(sep + 1));
+      });
+
+      if (savedToken()) {
+        showApp();
+      }
+    </script>
+  </body>
+</html>
