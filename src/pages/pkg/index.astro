@@ -3,7 +3,6 @@ import CustomHeader from '../../components/header/CustomHeader.astro';
 import ThemeInit from '../../components/ThemeInit.astro';
 import Footer from '../../components/Footer.astro';
 import Icon from '../../components/icons/Icon.astro';
-import { inputClasses } from '../../components/ui/input';
 import site from '../../config/site.json';
 import '../../styles/global.css';
 ---
@@ -25,9 +24,9 @@ import '../../styles/global.css';
         <h1 class="text-2xl md:text-3xl font-semibold tracking-tight">Packages</h1>
         <p class="text-muted mt-2 mb-8">Libraries for ZZ. <code class="font-mono text-sm text-foreground">zz add &lt;name&gt;</code> to install.</p>
 
-        <div class="flex flex-wrap items-center gap-3 max-w-xl mb-8">
+        <div class="flex flex-wrap items-center gap-3 max-w-3xl mb-8 rounded-xl border border-slate-800/80 bg-slate-900/50 p-3 shadow-lg">
           <div class="relative flex-1 min-w-52">
-            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-faint">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
               <Icon name="search" size={16} />
             </span>
             <label for="pkg-search" class="sr-only">Search packages</label>
@@ -39,19 +38,21 @@ import '../../styles/global.css';
               role="combobox"
               aria-expanded="false"
               aria-controls="pkg-suggest"
-              class={inputClasses + ' pl-10'}
+              class="w-full bg-transparent py-2 pl-10 pr-3 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none"
             />
             <div id="pkg-suggest" class="hidden absolute left-0 right-0 top-full mt-1 rounded-lg border border-border bg-surface shadow-xl overflow-hidden z-10" role="listbox"></div>
           </div>
+          <div class="h-6 w-px bg-slate-800 hidden sm:block" aria-hidden="true"></div>
           <div class="relative">
-            <button id="pkg-author-btn" class="flex items-center gap-2 px-3 py-2 rounded-md border border-border bg-surface text-sm text-muted hover:text-foreground hover:border-accent-border" aria-haspopup="listbox" aria-expanded="false">
+            <button id="pkg-author-btn" class="flex items-center gap-2 px-3 py-2 rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-sm hover:border-slate-700" aria-haspopup="listbox" aria-expanded="false">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
               <span id="pkg-author-label">All authors</span>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
             <div id="pkg-author-menu" class="hidden absolute left-0 top-[calc(100%+6px)] min-w-44 max-h-64 overflow-y-auto rounded-lg border border-border bg-surface shadow-2xl shadow-black/50 p-1 z-20" role="listbox" aria-label="Filter by author"></div>
           </div>
           <div class="relative">
-            <button id="pkg-sort-btn" class="flex items-center gap-2 px-3 py-2 rounded-md border border-border bg-surface text-sm text-muted hover:text-foreground hover:border-accent-border" aria-haspopup="listbox" aria-expanded="false">
+            <button id="pkg-sort-btn" class="flex items-center gap-2 px-3 py-2 rounded-md bg-slate-900 border border-slate-800 text-slate-200 text-sm hover:border-slate-700" aria-haspopup="listbox" aria-expanded="false">
               <span id="pkg-sort-label">Recently updated</span>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
@@ -190,32 +191,35 @@ import '../../styles/global.css';
         pkgList.innerHTML = packages
           .map(
             (pkg) => `
-          <div class="rounded-lg border border-border bg-surface p-5 transition-colors hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-950/30">
-            <a href="/pkg/view?name=${encodeURIComponent(pkg.name)}" class="block hover:border-accent-border">
+          <div class="rounded-xl border border-slate-800/80 bg-slate-900/50 p-5 shadow-lg transition-all hover:border-blue-500/50">
+            <a href="/pkg/view?name=${encodeURIComponent(pkg.name)}" class="block group">
               <div class="flex items-start justify-between gap-3">
-                <h3 class="font-mono font-medium text-foreground">${esc(pkg.name)}</h3>
-                <span class="shrink-0 text-accent text-sm font-mono">v${esc(pkg.latest)}</span>
+                <h3 class="font-mono font-bold text-slate-100 group-hover:text-blue-400">${esc(pkg.name)}</h3>
+                <span class="shrink-0 bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 text-xs rounded-full font-mono">v${esc(pkg.latest)}</span>
               </div>
-              <p class="text-muted text-sm mt-1.5 leading-relaxed">${esc(pkg.description) || 'No description'}</p>
+              <p class="text-sm mt-1.5 leading-relaxed text-slate-400">${esc(pkg.description) || 'No description'}</p>
             </a>
             <div class="flex items-center justify-between mt-4 text-xs">
-              <a href="/pkg/author?login=${encodeURIComponent(pkg.author || '')}" class="flex items-center gap-1.5 text-faint hover:text-accent">
-                <span class="flex items-center justify-center w-5 h-5 rounded-full bg-accent-soft border border-accent-border text-accent font-mono text-[10px] font-semibold">${esc((pkg.author || '?').slice(0, 1).toUpperCase())}</span>
+              <a href="/pkg/author?login=${encodeURIComponent(pkg.author || '')}" class="flex items-center gap-1.5 text-slate-400 hover:text-blue-400">
+                <span class="flex items-center justify-center w-5 h-5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 font-mono text-[10px] font-semibold">${esc((pkg.author || '?').slice(0, 1).toUpperCase())}</span>
                 ${esc(pkg.author)}
               </a>
-              <button data-copy="zz add ${esc(pkg.name)}" class="copy-btn text-accent font-mono hover:underline">copy install</button>
+              <button data-copy="zz add ${esc(pkg.name)}" class="copy-btn bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg border border-slate-700/50 flex items-center gap-2"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>copy install</span></button>
             </div>
           </div>`,
           )
           .join('');
         pkgList.querySelectorAll('.copy-btn').forEach((btn) => {
           btn.addEventListener('click', async () => {
+            const label = btn.querySelector('span');
             try {
               await navigator.clipboard.writeText(btn.dataset.copy);
-              btn.textContent = 'copied!';
-              setTimeout(() => (btn.textContent = 'copy install'), 1500);
+              if (label) label.textContent = 'copied!';
+              setTimeout(() => {
+                if (label) label.textContent = 'copy install';
+              }, 1500);
             } catch {
-              btn.textContent = 'copy failed';
+              if (label) label.textContent = 'copy failed';
             }
           });
         });

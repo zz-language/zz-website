@@ -88,16 +88,16 @@ import '../../styles/global.css';
               ${packages
                 .map(
                   (pkg) => `
-                <div class="rounded-lg border border-border bg-surface p-5 transition-colors hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-950/30">
-                  <a href="/pkg/view?name=${encodeURIComponent(pkg.name)}" class="block">
+                <div class="rounded-xl border border-slate-800/80 bg-slate-900/50 p-5 shadow-lg transition-all hover:border-blue-500/50">
+                  <a href="/pkg/view?name=${encodeURIComponent(pkg.name)}" class="block group">
                     <div class="flex items-start justify-between gap-3">
-                      <h3 class="font-mono font-medium text-foreground">${esc(pkg.name)}</h3>
-                      <span class="shrink-0 text-accent text-sm font-mono">v${esc(pkg.latest)}</span>
+                      <h3 class="font-mono font-bold text-slate-100 group-hover:text-blue-400">${esc(pkg.name)}</h3>
+                      <span class="shrink-0 bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 text-xs rounded-full font-mono">v${esc(pkg.latest)}</span>
                     </div>
-                    <p class="text-muted text-sm mt-1.5 leading-relaxed">${esc(pkg.description) || 'No description'}</p>
+                    <p class="text-sm mt-1.5 leading-relaxed text-slate-400">${esc(pkg.description) || 'No description'}</p>
                   </a>
                   <div class="flex items-center justify-end mt-4 text-xs">
-                    <button data-copy="zz add ${esc(pkg.name)}" class="copy-btn text-accent font-mono hover:underline">copy install</button>
+                    <button data-copy="zz add ${esc(pkg.name)}" class="copy-btn bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg border border-slate-700/50 flex items-center gap-2"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>copy install</span></button>
                   </div>
                 </div>`,
                 )
@@ -105,12 +105,15 @@ import '../../styles/global.css';
             </div>`;
           content.querySelectorAll('.copy-btn').forEach((btn) => {
             btn.addEventListener('click', async () => {
+              const label = btn.querySelector('span');
               try {
                 await navigator.clipboard.writeText(btn.dataset.copy);
-                btn.textContent = 'copied!';
-                setTimeout(() => (btn.textContent = 'copy install'), 1500);
+                if (label) label.textContent = 'copied!';
+                setTimeout(() => {
+                  if (label) label.textContent = 'copy install';
+                }, 1500);
               } catch {
-                btn.textContent = 'copy failed';
+                if (label) label.textContent = 'copy failed';
               }
             });
           });
