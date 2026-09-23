@@ -9,7 +9,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          'bg-gradient-to-b from-[#9a6bff] to-[#7c3aed] text-primary-foreground border border-violet-400/20 shadow-lg shadow-violet-600/25 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)] hover:brightness-110 active:brightness-95',
+          'bg-gradient-to-b from-[#0080FF] to-[#0969DA] text-primary-foreground border border-blue-400/20 shadow-lg shadow-blue-600/25 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)] hover:brightness-110 active:brightness-95',
         secondary:
           'bg-secondary text-secondary-foreground border border-border shadow-sm shadow-black/30 hover:bg-raised',
         outline:

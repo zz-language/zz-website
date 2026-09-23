@@ -31,7 +31,6 @@ export default defineConfig({
     '/docs/advanced': '/advanced',
     '/docs/stdlib': '/stdlib/overview',
     '/docs/stdlib/overview': '/stdlib/overview',
-    '/docs/stdlib/io': '/stdlib/io',
     '/docs/stdlib/str': '/stdlib/str',
     '/docs/stdlib/vec': '/stdlib/vec',
     '/docs/stdlib/json': '/stdlib/json',
@@ -68,7 +67,6 @@ export default defineConfig({
           label: 'Standard Library',
           items: [
             { label: 'Overview', slug: 'stdlib/overview' },
-            { label: 'std.io', slug: 'stdlib/io' },
             { label: 'std.str', slug: 'stdlib/str' },
             { label: 'std.vec', slug: 'stdlib/vec' },
             { label: 'std.json', slug: 'stdlib/json' },

@@ -122,7 +122,10 @@ import '../../styles/global.css';
               <p class="text-muted text-sm mt-1.5 leading-relaxed">${esc(pkg.description) || 'No description'}</p>
             </a>
             <div class="flex items-center justify-between mt-4 text-xs">
-              <a href="/pkg/author?login=${encodeURIComponent(pkg.author || '')}" class="text-faint hover:text-accent">${esc(pkg.author)}</a>
+              <a href="/pkg/author?login=${encodeURIComponent(pkg.author || '')}" class="flex items-center gap-1.5 text-faint hover:text-accent">
+                <span class="flex items-center justify-center w-5 h-5 rounded-full bg-accent-soft border border-accent-border text-accent font-mono text-[10px] font-semibold">${esc((pkg.author || '?').slice(0, 1).toUpperCase())}</span>
+                ${esc(pkg.author)}
+              </a>
               <button data-copy="zz add ${esc(pkg.name)}" class="copy-btn text-accent font-mono hover:underline">copy install</button>
             </div>
           </div>`,

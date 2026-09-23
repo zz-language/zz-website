@@ -8,35 +8,35 @@
 
 /* ——— ZZ design tokens: deep black default, soft light alternative ——— */
 @theme {
-  --color-background: #030712;
-  --color-surface: #09090b;
-  --color-raised: #101014;
-  --color-border: #232329;
-  --color-foreground: #fafafa;
-  --color-muted: #a1a1aa;
-  --color-faint: #63636b;
+  --color-background: #0b0f17;
+  --color-surface: #0f172a;
+  --color-raised: #16213a;
+  --color-border: #1e293b;
+  --color-foreground: #f1f5f9;
+  --color-muted: #94a3b8;
+  --color-faint: #64748b;
 
-  /* Electric blue from the official logo gradient (#0c57f7 → #3fd8fe) */
-  --color-accent: #38bdf8;
-  --color-accent-hover: #7dd3fc;
-  --color-accent-soft: rgba(56, 189, 248, 0.12);
-  --color-accent-border: rgba(56, 189, 248, 0.35);
+  /* Electric Blue brand (#0080FF / #0969DA) */
+  --color-accent: #0080ff;
+  --color-accent-hover: #33a0ff;
+  --color-accent-soft: rgba(0, 128, 255, 0.12);
+  --color-accent-border: rgba(0, 128, 255, 0.35);
 
   --color-success: #34d399;
   --color-danger: #f87171;
   --color-warn: #fbbf24;
 
   /* shadcn semantic aliases over the same palette */
-  --color-primary: #38bdf8;
-  --color-primary-foreground: #030712;
-  --color-secondary: #101014;
-  --color-secondary-foreground: #fafafa;
-  --color-muted-bg: #101014;
-  --color-muted-foreground: #a1a1aa;
+  --color-primary: #0080ff;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #16213a;
+  --color-secondary-foreground: #f1f5f9;
+  --color-muted-bg: #16213a;
+  --color-muted-foreground: #94a3b8;
   --color-destructive: #f87171;
   --color-destructive-foreground: #fafafa;
-  --color-input: #232329;
-  --color-ring: #38bdf8;
+  --color-input: #1e293b;
+  --color-ring: #0080ff;
 
   --radius: 0.5rem;
 
@@ -88,12 +88,12 @@
   --sl-color-accent-low: #dbeafe;
 }
 :root[data-theme='dark'] {
-  --sl-color-accent: #38bdf8;
-  --sl-color-accent-high: #7dd3fc;
-  --sl-color-accent-low: #0c2440;
-  --sl-color-black: #030712;
-  --sl-color-gray-6: #09090b;
-  --sl-color-gray-5: #101014;
+  --sl-color-accent: #0080ff;
+  --sl-color-accent-high: #33a0ff;
+  --sl-color-accent-low: #0a2547;
+  --sl-color-black: #0b0f17;
+  --sl-color-gray-6: #0f172a;
+  --sl-color-gray-5: #16213a;
 }
 
 /* ——— Base ——— */
@@ -109,7 +109,7 @@ code {
 }
 
 ::selection {
-  background: rgba(56, 189, 248, 0.35);
+  background: rgba(0, 128, 255, 0.35);
 }
 
 :focus-visible {

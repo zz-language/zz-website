@@ -121,4 +121,30 @@ match int("42") {
     .none => println("not a number"),
 }`,
   },
+  {
+    id: 'strings',
+    label: 'Strings',
+    code: `msg := "  hello, zz!  "
+println("length: {msg.length()}")
+println("trimmed: [{msg.trim()}]")
+
+csv := "ada,grace,hopper"
+names := csv.split(",")
+println(names.join(" | "))
+
+println(msg.contains("zz"))
+println(msg.replace("zz", "world"))
+println("ab".repeat(3))`,
+  },
+  {
+    id: 'dicts',
+    label: 'Dictionaries',
+    code: `scores := {"ada": 95, "grace": 87}
+println("entries: {scores.len()}")
+k := "ada"
+println("ada: {scores[k]}")
+
+scores["hopper"] = 100
+println("entries: {scores.len()}")`,
+  },
 ];
