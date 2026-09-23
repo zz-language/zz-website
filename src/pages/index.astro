@@ -1,144 +1,248 @@
 ---
 import CustomHeader from '../components/header/CustomHeader.astro';
-import Hero from '../components/hero/Hero.astro';
+import Footer from '../components/Footer.astro';
 import InstallWidget from '../components/hero/InstallWidget.astro';
+import Icon from '../components/icons/Icon.astro';
+import { buttonVariants } from '../components/ui/button';
 import site from '../config/site.json';
+import '../styles/global.css';
+
+const features = [
+  {
+    icon: 'database',
+    title: 'Universal SQL engine',
+    body: 'One API for your database. Query results map straight into structs — no ORM, no boilerplate.',
+  },
+  {
+    icon: 'zap',
+    title: 'Zero-alloc structs',
+    body: 'Rows decode directly into typed structs. Small RSS, no GC pauses, predictable performance.',
+  },
+  {
+    icon: 'refresh',
+    title: 'Pure async I/O',
+    body: 'HTTP, sockets and files are non-blocking by default. Concurrency without callback gymnastics.',
+  },
+  {
+    icon: 'cpu',
+    title: 'AOT and VM runtimes',
+    body: 'Iterate with zz run, ship native binaries with zz build. Same code, both targets.',
+  },
+  {
+    icon: 'terminal',
+    title: 'Diagnostics that help',
+    body: 'Did-you-mean suggestions, fix-it hints and zz check --fix. Errors tell you how to fix them.',
+  },
+  {
+    icon: 'package',
+    title: 'Batteries included',
+    body: '70+ stdlib functions: JSON, HTTP, math, encoding, time. Plus a package registry at /pkg.',
+  },
+] as const;
+
+const bench = [
+  { name: 'CPU intensive', zz: '17ms', go: '71ms', rust: '15ms' },
+  { name: 'Concurrency stress', zz: '240ms', go: '812ms', rust: '254ms' },
+  { name: 'Memory alloc', zz: '174ms', go: '271ms', rust: '268ms' },
+  { name: 'HTTP throughput', zz: '56,236 rps', go: '52,780 rps', rust: '49,085 rps' },
+];
+
+// Static highlight: kept as data so `{...}` in ZZ code isn't parsed as template exprs.
+const codeHtml = `<span class="text-violet-400">struct</span> <span class="text-zinc-100">User</span> <span class="text-zinc-500">{</span><span class="text-zinc-300">id: </span><span class="text-violet-300">int</span><span class="text-zinc-500">,</span><span class="text-zinc-300"> name: </span><span class="text-violet-300">str</span><span class="text-zinc-500">,</span><span class="text-zinc-300"> email: </span><span class="text-violet-300">str</span><span class="text-zinc-500">}</span>
+
+<span class="text-zinc-300">users: [User] = []</span>
+<span class="text-zinc-300">users.append(User{id: </span><span class="text-amber-300">1</span><span class="text-zinc-500">,</span><span class="text-zinc-300"> name: </span><span class="text-emerald-300">"Ada"</span><span class="text-zinc-500">,</span><span class="text-zinc-300"> email: </span><span class="text-emerald-300">"ada@example.com"</span><span class="text-zinc-300">})</span>
+<span class="text-zinc-300">users.append(User{id: </span><span class="text-amber-300">2</span><span class="text-zinc-500">,</span><span class="text-zinc-300"> name: </span><span class="text-emerald-300">"Grace"</span><span class="text-zinc-500">,</span><span class="text-zinc-300"> email: </span><span class="text-emerald-300">"grace@example.com"</span><span class="text-zinc-300">})</span>
+
+<span class="text-violet-400">for</span><span class="text-zinc-300"> user </span><span class="text-violet-400">in</span><span class="text-zinc-300"> users {</span>
+    <span class="text-zinc-100">println</span><span class="text-zinc-300">(</span><span class="text-emerald-300">"{user.id}. {user.name} &lt;{user.email}&gt;"</span><span class="text-zinc-300">)</span>
+<span class="text-zinc-300">}</span>`;
 ---
 
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{site.siteName}</title>
+    <title>{site.siteName} — Fast systems language with SQL built in</title>
     <meta name="description" content={site.tagline} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <script type="application/ld+json" set:html={JSON.stringify({
-      "@context": "https://schema.org",
-      "@type": "SoftwareApplication",
-      "name": site.siteName,
-      "description": site.tagline,
-      "url": site.domain,
-      "applicationCategory": "DeveloperApplication",
-      "operatingSystem": "Cross-platform",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "USD"
-      }
-    })} />
+    <script
+      type="application/ld+json"
+      set:html={JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'SoftwareApplication',
+        name: site.siteName,
+        description: site.tagline,
+        url: site.domain,
+        applicationCategory: 'DeveloperApplication',
+        operatingSystem: 'Cross-platform',
+        offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+      })}
+    />
   </head>
-  <body class="bg-[#0F172A] text-[#F8FAFC] font-body antialiased">
+  <body class="bg-background text-foreground font-sans antialiased">
     <CustomHeader />
 
-    <main>
-      <Hero />
-      <InstallWidget />
+    <main class="pt-14">
+      {/* ——— Hero ——— */}
+      <section class="relative border-b border-border overflow-hidden">
+        <div aria-hidden="true" class="pointer-events-none absolute inset-0">
+          <div class="absolute -top-48 left-1/2 h-[28rem] w-[46rem] -translate-x-1/2 rounded-full bg-violet-600/15 blur-3xl"></div>
+          <div class="absolute top-1/2 -right-40 h-72 w-72 rounded-full bg-violet-600/10 blur-3xl"></div>
+        </div>
+        <div class="relative max-w-6xl mx-auto px-4 md:px-6 py-16 md:py-24 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-accent-border bg-accent-soft text-accent text-xs font-mono mb-6">
+              <span class="w-1.5 h-1.5 rounded-full bg-accent"></span>
+              v0.1.0 — AOT compilation stable
+            </div>
+            <h1 class="text-4xl md:text-5xl font-semibold tracking-tight leading-[1.1] mb-5">
+              A fast systems language with SQL built in.
+            </h1>
+            <p class="text-lg text-muted leading-relaxed mb-8 max-w-lg">
+              Inferred types, pipelines and pattern matching — plus a universal
+              SQL engine, pure-async I/O and tooling that fixes your code.
+              No GC pauses. No boilerplate.
+            </p>
+            <div class="flex flex-wrap gap-3 mb-8">
+              <a href={site.docsPath} class={buttonVariants({ variant: 'default', size: 'lg' })}>
+                Get started
+                <Icon name="arrow-right" size={16} />
+              </a>
+              <a href="/playground" class={buttonVariants({ variant: 'outline', size: 'lg' })}>
+                <Icon name="play" size={16} />
+                Try it live
+              </a>
+            </div>
+            <InstallWidget />
+          </div>
 
-      {/* Features Grid */}
-      <section class="py-16 md:py-24">
-        <div class="max-w-7xl mx-auto px-4 md:px-8">
-          <h2 class="text-2xl md:text-3xl font-bold text-[#F8FAFC] font-mono mb-4">Why ZZ?</h2>
-          <p class="text-[#94A3B8] mb-12 max-w-2xl">A systems language that doesn't make you choose between performance and productivity.</p>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Feature cards */}
-            <div class="bg-[#111827] rounded-xl border border-[#475569]/50 p-6 hover:border-[#22C55E]/30 transition-colors">
-              <div class="text-[#22C55E] text-2xl mb-3">⚡</div>
-              <h3 class="text-[#F8FAFC] font-semibold font-mono mb-2">Zero-Allocation Structs</h3>
-              <p class="text-[#94A3B8] text-sm">Map SQL rows directly to structs without copying. Memory-efficient by default.</p>
+          {/* ——— Animated terminal ——— */}
+          <div class="rounded-lg border border-border bg-surface overflow-hidden shadow-2xl shadow-black/60" role="img" aria-label="Terminal showing ZZ commands and output">
+            <div class="flex items-center gap-1.5 px-4 py-3 border-b border-border">
+              <span class="w-2.5 h-2.5 rounded-full bg-border"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-border"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-border"></span>
+              <span class="ml-2 text-faint text-xs font-mono">terminal</span>
             </div>
-            <div class="bg-[#111827] rounded-xl border border-[#475569]/50 p-6 hover:border-[#22C55E]/30 transition-colors">
-              <div class="text-[#FBBF24] text-2xl mb-3">🗄️</div>
-              <h3 class="text-[#F8FAFC] font-semibold font-mono mb-2">Universal SQL Engine</h3>
-              <p class="text-[#94A3B8] text-sm">Write SQL once, run on SQLite, PostgreSQL, MySQL. The <code class="text-[#FBBF24]">sqlz!{}</code> macro handles it.</p>
-            </div>
-            <div class="bg-[#111827] rounded-xl border border-[#475569]/50 p-6 hover:border-[#22C55E]/30 transition-colors">
-              <div class="text-[#C084FC] text-2xl mb-3">🔄</div>
-              <h3 class="text-[#F8FAFC] font-semibold font-mono mb-2">Pure Async Runtime</h3>
-              <p class="text-[#94A3B8] text-sm">Non-blocking I/O everywhere. HTTP, sockets, files — all async by default.</p>
-            </div>
-            <div class="bg-[#111827] rounded-xl border border-[#475569]/50 p-6 hover:border-[#22C55E]/30 transition-colors">
-              <div class="text-[#22C55E] text-2xl mb-3">🚀</div>
-              <h3 class="text-[#F8FAFC] font-semibold font-mono mb-2">AOT & VM Runtime</h3>
-              <p class="text-[#94A3B8] text-sm">Compile ahead-of-time for production, use the VM for development. Same code, both modes.</p>
-            </div>
-            <div class="bg-[#111827] rounded-xl border border-[#475569]/50 p-6 hover:border-[#22C55E]/30 transition-colors">
-              <div class="text-[#FBBF24] text-2xl mb-3">🔍</div>
-              <h3 class="text-[#F8FAFC] font-semibold font-mono mb-2">Smart Diagnostics</h3>
-              <p class="text-[#94A3B8] text-sm">Levenshtein suggestions, fix-it hints, source-mapped errors. Know what went wrong instantly.</p>
-            </div>
-            <div class="bg-[#111827] rounded-xl border border-[#475569]/50 p-6 hover:border-[#22C55E]/30 transition-colors">
-              <div class="text-[#C084FC] text-2xl mb-3">🧩</div>
-              <h3 class="text-[#F8FAFC] font-semibold font-mono mb-2">Rich Standard Library</h3>
-              <p class="text-[#94A3B8] text-sm">HTTP, JSON, filesystem, math, string ops, encoding — 70+ built-in functions.</p>
+            <div class="p-5 font-mono text-sm leading-7 min-h-[220px] overflow-hidden">
+              <div id="term-lines"></div>
+              <span id="term-caret" class="zz-cursor" aria-hidden="true"></span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Benchmark Section */}
-      <section class="bg-[#111827] border-y border-[#475569]/50 py-16 md:py-24">
-        <div class="max-w-7xl mx-auto px-4 md:px-8">
-          <h2 class="text-2xl md:text-3xl font-bold text-[#F8FAFC] font-mono mb-4">Performance</h2>
-          <p class="text-[#94A3B8] mb-8 max-w-2xl">Head-to-head with Go and Rust. ZZ matches or beats both in most benchmarks.</p>
+      {/* ——— Features ——— */}
+      <section class="border-b border-border">
+        <div class="max-w-6xl mx-auto px-4 md:px-6 py-16 md:py-24">
+          <p class="text-sm font-mono text-accent mb-3">Why ZZ</p>
+          <h2 class="text-2xl md:text-3xl font-semibold tracking-tight mb-4">
+            Systems performance, scripting ergonomics.
+          </h2>
+          <p class="text-muted max-w-2xl mb-12">
+            One language from quick script to native binary — with a database story most systems languages lack.
+          </p>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {features.map((f) => (
+              <div class="rounded-lg border border-border bg-surface p-6 shadow-sm shadow-black/30 hover:border-accent-border hover:shadow-lg hover:shadow-black/40">
+                <div class="flex items-center justify-center w-10 h-10 rounded-lg border border-accent-border bg-accent-soft text-accent mb-4">
+                  <Icon name={f.icon} size={20} />
+                </div>
+                <h3 class="font-medium mb-2">{f.title}</h3>
+                <p class="text-sm text-muted leading-relaxed">{f.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-          <div class="overflow-x-auto">
-            <table class="w-full text-sm">
+      {/* ——— Code example ——— */}
+      <section class="border-b border-border bg-surface/50">
+        <div class="max-w-6xl mx-auto px-4 md:px-6 py-16 md:py-24 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div>
+            <p class="text-sm font-mono text-accent mb-3">Familiar, not foreign</p>
+            <h2 class="text-2xl md:text-3xl font-semibold tracking-tight mb-4">
+              Reads like pseudocode. Runs like Rust.
+            </h2>
+            <p class="text-muted leading-relaxed mb-6">
+              Structs, string interpolation and iterators work the way you expect.
+              Paste this into the <a href="/playground" class="text-accent hover:underline">playground</a> — it runs in your browser.
+            </p>
+            <a href="/playground" class="inline-flex items-center gap-2 text-sm font-medium text-accent hover:underline">
+              Open in playground
+              <Icon name="arrow-right" size={16} />
+            </a>
+          </div>
+          <div class="rounded-lg border border-border bg-surface overflow-hidden shadow-xl shadow-black/40">
+            <div class="flex items-center px-4 py-3 border-b border-border">
+              <Icon name="file" size={14} class="text-faint" />
+              <span class="ml-2 text-faint text-xs font-mono">users.zz</span>
+            </div>
+            <pre class="p-5 text-sm leading-7 overflow-x-auto"><code set:html={codeHtml}></code></pre>
+            <div class="px-5 py-3 border-t border-border font-mono text-xs text-faint">
+              <div>1. Ada &lt;ada@example.com&gt;</div>
+              <div>2. Grace &lt;grace@example.com&gt;</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ——— Benchmarks ——— */}
+      <section class="border-b border-border">
+        <div class="max-w-6xl mx-auto px-4 md:px-6 py-16 md:py-24">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="flex items-center justify-center w-8 h-8 rounded-lg border border-accent-border bg-accent-soft text-accent">
+              <Icon name="gauge" size={18} />
+            </div>
+            <p class="text-sm font-mono text-accent">Benchmarks</p>
+          </div>
+          <h2 class="text-2xl md:text-3xl font-semibold tracking-tight mb-4">Keeps up with Rust. Leaves Go behind.</h2>
+          <p class="text-muted max-w-2xl mb-8">
+            Head-to-head AOT runs from <code class="font-mono text-sm text-foreground">bench/performance_check</code> in the ZZ repo. Lower is better, except throughput.
+          </p>
+          <div class="rounded-lg border border-border bg-surface overflow-hidden overflow-x-auto shadow-xl shadow-black/40">
+            <table class="w-full text-sm min-w-[560px]">
               <thead>
-                <tr class="border-b border-[#475569]/50">
-                  <th class="text-left py-3 px-4 text-[#94A3B8] font-mono">Benchmark</th>
-                  <th class="text-right py-3 px-4 text-[#22C55E] font-mono">ZZ (AOT MT)</th>
-                  <th class="text-right py-3 px-4 text-[#94A3B8] font-mono">Go</th>
-                  <th class="text-right py-3 px-4 text-[#94A3B8] font-mono">Rust</th>
+                <tr class="border-b border-border bg-surface">
+                  <th class="text-left py-3 px-4 text-muted font-medium">Benchmark</th>
+                  <th class="text-right py-3 px-4 font-mono font-medium text-accent">ZZ AOT</th>
+                  <th class="text-right py-3 px-4 font-mono font-medium text-muted">Go</th>
+                  <th class="text-right py-3 px-4 font-mono font-medium text-muted">Rust</th>
                 </tr>
               </thead>
               <tbody class="font-mono">
-                <tr class="border-b border-[#475569]/30">
-                  <td class="py-3 px-4 text-[#F8FAFC]">CPU Intensive</td>
-                  <td class="py-3 px-4 text-[#22C55E] text-right">17ms</td>
-                  <td class="py-3 px-4 text-[#94A3B8] text-right">71ms</td>
-                  <td class="py-3 px-4 text-[#94A3B8] text-right">15ms</td>
-                </tr>
-                <tr class="border-b border-[#475569]/30">
-                  <td class="py-3 px-4 text-[#F8FAFC]">Concurrency Stress</td>
-                  <td class="py-3 px-4 text-[#22C55E] text-right">240ms</td>
-                  <td class="py-3 px-4 text-[#94A3B8] text-right">812ms</td>
-                  <td class="py-3 px-4 text-[#94A3B8] text-right">254ms</td>
-                </tr>
-                <tr class="border-b border-[#475569]/30">
-                  <td class="py-3 px-4 text-[#F8FAFC]">Memory Alloc</td>
-                  <td class="py-3 px-4 text-[#22C55E] text-right">174ms</td>
-                  <td class="py-3 px-4 text-[#94A3B8] text-right">271ms</td>
-                  <td class="py-3 px-4 text-[#94A3B8] text-right">268ms</td>
-                </tr>
-                <tr class="border-b border-[#475569]/30">
-                  <td class="py-3 px-4 text-[#F8FAFC]">String Concat</td>
-                  <td class="py-3 px-4 text-[#22C55E] text-right">11ms</td>
-                  <td class="py-3 px-4 text-[#94A3B8] text-right">434ms</td>
-                  <td class="py-3 px-4 text-[#94A3B8] text-right">1ms</td>
-                </tr>
-                <tr>
-                  <td class="py-3 px-4 text-[#F8FAFC]">HTTP Throughput</td>
-                  <td class="py-3 px-4 text-[#22C55E] text-right">56,236 rps</td>
-                  <td class="py-3 px-4 text-[#94A3B8] text-right">52,780 rps</td>
-                  <td class="py-3 px-4 text-[#94A3B8] text-right">49,085 rps</td>
-                </tr>
+                {bench.map((r) => (
+                  <tr class="border-b border-border last:border-0 hover:bg-surface">
+                    <td class="py-3 px-4 font-sans">{r.name}</td>
+                    <td class="py-3 px-4 text-right text-accent">{r.zz}</td>
+                    <td class="py-3 px-4 text-right text-muted">{r.go}</td>
+                    <td class="py-3 px-4 text-right text-muted">{r.rust}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
         </div>
       </section>
 
-      {/* CTA */}
-      <section class="py-16 md:py-24">
-        <div class="max-w-7xl mx-auto px-4 md:px-8 text-center">
-          <h2 class="text-3xl md:text-4xl font-bold text-[#F8FAFC] font-mono mb-6">Ready to build?</h2>
-          <p class="text-[#94A3B8] mb-8 max-w-xl mx-auto">Join the community. Start building fast, safe, and simple.</p>
-          <div class="flex flex-wrap justify-center gap-4">
-            <a href={site.docsPath} class="inline-flex items-center gap-2 px-6 py-3 bg-[#22C55E] text-[#0F172A] font-semibold rounded-lg hover:bg-[#16A34A] transition-colors">
-              Read the Docs
+      {/* ——— CTA ——— */}
+      <section>
+        <div class="max-w-6xl mx-auto px-4 md:px-6 py-16 md:py-24 text-center">
+          <h2 class="text-3xl md:text-4xl font-semibold tracking-tight mb-4">Ship something fast this weekend.</h2>
+          <p class="text-muted mb-8 max-w-xl mx-auto">One install command. A tour in twenty minutes. Native binaries by dinner.</p>
+          <div class="flex flex-wrap justify-center gap-3">
+            <a href={site.docsPath} class={buttonVariants({ variant: 'default', size: 'lg' })}>
+              Read the docs
+              <Icon name="arrow-right" size={16} />
             </a>
-            <a href={site.githubRepo} target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-6 py-3 border border-[#475569] text-[#F8FAFC] font-semibold rounded-lg hover:border-[#22C55E] hover:text-[#22C55E] transition-colors">
+            <a
+              href={site.githubRepo}
+              target="_blank"
+              rel="noopener noreferrer"
+              class={buttonVariants({ variant: 'outline', size: 'lg' })}
+            >
+              <Icon name="github" size={16} />
               Star on GitHub
             </a>
           </div>
@@ -146,19 +250,85 @@ import site from '../config/site.json';
       </section>
     </main>
 
-    {/* Footer */}
-    <footer class="bg-[#111827] border-t border-[#475569]/50 py-8">
-      <div class="max-w-7xl mx-auto px-4 md:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
-        <div class="text-[#94A3B8] text-sm font-mono">
-          &copy; {new Date().getFullYear()} ZZ Language. MIT License.
-        </div>
-        <div class="flex items-center gap-6">
-          <a href={site.docsPath} class="text-[#94A3B8] hover:text-[#F8FAFC] text-sm transition-colors">Docs</a>
-          <a href="/playground" class="text-[#94A3B8] hover:text-[#F8FAFC] text-sm transition-colors">Playground</a>
-          <a href={site.pkgRegistryPath} class="text-[#94A3B8] hover:text-[#F8FAFC] text-sm transition-colors">Packages</a>
-          <a href={site.githubRepo} target="_blank" rel="noopener noreferrer" class="text-[#94A3B8] hover:text-[#F8FAFC] text-sm transition-colors">GitHub</a>
-        </div>
-      </div>
-    </footer>
+    <Footer />
+
+    <script>
+      // Animated terminal. Single-flight: a generation counter kills stale
+      // loops (e.g. re-executed scripts under HMR), which used to overlap text.
+      (function () {
+        var w = window;
+        w.__zzHeroGen = (w.__zzHeroGen || 0) + 1;
+        var gen = w.__zzHeroGen;
+
+        var LINES = [
+          { text: '$ zz run hello.zz', cls: 'text-zinc-100', type: true },
+          { text: 'Hello, Ada!', cls: 'text-muted', type: false },
+          { text: '$ zz eval "range(1, 6) |> map(|x| x * 2) |> str"', cls: 'text-zinc-100', type: true },
+          { text: '[2, 4, 6, 8, 10]', cls: 'text-muted', type: false },
+        ];
+        var box = document.getElementById('term-lines');
+        var caret = document.getElementById('term-caret');
+        if (!box) return;
+        var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        function alive() {
+          return w.__zzHeroGen === gen && document.contains(box);
+        }
+        function esc(s) {
+          return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+        function renderStatic() {
+          box.innerHTML = LINES.map(function (l) {
+            return '<div class="' + l.cls + '">' + esc(l.text) + '</div>';
+          }).join('');
+          if (caret) caret.remove();
+        }
+        if (reduceMotion) {
+          renderStatic();
+          return;
+        }
+
+        function wait(ms) {
+          return new Promise(function (r) {
+            setTimeout(r, ms);
+          });
+        }
+
+        async function play() {
+          while (alive()) {
+            box.innerHTML = '';
+            if (caret && !document.contains(caret)) {
+              var term = box.parentElement;
+              if (term) term.appendChild(caret);
+            }
+            for (var li = 0; li < LINES.length; li++) {
+              if (!alive()) return;
+              var line = LINES[li];
+              var div = document.createElement('div');
+              div.className = line.cls;
+              // Caret rides the line being typed so it never floats elsewhere.
+              if (caret) div.appendChild(caret);
+              box.appendChild(div);
+              if (line.type) {
+                var textNode = document.createTextNode('');
+                div.insertBefore(textNode, div.firstChild);
+                for (var i = 1; i <= line.text.length; i++) {
+                  if (!alive()) return;
+                  textNode.data = line.text.slice(0, i);
+                  await wait(line.text.length > 40 ? 18 : 34);
+                }
+                await wait(450);
+              } else {
+                div.insertBefore(document.createTextNode(line.text), div.firstChild);
+                if (!alive()) return;
+                await wait(700);
+              }
+            }
+            await wait(2600);
+          }
+        }
+        play();
+      })();
+    </script>
   </body>
 </html>

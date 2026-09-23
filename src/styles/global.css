@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @layer base, starlight, theme, components, utilities;
 
@@ -6,70 +6,151 @@
 @import 'tailwindcss/theme.css' layer(theme);
 @import 'tailwindcss/utilities.css' layer(utilities);
 
+/* ——— ZZ design tokens: premium near-black, single violet accent ——— */
 @theme {
-  --color-primary: #1E293B;
-  --color-on-primary: #FFFFFF;
-  --color-secondary: #334155;
-  --color-accent: #22C55E;
-  --color-accent-hover: #16A34A;
-  --color-background: #0F172A;
-  --color-foreground: #F8FAFC;
-  --color-muted: #272F42;
-  --color-border: #475569;
-  --color-destructive: #EF4444;
+  --color-background: #0a0a0a;
+  --color-surface: #0d0d0f;
+  --color-raised: #141417;
+  --color-border: #232329;
+  --color-foreground: #fafafa;
+  --color-muted: #a1a1aa;
+  --color-faint: #63636b;
 
-  --font-display: 'JetBrains Mono', monospace;
-  --font-body: 'IBM Plex Sans', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --color-accent: #8b5cf6;
+  --color-accent-hover: #7c3aed;
+  --color-accent-soft: rgba(139, 92, 246, 0.12);
+  --color-accent-border: rgba(139, 92, 246, 0.35);
+
+  --color-success: #34d399;
+  --color-danger: #f87171;
+  --color-warn: #fbbf24;
+
+  /* shadcn semantic aliases over the same palette */
+  --color-primary: #8b5cf6;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #141417;
+  --color-secondary-foreground: #fafafa;
+  --color-muted-bg: #141417;
+  --color-muted-foreground: #a1a1aa;
+  --color-destructive: #f87171;
+  --color-destructive-foreground: #fafafa;
+  --color-input: #232329;
+  --color-ring: #8b5cf6;
+
+  --radius: 0.5rem;
+
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 }
 
-/* Base styles */
+/* ——— Starlight chrome aligned to the same system ——— */
+:root {
+  --sl-font: 'Inter', system-ui, -apple-system, sans-serif;
+  --sl-font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --sl-color-accent: #7c3aed;
+  --sl-color-accent-high: #6d28d9;
+  --sl-color-accent-low: #ede9fe;
+}
+:root[data-theme='dark'] {
+  --sl-color-accent: #a78bfa;
+  --sl-color-accent-high: #c4b5fd;
+  --sl-color-accent-low: #2e1065;
+  --sl-color-black: #0a0a0a;
+  --sl-color-gray-6: #0d0d0f;
+  --sl-color-gray-5: #141417;
+}
+
+/* ——— Base ——— */
 html {
-  font-family: var(--font-body);
+  font-family: var(--font-sans);
   background: var(--color-background);
   color: var(--color-foreground);
 }
 
-/* Code blocks */
-pre, code {
+pre,
+code {
   font-family: var(--font-mono);
 }
 
-/* Focus ring */
+::selection {
+  background: rgba(139, 92, 246, 0.35);
+}
+
 :focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
 
-/* Smooth transitions */
-a, button {
-  transition: color 150ms ease, background-color 150ms ease, opacity 150ms ease;
+a,
+button {
+  transition:
+    color 150ms ease,
+    background-color 150ms ease,
+    border-color 150ms ease,
+    opacity 150ms ease;
 }
 
-/* Scrollbar styling */
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ——— Scrollbars ——— */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
-
 ::-webkit-scrollbar-track {
-  background: var(--color-background);
+  background: transparent;
 }
-
 ::-webkit-scrollbar-thumb {
-  background: var(--color-border);
+  background: #2e2e35;
   border-radius: 4px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-secondary);
+  background: #3f3f46;
 }
 
-/* Reduced motion */
+/* ——— Terminal prompt cursor ——— */
+.zz-cursor {
+  display: inline-block;
+  width: 0.55em;
+  height: 1.15em;
+  vertical-align: text-bottom;
+  background: var(--color-accent);
+  animation: zz-blink 1s step-end infinite;
+}
+@keyframes zz-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+.zz-stdin-capture {
+  position: absolute;
+  opacity: 0.01;
+  width: 1px;
+  height: 1px;
+  border: 0;
+  padding: 0;
+  pointer-events: none;
+}
+
+/* ——— Reduced motion ——— */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+  .zz-cursor {
+    animation: none;
+    opacity: 1;
   }
 }
