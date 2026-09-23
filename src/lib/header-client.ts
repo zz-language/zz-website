@@ -76,9 +76,9 @@ export function renderAuth(): void {
   const initial = escName(session.login.slice(0, 1).toUpperCase());
   slot.innerHTML =
     `<div class="relative">` +
-    `<button id="user-badge" class="flex items-center gap-2 pl-1.5 pr-2.5 py-1 rounded-md text-sm text-foreground hover:bg-raised" aria-label="Account menu" aria-haspopup="true">` +
-    `<span class="flex items-center justify-center w-6 h-6 rounded-full bg-accent-soft border border-accent-border text-accent font-mono text-xs font-semibold">${initial}</span>` +
-    `<span class="max-w-24 truncate font-mono text-xs">${escName(session.login)}</span></button>` +
+    `<button id="user-badge" class="flex h-9 items-center gap-2 pl-1.5 pr-2.5 rounded-lg bg-slate-900/60 border border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white transition" aria-label="Account menu" aria-haspopup="true">` +
+    `<span class="flex items-center justify-center w-6 h-6 rounded-full bg-blue-600/20 text-blue-400 border border-blue-500/30 font-mono text-xs font-semibold">${initial}</span>` +
+    `<span class="max-w-24 truncate font-mono text-xs px-1">${escName(session.login)}</span></button>` +
     `<div id="user-menu" class="user-menu hidden absolute right-0 mt-2 w-60 overflow-hidden rounded-xl border border-slate-800 bg-slate-900/95 backdrop-blur-md shadow-xl z-50">` +
     `<div class="px-3 py-2.5 border-b border-slate-800 mb-1"><div class="text-[11px] text-slate-400">Signed in as</div>` +
     `<div class="font-mono font-medium text-slate-100 truncate">${escName(session.login)}</div></div>` +

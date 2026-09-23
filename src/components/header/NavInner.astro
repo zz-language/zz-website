@@ -26,10 +26,10 @@ import site from '../../config/site.json';
     </a>
   </div>
 
-  <div class="flex items-center gap-1">
+  <div class="flex items-center gap-1.5">
     <button
       id="nav-search"
-      class="hidden sm:flex items-center gap-3 px-3 py-1.5 rounded-md bg-slate-900 border border-slate-800 text-slate-400 text-xs hover:border-slate-700 hover:text-slate-200 transition"
+      class="hidden h-9 sm:flex items-center gap-3 px-3 rounded-lg bg-slate-900/60 border border-slate-800 text-slate-300 text-xs hover:border-slate-700 hover:text-white transition"
       aria-label="Search (Ctrl+K)"
     >
       <Icon name="search" size={14} />
@@ -38,7 +38,7 @@ import site from '../../config/site.json';
     </button>
     <button
       id="theme-toggle"
-      class="p-2 rounded-md text-muted hover:text-foreground hover:bg-raised"
+      class="h-9 w-9 grid place-items-center rounded-lg bg-slate-900/60 border border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white transition"
       aria-label="Toggle theme"
     >
       <span class="theme-icon-dark"><Icon name="sun" size={18} /></span>
@@ -47,7 +47,7 @@ import site from '../../config/site.json';
     <span id="nav-auth">
       <a
         href="/login"
-        class="px-3 py-1.5 rounded-md text-sm text-muted hover:text-foreground hover:bg-raised"
+        class="flex h-9 items-center px-3 rounded-lg bg-slate-900/60 border border-slate-800 text-sm text-slate-300 hover:border-slate-700 hover:text-white transition"
       >
         Log in
       </a>
@@ -56,14 +56,14 @@ import site from '../../config/site.json';
       href={site.githubRepo}
       target="_blank"
       rel="noopener noreferrer"
-      class="p-2 rounded-md text-muted hover:text-foreground hover:bg-raised"
+      class="h-9 w-9 grid place-items-center rounded-lg bg-slate-900/60 border border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white transition"
       aria-label="ZZ on GitHub"
     >
       <Icon name="github" size={18} />
     </a>
     <button
       id="nav-menu-btn"
-      class="md:hidden p-2 rounded-md text-muted hover:text-foreground hover:bg-raised"
+      class="md:hidden h-9 w-9 grid place-items-center rounded-lg bg-slate-900/60 border border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white transition"
       aria-label="Open menu"
     >
       <Icon name="menu" size={18} />
