@@ -53,6 +53,14 @@ import '../styles/global.css';
     <script define:vars={{ registryApi: site.registryApi }}>
       const errPane = document.getElementById('login-error');
 
+      // Already signed in: the dashboard is home.
+      try {
+        if (localStorage.getItem('zz_token') && localStorage.getItem('zz_login')) {
+          const next = new URLSearchParams(window.location.search).get('next') || '/home';
+          window.location.replace(next.startsWith('/') ? next : '/home');
+        }
+      } catch {}
+
       function fail(msg) {
         errPane.textContent = msg;
         errPane.classList.remove('hidden');
