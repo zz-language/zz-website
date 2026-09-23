@@ -1,11 +1,14 @@
 ---
 /**
- * Starlight `Header` override: renders the single shared Navbar
- * (NavInner) instead of Starlight's default header. Starlight's own
- * Pagefind search button is intentionally omitted — the global command
- * palette covers docs search, so only one search control exists.
+ * Starlight `Header` override: renders the single shared Navbar as its own
+ * fixed bar — byte-identical tree to the main site — instead of living
+ * inside Starlight's header container (whose desktop grid/padding squeezes
+ * foreign content into the title column). Starlight's own header element
+ * is hidden via CSS; layout offsets still come from --sl-nav-height.
  */
 import NavInner from '../header/NavInner.astro';
 ---
 
-<NavInner />
+<div class="fixed top-0 left-0 right-0 z-50 bg-[#0B0F17]/80 backdrop-blur-md border-b border-slate-800/80 h-14">
+  <NavInner />
+</div>
