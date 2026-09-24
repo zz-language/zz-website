@@ -1,6 +1,12 @@
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 
+declare global {
+  interface Window {
+    renderMarkdown?: (src: string) => string;
+  }
+}
+
 /**
  * Render untrusted Markdown (package READMEs) to safe HTML.
  *

@@ -83,6 +83,14 @@ import '../../styles/global.css';
             <div id="pkg-maturity-menu" class="hidden absolute left-0 top-[calc(100%+6px)] min-w-44 rounded-xl border border-border bg-surface shadow-2xl shadow-black/50 p-1.5 z-20" role="listbox" aria-label="Filter by maturity"></div>
           </div>
           <div class="relative">
+            <button id="pkg-category-btn" class="flex items-center gap-2 px-3.5 py-2 rounded-full bg-blue-500/[0.07] border border-blue-500/20 text-[13px] text-foreground hover:border-blue-500/50 hover:bg-blue-500/[0.12] transition" aria-haspopup="listbox" aria-expanded="false">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" class="text-blue-400"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg>
+              <span id="pkg-category-label">All categories</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" class="text-faint"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div id="pkg-category-menu" class="hidden absolute left-0 top-[calc(100%+6px)] min-w-44 rounded-xl border border-border bg-surface shadow-2xl shadow-black/50 p-1.5 z-20" role="listbox" aria-label="Filter by category"></div>
+          </div>
+          <div class="relative">
             <button id="pkg-sort-btn" class="flex items-center gap-2 px-3.5 py-2 rounded-full bg-blue-500/[0.07] border border-blue-500/20 text-[13px] text-foreground hover:border-blue-500/50 hover:bg-blue-500/[0.12] transition" aria-haspopup="listbox" aria-expanded="false">
               <span id="pkg-sort-label">Recently updated</span>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" class="text-faint"><polyline points="6 9 12 15 18 9"/></svg>
@@ -117,11 +125,15 @@ import '../../styles/global.css';
         const sortBtn = document.getElementById('pkg-sort-btn');
         const sortLabel = document.getElementById('pkg-sort-label');
         const sortMenu = document.getElementById('pkg-sort-menu');
+        const categoryBtn = document.getElementById('pkg-category-btn');
+        const categoryLabel = document.getElementById('pkg-category-label');
+        const categoryMenu = document.getElementById('pkg-category-menu');
         const pkgList = document.getElementById('pkg-list');
         let allPackages = [];
         let authorFilter = '';
         let licenseFilter = '';
         let maturityFilter = '';
+        let categoryFilter = '';
         let sortMode = 'recent';
         // License lookup cache (name -> license): the search rows don't
         // carry licenses, so one batched info round per unseen package.
@@ -136,6 +148,37 @@ import '../../styles/global.css';
           ['early', 'Early (0.x)'],
         ];
 
+        // Fixed vocabulary (mirrors the CLI): only categories present in
+        // the result set are offered, each with a live count.
+        const CATEGORIES = ['backend', 'cli', 'frameworks', 'math', 'gui', 'utilities'];
+        function refreshCategories() {
+          const counts = {};
+          for (const p of allPackages) {
+            if (p.category) counts[p.category] = (counts[p.category] || 0) + 1;
+          }
+          const present = CATEGORIES.filter((c) => counts[c]);
+          if (categoryFilter && !counts[categoryFilter]) {
+            categoryFilter = '';
+            categoryLabel.textContent = 'All categories';
+          }
+          categoryMenu.innerHTML =
+            `<button data-category="" role="option" class="filter-item">All categories${categoryFilter === '' ? checkMark() : ''}</button>` +
+            present
+              .map(
+                (c) =>
+                  `<button data-category="${esc(c)}" role="option" class="filter-item">${esc(c)}<span class="ml-auto text-xs text-faint">${counts[c]}</span>${categoryFilter === c ? checkMark() : ''}</button>`,
+              )
+              .join('') +
+            (present.length === 0 ? '<div class="px-3 py-2 text-xs text-faint">No categorized packages yet</div>' : '');
+          categoryMenu.querySelectorAll('[data-category]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+              categoryFilter = btn.dataset.category;
+              categoryLabel.textContent = categoryFilter || 'All categories';
+              closeMenus();
+              renderPackages();
+            });
+          });
+        }
         function majorOf(v) {
           const n = parseInt(String(v || '0').split('.')[0], 10);
           return Number.isFinite(n) ? n : 0;
@@ -151,6 +194,7 @@ import '../../styles/global.css';
             allPackages = Array.isArray(data) ? data : [];
             refreshAuthors();
             refreshLicenses();
+            refreshCategories();
             renderPackages();
             renderSuggest(searchInput.value.trim());
           } catch {
@@ -242,8 +286,8 @@ import '../../styles/global.css';
         }
 
         function closeMenus() {
-          [authorMenu, licenseMenu, maturityMenu, sortMenu].forEach((m) => m.classList.add('hidden'));
-          [authorBtn, licenseBtn, maturityBtn, sortBtn].forEach((b) => b.setAttribute('aria-expanded', 'false'));
+          [authorMenu, licenseMenu, maturityMenu, sortMenu, categoryMenu].forEach((m) => m.classList.add('hidden'));
+          [authorBtn, licenseBtn, maturityBtn, sortBtn, categoryBtn].forEach((b) => b.setAttribute('aria-expanded', 'false'));
         }
 
         function toggleMenu(menu, btn) {
@@ -266,8 +310,9 @@ import '../../styles/global.css';
         wireMenu(licenseBtn, licenseMenu);
         wireMenu(maturityBtn, maturityMenu);
         wireMenu(sortBtn, sortMenu);
+        wireMenu(categoryBtn, categoryMenu);
         document.addEventListener('click', (e) => {
-          if (![authorMenu, licenseMenu, maturityMenu, sortMenu].some((m) => m.contains(e.target))) closeMenus();
+          if (![authorMenu, licenseMenu, maturityMenu, sortMenu, categoryMenu].some((m) => m.contains(e.target))) closeMenus();
         });
         if (authorSearch) {
           authorSearch.addEventListener('click', (e) => e.stopPropagation());
@@ -306,6 +351,7 @@ import '../../styles/global.css';
         function visiblePackages() {
           let list = allPackages.slice();
           if (authorFilter) list = list.filter((p) => p.author === authorFilter);
+          if (categoryFilter) list = list.filter((p) => p.category === categoryFilter);
           if (licenseFilter) list = list.filter((p) => (licenseCache.get(p.name) || '') === licenseFilter);
           if (maturityFilter === 'stable') list = list.filter((p) => majorOf(p.latest) >= 1);
           if (maturityFilter === 'early') list = list.filter((p) => majorOf(p.latest) < 1);
@@ -331,6 +377,7 @@ import '../../styles/global.css';
                   <span class="shrink-0 bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 text-xs rounded-full font-mono">v${esc(pkg.latest)}</span>
                 </div>
                 <p class="text-sm mt-1.5 leading-relaxed text-muted">${esc(pkg.description) || 'No description'}</p>
+                ${pkg.category ? `<div class="mt-2.5"><span class="inline-block bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 text-[11px] rounded-full font-mono">${esc(pkg.category)}</span></div>` : ''}
               </a>
               <div class="flex items-center justify-between mt-4 text-xs">
                 <a href="/u/${encodeURIComponent(pkg.author || '')}" class="flex items-center gap-1.5 text-muted hover:text-blue-400">
@@ -373,6 +420,15 @@ import '../../styles/global.css';
 
         let timeout;
         const suggestBox = document.getElementById('pkg-suggest');
+
+        // Deep link: /pkg?category=cli preselects the filter.
+        try {
+          const deep = new URLSearchParams(window.location.search).get('category') || '';
+          if (deep) {
+            categoryFilter = deep;
+            categoryLabel.textContent = deep;
+          }
+        } catch {}
 
         function renderSuggest(query) {
           const q = query.toLowerCase();
