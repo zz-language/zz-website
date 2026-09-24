@@ -136,7 +136,7 @@ const ICONS: Record<string, string> = {
       list.unshift({
         title: `My packages (@${s.login})`,
         hint: 'Action',
-        run: () => (window.location.href = `/pkg/author?login=${encodeURIComponent(s.login)}`),
+        run: () => (window.location.href = `/u/${encodeURIComponent(s.login)}`),
       });
       list.unshift({
         title: 'API tokens',
@@ -155,7 +155,7 @@ const ICONS: Record<string, string> = {
       pkgCache = (Array.isArray(data) ? data : []).map((p) => ({
         title: p.name,
         sub: `v${p.latest || '?'} · ${p.author || 'unknown'}`,
-        path: `/pkg/view?name=${encodeURIComponent(p.name)}`,
+        path: `/pkg/${encodeURIComponent(p.name)}`,
         group: 'Packages',
       }));
     } catch {

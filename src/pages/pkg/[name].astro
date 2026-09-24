@@ -6,6 +6,18 @@ import Footer from '../../components/Footer.astro';
 import Icon from '../../components/icons/Icon.astro';
 import site from '../../config/site.json';
 import '../../styles/global.css';
+
+const routeName = Astro.params.name ?? '';
+
+export async function getStaticPaths() {
+  try {
+    const res = await fetch(`${site.registryApi}/api/pkg/search?q=`);
+    const data = await res.json();
+    return (Array.isArray(data) ? data : []).map((p) => ({ params: { name: p.name } }));
+  } catch {
+    return [];
+  }
+}
 ---
 
 <html lang="en">
@@ -34,11 +46,11 @@ import '../../styles/global.css';
 
     <Footer />
 
-    <script define:vars={{ registryApi: site.registryApi }}>
+    <script define:vars={{ registryApi: site.registryApi, routeName }}>
     function main() {
     if (!document.getElementById('pkg-content')) return;
         const content = document.getElementById('pkg-content');
-        const pkgName = new URLSearchParams(window.location.search).get('name');
+        const pkgName = routeName || new URLSearchParams(window.location.search).get('name');
 
         function esc(s) {
           return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');

@@ -325,7 +325,7 @@ import '../../styles/global.css';
             .map(
               (pkg) => `
             <div class="rounded-xl border border-border bg-surface p-5 shadow-lg transition-all duration-200 motion-safe:hover:-translate-y-1 hover:border-blue-500/50 hover:shadow-[0_16px_50px_-12px_rgba(0,128,255,0.35)]">
-              <a href="/pkg/view?name=${encodeURIComponent(pkg.name)}" class="block group">
+              <a href="/pkg/${encodeURIComponent(pkg.name)}" class="block group">
                 <div class="flex items-start justify-between gap-3">
                   <h3 class="font-mono font-bold text-foreground group-hover:text-blue-400">${esc(pkg.name)}</h3>
                   <span class="shrink-0 bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 text-xs rounded-full font-mono">v${esc(pkg.latest)}</span>
@@ -333,7 +333,7 @@ import '../../styles/global.css';
                 <p class="text-sm mt-1.5 leading-relaxed text-muted">${esc(pkg.description) || 'No description'}</p>
               </a>
               <div class="flex items-center justify-between mt-4 text-xs">
-                <a href="/pkg/author?login=${encodeURIComponent(pkg.author || '')}" class="flex items-center gap-1.5 text-muted hover:text-blue-400">
+                <a href="/u/${encodeURIComponent(pkg.author || '')}" class="flex items-center gap-1.5 text-muted hover:text-blue-400">
                   <span class="flex items-center justify-center w-5 h-5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 font-mono text-[10px] font-semibold">${esc((pkg.author || '?').slice(0, 1).toUpperCase())}</span>
                   ${esc(pkg.author)}
                 </a>
@@ -386,7 +386,7 @@ import '../../styles/global.css';
           }
           suggestBox.innerHTML = hits
             .map(
-              (p) => `<a href="/pkg/view?name=${encodeURIComponent(p.name)}" role="option" class="flex items-center justify-between gap-3 px-3 py-2 text-sm hover:bg-raised"><span class="font-mono text-foreground">${esc(p.name)}</span><span class="font-mono text-xs text-faint">v${esc(p.latest)}</span></a>`,
+              (p) => `<a href="/pkg/${encodeURIComponent(p.name)}" role="option" class="flex items-center justify-between gap-3 px-3 py-2 text-sm hover:bg-raised"><span class="font-mono text-foreground">${esc(p.name)}</span><span class="font-mono text-xs text-faint">v${esc(p.latest)}</span></a>`,
             )
             .join('');
           suggestBox.classList.remove('hidden');
