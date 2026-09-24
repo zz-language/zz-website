@@ -10,13 +10,20 @@ import '../../styles/global.css';
 const routeName = Astro.params.name ?? '';
 
 export async function getStaticPaths() {
-  try {
-    const res = await fetch(`${site.registryApi}/api/pkg/search?q=`);
-    const data = await res.json();
-    return (Array.isArray(data) ? data : []).map((p) => ({ params: { name: p.name } }));
-  } catch {
-    return [];
+  // Retry: a registry cold-start during build/dev-start must not silently
+  // yield zero pretty URLs (Astro caches the first result).
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const res = await fetch(`${site.registryApi}/api/pkg/search?q=`);
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        return data.map((p) => ({ params: { name: p.name } }));
+      }
+    } catch {}
+    await new Promise((r) => setTimeout(r, 2000 * attempt));
   }
+  console.warn('[pkg/[name]] registry unreachable after retries: no pretty package URLs prerendered');
+  return [];
 }
 ---
 

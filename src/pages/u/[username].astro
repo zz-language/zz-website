@@ -10,14 +10,21 @@ import '../../styles/global.css';
 const routeLogin = Astro.params.username ?? '';
 
 export async function getStaticPaths() {
-  try {
-    const res = await fetch(`${site.registryApi}/api/pkg/search?q=`);
-    const data = await res.json();
-    const logins = [...new Set((Array.isArray(data) ? data : []).map((p) => p.author).filter(Boolean))];
-    return logins.map((username) => ({ params: { username } }));
-  } catch {
-    return [];
+  // Retry: a registry cold-start during build/dev-start must not silently
+  // yield zero pretty URLs (Astro caches the first result).
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const res = await fetch(`${site.registryApi}/api/pkg/search?q=`);
+      const data = await res.json();
+      const logins = [...new Set((Array.isArray(data) ? data : []).map((p) => p.author).filter(Boolean))];
+      if (logins.length > 0) {
+        return logins.map((username) => ({ params: { username } }));
+      }
+    } catch {}
+    await new Promise((r) => setTimeout(r, 2000 * attempt));
   }
+  console.warn('[u/[username]] registry unreachable after retries: no pretty author URLs prerendered');
+  return [];
 }
 ---
 
