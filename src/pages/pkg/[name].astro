@@ -63,6 +63,28 @@ export async function getStaticPaths() {
           return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         }
 
+        function fmtSize(b) {
+          if (typeof b !== 'number' || !(b > 0)) return '—';
+          const units = ['B', 'KB', 'MB', 'GB'];
+          let i = 0;
+          let v = b;
+          while (v >= 1024 && i < units.length - 1) {
+            v /= 1024;
+            i++;
+          }
+          return (i === 0 ? v : v.toFixed(1)) + ' ' + units[i];
+        }
+
+        function zzSession() {
+          try {
+            const login = localStorage.getItem('zz_login') || '';
+            const token = localStorage.getItem('zz_token') || '';
+            return login && token ? { login, token } : null;
+          } catch {
+            return null;
+          }
+        }
+
         function versionsHtml(md) {
           const versions = Array.isArray(md.versions) ? md.versions : [];
           if (versions.length === 0) return '';
@@ -132,6 +154,18 @@ export async function getStaticPaths() {
                   <div class="text-xs text-faint mb-1">Version</div>
                   <div class="font-mono text-sm">${esc(md.latest)}</div>
                 </div>
+                <div class="rounded-lg border border-border bg-surface p-4">
+                  <div class="text-xs text-faint mb-1">Size</div>
+                  <div class="font-mono text-sm" title="${typeof md.size_bytes === 'number' ? esc(md.size_bytes) + ' bytes (latest version)' : ''}">${esc(fmtSize(md.size_bytes))}</div>
+                </div>
+                ${
+                  md.homepage
+                    ? `<div class="rounded-lg border border-border bg-surface p-4">
+                  <div class="text-xs text-faint mb-1.5">Homepage</div>
+                  <a href="${esc(md.homepage)}" target="_blank" rel="noopener noreferrer" class="font-mono text-sm text-accent hover:underline break-all">${esc(String(md.homepage).replace(/^https?:\/\//, ''))}</a>
+                </div>`
+                    : ''
+                }
               </div>
               ${
                 (Array.isArray(md.owners) && md.owners.length > 0) || md.repo
@@ -173,7 +207,8 @@ export async function getStaticPaths() {
               <div>
                 <h2 class="font-medium mb-2">README</h2>
                 <div class="rounded-lg border border-border bg-surface p-5 md:p-6 md-body" data-readme>${pkg.readme ? 'Loading README…' : 'No README available.'}</div>
-              </div>`;
+              </div>
+              <div data-settings></div>`;
             if (pkg.readme) {
               const readmeEl = content.querySelector('[data-readme]');
               const render = window.renderMarkdown;
@@ -195,6 +230,7 @@ export async function getStaticPaths() {
                 }
               });
             }
+            renderSettings(pkg, md);
           } catch {
             content.innerHTML = `
               <div class="text-center py-12">
@@ -203,6 +239,143 @@ export async function getStaticPaths() {
                 <code class="px-4 py-2 bg-surface border border-border rounded-lg text-accent font-mono text-sm">zz publish</code>
               </div>`;
           }
+        }
+
+        function renderSettings(pkg, md) {
+          const slot = content.querySelector('[data-settings]');
+          if (!slot) return;
+          const session = zzSession();
+          const owners = Array.isArray(md.owners) ? md.owners : [];
+          const isOwner = !!session && (owners.includes(session.login) || session.login === md.author);
+          if (!isOwner) return;
+          const token = session.token;
+          const inputCls =
+            'w-full bg-raised border border-border rounded-md px-3 py-2 text-sm font-mono placeholder:text-faint focus:outline-none focus:border-accent';
+          slot.innerHTML = `
+            <div class="mt-8 rounded-lg border border-accent-border bg-surface p-4 md:p-5">
+              <div class="flex items-center justify-between gap-3 mb-1">
+                <h2 class="font-medium">Package settings</h2>
+                <span class="text-xs text-faint font-mono">visible to owners only</span>
+              </div>
+              <p class="text-xs text-muted mb-4">Changes apply immediately and survive republishes. Leave a field empty to clear it.</p>
+              <div class="grid gap-3 mb-3">
+                <label class="block">
+                  <span class="block text-xs text-faint mb-1">Repository URL</span>
+                  <input data-set-repo class="${inputCls}" value="${esc(md.repo || '')}" placeholder="https://github.com/you/pkg" spellcheck="false" />
+                </label>
+                <label class="block">
+                  <span class="block text-xs text-faint mb-1">Homepage URL</span>
+                  <input data-set-homepage class="${inputCls}" value="${esc(md.homepage || '')}" placeholder="https://you.dev/pkg" spellcheck="false" />
+                </label>
+                <label class="block">
+                  <span class="block text-xs text-faint mb-1">Description</span>
+                  <input data-set-desc class="${inputCls}" value="${esc(md.description || '')}" placeholder="One-line description" maxlength="2000" spellcheck="false" />
+                </label>
+              </div>
+              <div class="flex items-center gap-3 mb-5">
+                <button data-set-save class="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium disabled:opacity-50">Save changes</button>
+                <span data-set-msg class="text-xs font-mono"></span>
+              </div>
+              <div class="border-t border-border pt-4">
+                <h3 class="text-sm font-medium mb-1">Collaborators</h3>
+                <p class="text-xs text-muted mb-3">Owners can publish and manage this package. They must have signed in once before you can add them.</p>
+                <div data-set-owners class="flex flex-wrap items-center gap-1.5 mb-3"></div>
+                <div class="flex items-center gap-2">
+                  <input data-set-add class="${inputCls}" style="max-width: 16rem" placeholder="github-login" spellcheck="false" />
+                  <button data-set-addbtn class="px-3 py-2 rounded-lg border border-border text-sm text-muted hover:text-accent hover:border-accent-border font-mono shrink-0">Add</button>
+                  <span data-set-ownmsg class="text-xs font-mono"></span>
+                </div>
+              </div>
+            </div>`;
+
+          const msg = slot.querySelector('[data-set-msg]');
+          const say = (el, text, ok) => {
+            el.textContent = text;
+            el.className = 'text-xs font-mono ' + (ok ? 'text-green-400' : 'text-red-400');
+          };
+          const api = async (method, path, body) => {
+            const res = await fetch(`${registryApi}${path}`, {
+              method,
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+              },
+              body: body === undefined ? undefined : JSON.stringify(body),
+            });
+            let data = {};
+            try {
+              data = await res.json();
+            } catch {}
+            if (!res.ok) throw new Error(data.error || `request failed (${res.status})`);
+            return data;
+          };
+          const refresh = () => loadPackage(md.name);
+
+          slot.querySelector('[data-set-save]').addEventListener('click', async (e) => {
+            const btn = e.currentTarget;
+            btn.disabled = true;
+            try {
+              await api('PUT', `/api/pkg/${encodeURIComponent(md.name)}`, {
+                repo: slot.querySelector('[data-set-repo]').value.trim(),
+                homepage: slot.querySelector('[data-set-homepage]').value.trim(),
+                description: slot.querySelector('[data-set-desc]').value.trim(),
+              });
+              say(msg, 'saved', true);
+              refresh();
+            } catch (err) {
+              say(msg, String((err && err.message) || err), false);
+            } finally {
+              btn.disabled = false;
+            }
+          });
+
+          const ownersEl = slot.querySelector('[data-set-owners]');
+          const ownMsg = slot.querySelector('[data-set-ownmsg]');
+          const paintOwners = (list, self) => {
+            ownersEl.innerHTML = list
+              .map(
+                (o) =>
+                  `<span class="inline-flex items-center gap-1.5 bg-raised border border-border pl-2.5 pr-1.5 py-1 text-xs rounded-full font-mono"><a href="/u/${encodeURIComponent(o)}" class="text-accent hover:underline">${esc(o)}</a>` +
+                  (o === self
+                    ? ''
+                    : `<button data-unowner="${esc(o)}" title="Remove ${esc(o)}" class="text-faint hover:text-red-400 font-mono px-1">×</button>`) +
+                  `</span>`,
+              )
+              .join('');
+            ownersEl.querySelectorAll('[data-unowner]').forEach((b) =>
+              b.addEventListener('click', async () => {
+                const login = b.dataset.unowner;
+                try {
+                  await api('DELETE', `/api/pkg/${encodeURIComponent(md.name)}/owners/${encodeURIComponent(login)}`);
+                  say(ownMsg, `removed ${login}`, true);
+                  refresh();
+                } catch (err) {
+                  say(ownMsg, String((err && err.message) || err), false);
+                }
+              }),
+            );
+          };
+          paintOwners(owners, session.login);
+
+          const addInput = slot.querySelector('[data-set-add]');
+          const doAdd = async () => {
+            const login = addInput.value.trim();
+            if (!login) return;
+            try {
+              await api('POST', `/api/pkg/${encodeURIComponent(md.name)}/owners`, { login });
+              say(ownMsg, `added ${login}`, true);
+              refresh();
+            } catch (err) {
+              say(ownMsg, String((err && err.message) || err), false);
+            }
+          };
+          slot.querySelector('[data-set-addbtn]').addEventListener('click', doAdd);
+          addInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              doAdd();
+            }
+          });
         }
     }
     document.addEventListener('astro:page-load', main);
