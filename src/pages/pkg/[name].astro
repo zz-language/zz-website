@@ -54,7 +54,6 @@ export async function getStaticPaths() {
     <Footer />
 
     <script define:vars={{ registryApi: site.registryApi, routeName }}>
-    import { renderMarkdown } from '../../lib/markdown';
     function main() {
     if (!document.getElementById('pkg-content')) return;
         const content = document.getElementById('pkg-content');
@@ -173,8 +172,17 @@ export async function getStaticPaths() {
               }
               <div>
                 <h2 class="font-medium mb-2">README</h2>
-                <div class="rounded-lg border border-border bg-surface p-5 md:p-6 md-body">${pkg.readme ? renderMarkdown(pkg.readme) : 'No README available.'}</div>
+                <div class="rounded-lg border border-border bg-surface p-5 md:p-6 md-body" data-readme>${pkg.readme ? 'Loading README…' : 'No README available.'}</div>
               </div>`;
+            if (pkg.readme) {
+              const readmeEl = content.querySelector('[data-readme]');
+              const render = window.renderMarkdown;
+              if (readmeEl && typeof render === 'function') {
+                readmeEl.innerHTML = render(pkg.readme);
+              } else if (readmeEl) {
+                readmeEl.textContent = pkg.readme;
+              }
+            }
             const copyBtn = content.querySelector('.copy-btn');
             if (copyBtn) {
               copyBtn.addEventListener('click', async () => {
@@ -198,6 +206,10 @@ export async function getStaticPaths() {
         }
     }
     document.addEventListener('astro:page-load', main);
+    </script>
+    <script>
+      import { renderMarkdown } from '../../lib/markdown';
+      window.renderMarkdown = renderMarkdown;
     </script>
   </body>
 </html>
