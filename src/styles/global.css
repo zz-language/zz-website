@@ -246,6 +246,9 @@ header.header {
   font-size: 0.875rem;
   color: var(--color-muted);
   text-align: left;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
 }
 .filter-item:hover {
   color: var(--color-foreground);
