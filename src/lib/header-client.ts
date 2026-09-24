@@ -176,7 +176,9 @@ export function initHeader(): void {
   const openPalette = () => window.dispatchEvent(new Event('zz-open-palette'));
   document.getElementById('nav-search')?.addEventListener('click', openPalette);
   document.addEventListener('keydown', (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+    // e.code is layout-independent: Arabic ن sits on the physical K key,
+    // so Ctrl+ن opens the palette exactly like Ctrl+K.
+    if ((e.metaKey || e.ctrlKey) && (e.key.toLowerCase() === 'k' || e.code === 'KeyK')) {
       e.preventDefault();
       if (document.querySelector('#zz-palette:not(.hidden)') || focusSearch()) return;
       openPalette();
