@@ -130,7 +130,8 @@ function focusSearch(): boolean {
 
 /** Highlight the nav link matching the current route. */
 function markActiveNav(): void {
-  const path = window.location.pathname;
+  const raw = window.location.pathname;
+  const path = raw.length > 1 && raw.endsWith('/') ? raw.slice(0, -1) : raw;
   const section =
     path.startsWith('/playground') ? 'playground'
     : path.startsWith('/pkg') ? 'packages'
