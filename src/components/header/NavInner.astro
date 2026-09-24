@@ -47,13 +47,10 @@ import site from '../../config/site.json';
       <span class="theme-icon-dark"><Icon name="sun" size={18} /></span>
       <span class="theme-icon-light hidden"><Icon name="moon" size={18} /></span>
     </button>
-    <span id="nav-auth">
-      <a
-        href="/login"
-        class="flex h-9 items-center px-3 rounded-lg bg-surface/80 border border-border text-sm text-muted hover:text-foreground hover:border-accent-border transition"
-      >
-        Log in
-      </a>
+    <span id="nav-auth" class="inline-flex min-w-[4.5rem] justify-end">
+      <span class="flex h-9 items-center gap-2" aria-hidden="true">
+        <span class="w-6 h-6 rounded-full bg-raised animate-pulse"></span>
+      </span>
     </span>
     <a
       href={site.githubRepo}

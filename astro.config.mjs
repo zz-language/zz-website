@@ -49,6 +49,7 @@ export default defineConfig({
       // Docs chrome reuses the main-site bar (same height, blur, controls).
       components: {
         Header: './src/components/starlight/SiteHeader.astro',
+        Head: './src/components/starlight/Head.astro',
       },
       social: [
         { icon: 'github', label: 'GitHub', href: site.githubRepo },

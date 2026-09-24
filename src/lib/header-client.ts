@@ -73,7 +73,7 @@ export function renderAuth(): void {
   if (homeLink) homeLink.classList.toggle('hidden', !session);
   if (!session) {
     slot.innerHTML =
-      '<a href="/login" class="px-3 py-1.5 rounded-md text-sm text-muted hover:text-foreground hover:bg-raised">Log in</a>';
+      '<a href="/login" class="flex h-9 items-center px-3 rounded-lg bg-surface/80 border border-border text-sm text-muted hover:text-foreground hover:border-accent-border transition">Log in</a>';
     document.querySelectorAll('.nav-auth-link').forEach((a) => {
       (a as HTMLElement).style.display = '';
     });

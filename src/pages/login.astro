@@ -1,5 +1,6 @@
 ---
 import CustomHeader from '../components/header/CustomHeader.astro';
+import { ClientRouter } from 'astro:transitions';
 import ThemeInit from '../components/ThemeInit.astro';
 import Footer from '../components/Footer.astro';
 import Icon from '../components/icons/Icon.astro';
@@ -9,6 +10,7 @@ import '../styles/global.css';
 
 <html lang="en">
   <head>
+    <ClientRouter />
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Log in | {site.siteName}</title>
