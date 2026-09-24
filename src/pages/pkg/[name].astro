@@ -54,6 +54,7 @@ export async function getStaticPaths() {
     <Footer />
 
     <script define:vars={{ registryApi: site.registryApi, routeName }}>
+    import { renderMarkdown } from '../../lib/markdown';
     function main() {
     if (!document.getElementById('pkg-content')) return;
         const content = document.getElementById('pkg-content');
@@ -124,6 +125,32 @@ export async function getStaticPaths() {
                   <div class="font-mono text-sm">${esc(md.latest)}</div>
                 </div>
               </div>
+              ${
+                (Array.isArray(md.owners) && md.owners.length > 0) || md.repo
+                  ? `<div class="grid grid-cols-2 gap-4 mb-4">
+                  <div class="rounded-lg border border-border bg-surface p-4">
+                    <div class="text-xs text-faint mb-1.5">Collaborators</div>
+                    <div class="flex flex-wrap items-center gap-1.5">${
+                      Array.isArray(md.owners) && md.owners.length > 0
+                        ? md.owners
+                            .map(
+                              (o) => `<a href="/u/${encodeURIComponent(o)}" title="${esc(o)}" class="flex items-center justify-center w-7 h-7 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 font-mono text-xs font-semibold hover:border-blue-500/50">${esc(String(o).slice(0, 1).toUpperCase())}</a>`,
+                            )
+                            .join('')
+                        : '<span class="text-xs text-faint">—</span>'
+                    }</div>
+                  </div>
+                  <div class="rounded-lg border border-border bg-surface p-4">
+                    <div class="text-xs text-faint mb-1.5">Repository</div>
+                    ${
+                      md.repo
+                        ? `<a href="${esc(md.repo)}" target="_blank" rel="noopener noreferrer" class="font-mono text-sm text-accent hover:underline break-all">${esc(md.repo.replace(/^https?:\/\//, ''))}</a>`
+                        : '<span class="text-xs text-faint">Not linked</span>'
+                    }
+                  </div>
+                </div>`
+                  : ''
+              }
               ${versionsHtml(md)}
               ${
                 deps.length > 0
@@ -137,7 +164,7 @@ export async function getStaticPaths() {
               }
               <div>
                 <h2 class="font-medium mb-2">README</h2>
-                <div class="rounded-lg border border-border bg-surface p-5 text-sm text-muted whitespace-pre-wrap">${esc(pkg.readme) || 'No README available.'}</div>
+                <div class="rounded-lg border border-border bg-surface p-5 md:p-6 md-body">${pkg.readme ? renderMarkdown(pkg.readme) : 'No README available.'}</div>
               </div>`;
             const copyBtn = content.querySelector('.copy-btn');
             if (copyBtn) {
