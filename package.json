@@ -28,6 +28,8 @@
     "astro": "^7.2.10",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "dompurify": "^3.4.16",
+    "marked": "^18.0.14",
     "monaco-editor": "^0.52.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
