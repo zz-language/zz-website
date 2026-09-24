@@ -23,11 +23,17 @@ import '../../styles/global.css';
 
     <main class="pt-14">
       <div class="max-w-6xl mx-auto px-4 md:px-6 py-10 md:py-14">
+        <div class="relative">
+          <div aria-hidden="true" class="pointer-events-none absolute -top-24 left-1/4 h-64 w-[36rem] rounded-full bg-blue-600/10 blur-3xl"></div>
+        </div>
         <p class="text-sm font-mono text-accent mb-2">Registry</p>
-        <h1 class="text-2xl md:text-3xl font-semibold tracking-tight">Packages</h1>
+        <div class="flex flex-wrap items-end justify-between gap-4">
+          <h1 class="text-2xl md:text-3xl font-semibold tracking-tight">Packages</h1>
+          <span id="pkg-count" class="text-xs font-mono text-faint"></span>
+        </div>
         <p class="text-muted mt-2 mb-8">Libraries for ZZ. <code class="font-mono text-sm text-foreground">zz add &lt;name&gt;</code> to install.</p>
 
-        <div class="flex flex-wrap items-center gap-3 max-w-3xl mb-8 rounded-xl border border-border bg-surface p-3 shadow-lg">
+        <div class="flex flex-wrap items-center gap-2 max-w-3xl mb-4 rounded-xl border border-border bg-surface p-2 shadow-lg transition focus-within:border-blue-500/50 focus-within:shadow-[0_0_0_1px_rgba(0,128,255,0.3),0_8px_40px_-12px_rgba(0,128,255,0.25)]">
           <div class="relative flex-1 min-w-52">
             <span class="absolute left-3 top-1/2 -translate-y-1/2 text-faint">
               <Icon name="search" size={16} />
@@ -45,9 +51,9 @@ import '../../styles/global.css';
             />
             <div id="pkg-suggest" class="hidden absolute left-0 right-0 top-full mt-1 rounded-lg border border-border bg-surface shadow-xl overflow-hidden z-10" role="listbox"></div>
           </div>
-          <div class="h-6 w-px bg-border hidden sm:block" aria-hidden="true"></div>
+          <div class="h-6 w-px bg-white/5 hidden sm:block" aria-hidden="true"></div>
           <div class="relative">
-            <button id="pkg-author-btn" class="flex items-center gap-2 px-3 py-2 rounded-md bg-surface border border-border text-foreground text-sm hover:border-accent-border" aria-haspopup="listbox" aria-expanded="false">
+            <button id="pkg-author-btn" class="flex items-center gap-2 px-3 py-2 rounded-lg bg-transparent border border-transparent text-sm text-muted hover:text-foreground hover:bg-raised" aria-haspopup="listbox" aria-expanded="false">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
               <span id="pkg-author-label">All authors</span>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
@@ -55,7 +61,7 @@ import '../../styles/global.css';
             <div id="pkg-author-menu" class="hidden absolute left-0 top-[calc(100%+6px)] min-w-44 max-h-64 overflow-y-auto rounded-lg border border-border bg-surface shadow-2xl shadow-black/50 p-1 z-20" role="listbox" aria-label="Filter by author"></div>
           </div>
           <div class="relative">
-            <button id="pkg-sort-btn" class="flex items-center gap-2 px-3 py-2 rounded-md bg-surface border border-border text-foreground text-sm hover:border-accent-border" aria-haspopup="listbox" aria-expanded="false">
+            <button id="pkg-sort-btn" class="flex items-center gap-2 px-3 py-2 rounded-lg bg-transparent border border-transparent text-sm text-muted hover:text-foreground hover:bg-raised" aria-haspopup="listbox" aria-expanded="false">
               <span id="pkg-sort-label">Recently updated</span>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
@@ -189,6 +195,8 @@ import '../../styles/global.css';
 
         function renderPackages() {
           const packages = visiblePackages();
+          const counter = document.getElementById('pkg-count');
+          if (counter) counter.textContent = packages.length === 1 ? '1 package' : `${packages.length} packages`;
           if (packages.length === 0) {
             renderEmpty();
             return;
@@ -196,7 +204,7 @@ import '../../styles/global.css';
           pkgList.innerHTML = packages
             .map(
               (pkg) => `
-            <div class="rounded-xl border border-border bg-surface p-5 shadow-lg transition-all hover:border-blue-500/50">
+            <div class="rounded-xl border border-border bg-surface p-5 shadow-lg transition-all duration-200 motion-safe:hover:-translate-y-1 hover:border-blue-500/50 hover:shadow-[0_16px_50px_-12px_rgba(0,128,255,0.35)]">
               <a href="/pkg/view?name=${encodeURIComponent(pkg.name)}" class="block group">
                 <div class="flex items-start justify-between gap-3">
                   <h3 class="font-mono font-bold text-foreground group-hover:text-blue-400">${esc(pkg.name)}</h3>
