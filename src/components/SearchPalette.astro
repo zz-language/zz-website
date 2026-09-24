@@ -88,19 +88,6 @@ const ICONS: Record<string, string> = {
       transform: translateX(-50%) scale(1) translateY(0);
     }
   }
-  .palette-item {
-    border: 1px solid transparent;
-  }
-  .palette-item:hover {
-    background: rgba(255, 255, 255, 0.04);
-  }
-  .palette-item.palette-active {
-    background: rgba(0, 128, 255, 0.14);
-    border-color: rgba(0, 128, 255, 0.25);
-  }
-  .palette-item.palette-active .palette-title {
-    color: #93c5fd;
-  }
   @media (prefers-reduced-motion: reduce) {
     .zz-palette-panel {
       animation: none;
@@ -210,6 +197,14 @@ const ICONS: Record<string, string> = {
     return icons.doc;
   }
 
+  const ROW_BASE =
+    'display:flex;width:calc(100% - 1rem);margin-left:0.5rem;margin-right:0.5rem;' +
+    'align-items:center;gap:0.75rem;border-radius:0.75rem;border:1px solid transparent;' +
+    'padding:0.625rem 0.75rem;font-size:0.875rem;text-align:left;cursor:pointer;background:transparent;' +
+    'transition:background-color 120ms ease,border-color 120ms ease;';
+  const ROW_ACTIVE =
+    'background:rgba(0,128,255,0.14);border-color:rgba(0,128,255,0.35);';
+
   function render(list) {
     items = list;
     active = 0;
@@ -226,7 +221,7 @@ const ICONS: Record<string, string> = {
             ? `<div class="px-3 pt-2.5 pb-1 text-[11px] font-semibold text-slate-500 uppercase tracking-[0.08em]">${esc(it.group)}</div>`
             : '';
         lastGroup = it.group || lastGroup;
-        return `${head}<button data-idx="${i}" role="option" aria-selected="${i === 0}" class="palette-item flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-left"><span class="shrink-0 text-slate-500">${kindIcon(it.kind, it.group)}</span><span class="palette-title min-w-0 flex-1 truncate font-medium text-slate-200">${esc(it.title)}</span><span class="shrink-0 text-xs text-slate-600">${esc(it.sub || it.hint || '')}</span></button>`;
+        return `${head}<button data-idx="${i}" role="option" aria-selected="${i === 0}" class="palette-item" style="${ROW_BASE}"><span class="shrink-0 text-slate-500">${kindIcon(it.kind, it.group)}</span><span class="palette-title min-w-0 flex-1 truncate font-medium" style="color:#e2e8f0">${esc(it.title)}</span><span class="shrink-0 text-xs" style="color:#475569">${esc(it.sub || it.hint || '')}</span></button>`;
       })
       .join('');
     highlight();
@@ -243,10 +238,14 @@ const ICONS: Record<string, string> = {
   }
 
   function highlight() {
+    // Inline styles (not classes): rows are injected via innerHTML, so
+    // Astro-scoped <style> selectors never match them.
     results.querySelectorAll('.palette-item').forEach((btn, i) => {
       const on = i === active;
-      btn.classList.toggle('palette-active', on);
       btn.setAttribute('aria-selected', on ? 'true' : 'false');
+      btn.setAttribute('style', ROW_BASE + (on ? ROW_ACTIVE : ''));
+      const title = btn.querySelector('.palette-title');
+      if (title) title.setAttribute('style', `color:${on ? '#93c5fd' : '#e2e8f0'}`);
       if (on) btn.scrollIntoView({ block: 'nearest' });
     });
   }
