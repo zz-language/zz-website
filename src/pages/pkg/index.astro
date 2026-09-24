@@ -33,10 +33,10 @@ import '../../styles/global.css';
         </div>
         <p class="text-muted mt-2 mb-8">Libraries for ZZ. <code class="font-mono text-sm text-foreground">zz add &lt;name&gt;</code> to install.</p>
 
-        <div class="flex flex-wrap items-center gap-2 max-w-3xl mb-4 rounded-xl border border-border bg-surface p-2 shadow-lg transition focus-within:border-blue-500/50 focus-within:shadow-[0_0_0_1px_rgba(0,128,255,0.3),0_8px_40px_-12px_rgba(0,128,255,0.25)]">
-          <div class="relative flex-1 min-w-52">
-            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-faint">
-              <Icon name="search" size={16} />
+        <div class="max-w-3xl mb-3 rounded-xl border border-border bg-surface shadow-lg transition focus-within:border-blue-500/50 focus-within:shadow-[0_0_0_1px_rgba(0,128,255,0.3),0_8px_40px_-12px_rgba(0,128,255,0.25)]">
+          <div class="relative">
+            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-faint">
+              <Icon name="search" size={18} />
             </span>
             <label for="pkg-search" class="sr-only">Search packages</label>
             <input
@@ -47,13 +47,14 @@ import '../../styles/global.css';
               role="combobox"
               aria-expanded="false"
               aria-controls="pkg-suggest"
-              class="w-full bg-transparent py-2 pl-10 pr-3 text-sm text-foreground placeholder:text-faint focus:outline-none"
+              class="w-full bg-transparent py-3.5 pl-11 pr-4 text-[15px] text-foreground placeholder:text-faint focus:outline-none"
             />
-            <div id="pkg-suggest" class="hidden absolute left-0 right-0 top-full mt-1 rounded-lg border border-border bg-surface shadow-xl overflow-hidden z-10" role="listbox"></div>
+            <div id="pkg-suggest" class="hidden absolute left-0 right-0 top-full mt-2 rounded-xl border border-border bg-surface shadow-2xl overflow-hidden z-10" role="listbox"></div>
           </div>
-          <div class="h-6 w-px bg-white/5 hidden sm:block" aria-hidden="true"></div>
+        </div>
+        <div class="flex flex-wrap items-center gap-2 max-w-3xl mb-8">
           <div class="relative">
-            <button id="pkg-author-btn" class="flex items-center gap-2 px-3 py-2 rounded-lg bg-transparent border border-transparent text-sm text-muted hover:text-foreground hover:bg-raised" aria-haspopup="listbox" aria-expanded="false">
+            <button id="pkg-author-btn" class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface border border-border text-[13px] text-muted hover:text-foreground hover:border-blue-500/40 transition" aria-haspopup="listbox" aria-expanded="false">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
               <span id="pkg-author-label">All authors</span>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
@@ -61,7 +62,7 @@ import '../../styles/global.css';
             <div id="pkg-author-menu" class="hidden absolute left-0 top-[calc(100%+6px)] min-w-44 max-h-64 overflow-y-auto rounded-lg border border-border bg-surface shadow-2xl shadow-black/50 p-1 z-20" role="listbox" aria-label="Filter by author"></div>
           </div>
           <div class="relative">
-            <button id="pkg-sort-btn" class="flex items-center gap-2 px-3 py-2 rounded-lg bg-transparent border border-transparent text-sm text-muted hover:text-foreground hover:bg-raised" aria-haspopup="listbox" aria-expanded="false">
+            <button id="pkg-sort-btn" class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface border border-border text-[13px] text-muted hover:text-foreground hover:border-blue-500/40 transition" aria-haspopup="listbox" aria-expanded="false">
               <span id="pkg-sort-label">Recently updated</span>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
