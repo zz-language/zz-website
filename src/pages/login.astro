@@ -53,50 +53,54 @@ import '../styles/global.css';
     <Footer />
 
     <script define:vars={{ registryApi: site.registryApi }}>
-      const errPane = document.getElementById('login-error');
+    function main() {
+    if (!document.getElementById('github-login')) return;
+        const errPane = document.getElementById('login-error');
 
-      // Already signed in: the dashboard is home.
-      try {
-        if (localStorage.getItem('zz_token') && localStorage.getItem('zz_login')) {
-          const next = new URLSearchParams(window.location.search).get('next') || '/home';
-          window.location.replace(next.startsWith('/') ? next : '/home');
-        }
-      } catch {}
-
-      function fail(msg) {
-        errPane.textContent = msg;
-        errPane.classList.remove('hidden');
-      }
-
-      document.getElementById('github-login').addEventListener('click', () => {
-        errPane.classList.add('hidden');
-        const popup = window.open(`${registryApi}/api/auth/github`, 'zz_oauth', 'width=640,height=720');
-        if (!popup) fail('Popup blocked — allow popups for this site and try again.');
-      });
-
-      window.addEventListener('message', (e) => {
-        // Only accept credentials from the registry itself — a hostile frame
-        // could otherwise plant its own token in this browser.
+        // Already signed in: the dashboard is home.
         try {
-          if (e.origin !== new URL(registryApi).origin) return;
-        } catch {
-          return;
+          if (localStorage.getItem('zz_token') && localStorage.getItem('zz_login')) {
+            const next = new URLSearchParams(window.location.search).get('next') || '/home';
+            window.location.replace(next.startsWith('/') ? next : '/home');
+          }
+        } catch {}
+
+        function fail(msg) {
+          errPane.textContent = msg;
+          errPane.classList.remove('hidden');
         }
-        // Registry posts "zz_pat_…|login" (pipe-delimited, no JSON).
-        if (typeof e.data !== 'string' || !e.data.startsWith('zz_pat_')) return;
-        const sep = e.data.indexOf('|');
-        if (sep < 0) return;
-        try {
-          localStorage.setItem('zz_token', e.data.slice(0, sep));
-          localStorage.setItem('zz_login', e.data.slice(sep + 1));
-        } catch {
-          fail('Browser storage is unavailable — login cannot persist.');
-          return;
-        }
-        window.dispatchEvent(new Event('zz-session-change'));
-        const next = new URLSearchParams(window.location.search).get('next') || '/pkg/tokens';
-        window.location.href = next.startsWith('/') ? next : '/pkg/tokens';
-      });
+
+        document.getElementById('github-login').addEventListener('click', () => {
+          errPane.classList.add('hidden');
+          const popup = window.open(`${registryApi}/api/auth/github`, 'zz_oauth', 'width=640,height=720');
+          if (!popup) fail('Popup blocked — allow popups for this site and try again.');
+        });
+
+        window.addEventListener('message', (e) => {
+          // Only accept credentials from the registry itself — a hostile frame
+          // could otherwise plant its own token in this browser.
+          try {
+            if (e.origin !== new URL(registryApi).origin) return;
+          } catch {
+            return;
+          }
+          // Registry posts "zz_pat_…|login" (pipe-delimited, no JSON).
+          if (typeof e.data !== 'string' || !e.data.startsWith('zz_pat_')) return;
+          const sep = e.data.indexOf('|');
+          if (sep < 0) return;
+          try {
+            localStorage.setItem('zz_token', e.data.slice(0, sep));
+            localStorage.setItem('zz_login', e.data.slice(sep + 1));
+          } catch {
+            fail('Browser storage is unavailable — login cannot persist.');
+            return;
+          }
+          window.dispatchEvent(new Event('zz-session-change'));
+          const next = new URLSearchParams(window.location.search).get('next') || '/pkg/tokens';
+          window.location.href = next.startsWith('/') ? next : '/pkg/tokens';
+        });
+    }
+    document.addEventListener('astro:page-load', main);
     </script>
   </body>
 </html>

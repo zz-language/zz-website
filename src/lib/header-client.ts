@@ -107,11 +107,16 @@ export function renderAuth(): void {
     clearSession();
     window.location.reload();
   });
-  document.addEventListener('click', (e) => {
-    if (menu && !menu.classList.contains('hidden') && !menu.contains(e.target as Node)) {
-      menu.classList.add('hidden');
-    }
-  });
+  // Registered once: renderAuth re-runs on every client navigation, but the
+  // document handler must not pile up (stale closures over detached menus).
+  if (!document.body.hasAttribute('data-zz-menu-wired')) {
+    document.body.setAttribute('data-zz-menu-wired', '');
+    document.addEventListener('click', (e) => {
+      document.querySelectorAll('#user-menu:not(.hidden)').forEach((m) => {
+        if (!m.contains(e.target as Node)) m.classList.add('hidden');
+      });
+    });
+  }
 }
 
 function focusSearch(): boolean {
@@ -128,7 +133,9 @@ function focusSearch(): boolean {
   return false;
 }
 
-/** Highlight the nav link matching the current route. */
+/** Highlight the nav link matching the current route. Clears stale marks
+ * first: with a persisted header the old underline would otherwise stick
+ * across navigations. */
 function markActiveNav(): void {
   const raw = window.location.pathname;
   const path = raw.length > 1 && raw.endsWith('/') ? raw.slice(0, -1) : raw;
@@ -138,7 +145,10 @@ function markActiveNav(): void {
     : path === '/home' ? 'home'
     : path === '/login' || path === '/terms' || path === '/privacy' || path === '/' ? '' : 'docs';
   document.querySelectorAll('[data-nav]').forEach((a) => {
-    if ((a as HTMLElement).dataset.nav === section) a.classList.add('nav-link-active');
+    (a as HTMLElement).classList.toggle(
+      'nav-link-active',
+      (a as HTMLElement).dataset.nav === section,
+    );
   });
 }
 
@@ -187,4 +197,10 @@ export function initHeader(): void {
 
   window.addEventListener('zz-theme-change', (e) => applyThemeSetting((e as CustomEvent).detail));
   window.addEventListener('zz-session-change', renderAuth);
+  // Persisted header: re-mark the active link after every client-side
+  // navigation (full re-init doesn't re-run on swapped pages).
+  document.addEventListener('astro:page-load', () => {
+    renderAuth();
+    markActiveNav();
+  });
 }

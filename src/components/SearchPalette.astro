@@ -96,12 +96,19 @@ const ICONS: Record<string, string> = {
 </style>
 
 <script define:vars={{ registryApi: site.registryApi, docs: DOCS, icons: ICONS }}>
-  const palette = document.getElementById('zz-palette');
-  const input = document.getElementById('zz-palette-input');
-  const results = document.getElementById('zz-palette-results');
   let pkgCache = null;
   let items = [];
   let active = 0;
+
+  // Element refs are re-queried per navigation: after a client-side swap
+  // the previous nodes are detached, so module-level consts would go stale.
+  function refs() {
+    return {
+      palette: document.getElementById('zz-palette'),
+      input: document.getElementById('zz-palette-input'),
+      results: document.getElementById('zz-palette-results'),
+    };
+  }
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -206,6 +213,8 @@ const ICONS: Record<string, string> = {
     'background:rgba(0,128,255,0.14);border-color:rgba(0,128,255,0.35);';
 
   function render(list) {
+    const { results } = refs();
+    if (!results) return;
     items = list;
     active = 0;
     if (list.length === 0) {
@@ -238,6 +247,8 @@ const ICONS: Record<string, string> = {
   }
 
   function highlight() {
+    const { results } = refs();
+    if (!results) return;
     // Inline styles (not classes): rows are injected via innerHTML, so
     // Astro-scoped <style> selectors never match them.
     results.querySelectorAll('.palette-item').forEach((btn, i) => {
@@ -259,6 +270,8 @@ const ICONS: Record<string, string> = {
   }
 
   function open() {
+    const { palette, input } = refs();
+    if (!palette || !input) return;
     palette.classList.remove('hidden');
     input.value = '';
     search('').then(render);
@@ -266,29 +279,42 @@ const ICONS: Record<string, string> = {
   }
 
   function close() {
-    palette.classList.add('hidden');
+    refs().palette?.classList.add('hidden');
   }
 
-  let debounce;
-  input.addEventListener('input', () => {
-    clearTimeout(debounce);
-    debounce = setTimeout(() => search(input.value).then(render), 120);
-  });
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      active = Math.min(active + 1, items.length - 1);
-      highlight();
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      active = Math.max(active - 1, 0);
-      highlight();
-    } else if (e.key === 'Enter') {
-      activate(active);
-    } else if (e.key === 'Escape') {
-      close();
-    }
-  });
-  document.getElementById('zz-palette-backdrop').addEventListener('click', close);
-  window.addEventListener('zz-open-palette', open);
+  // Per-navigation wiring. The palette lives inside the persisted header,
+  // so its nodes survive swaps: wire once per node, not once per load.
+  function main() {
+    const { input } = refs();
+    if (!input || input.dataset.zzWired) return;
+    input.dataset.zzWired = '1';
+    let debounce;
+    input.addEventListener('input', () => {
+      clearTimeout(debounce);
+      debounce = setTimeout(() => search(input.value).then(render), 120);
+    });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        active = Math.min(active + 1, items.length - 1);
+        highlight();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        active = Math.max(active - 1, 0);
+        highlight();
+      } else if (e.key === 'Enter') {
+        activate(active);
+      } else if (e.key === 'Escape') {
+        close();
+      }
+    });
+    document.getElementById('zz-palette-backdrop')?.addEventListener('click', close);
+  }
+
+  // Window listener registered once: re-runs would stack duplicate opens.
+  if (!window.__zzPaletteWired) {
+    window.__zzPaletteWired = true;
+    window.addEventListener('zz-open-palette', open);
+  }
+  document.addEventListener('astro:page-load', main);
 </script>

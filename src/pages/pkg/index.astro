@@ -71,209 +71,213 @@ import '../../styles/global.css';
     <Footer />
 
     <script define:vars={{ registryApi: site.registryApi }}>
-      const searchInput = document.getElementById('pkg-search');
-      const authorBtn = document.getElementById('pkg-author-btn');
-      const authorLabel = document.getElementById('pkg-author-label');
-      const authorMenu = document.getElementById('pkg-author-menu');
-      const sortBtn = document.getElementById('pkg-sort-btn');
-      const sortLabel = document.getElementById('pkg-sort-label');
-      const sortMenu = document.getElementById('pkg-sort-menu');
-      const pkgList = document.getElementById('pkg-list');
-      let allPackages = [];
-      let authorFilter = '';
-      let sortMode = 'recent';
-      const SORTS = [
-        ['recent', 'Recently updated'],
-        ['name', 'Name A–Z'],
-      ];
+    function main() {
+    if (!document.getElementById('pkg-search')) return;
+        const searchInput = document.getElementById('pkg-search');
+        const authorBtn = document.getElementById('pkg-author-btn');
+        const authorLabel = document.getElementById('pkg-author-label');
+        const authorMenu = document.getElementById('pkg-author-menu');
+        const sortBtn = document.getElementById('pkg-sort-btn');
+        const sortLabel = document.getElementById('pkg-sort-label');
+        const sortMenu = document.getElementById('pkg-sort-menu');
+        const pkgList = document.getElementById('pkg-list');
+        let allPackages = [];
+        let authorFilter = '';
+        let sortMode = 'recent';
+        const SORTS = [
+          ['recent', 'Recently updated'],
+          ['name', 'Name A–Z'],
+        ];
 
-      async function fetchPackages(query) {
-        try {
-          const url = query
-            ? `${registryApi}/api/pkg/search?q=${encodeURIComponent(query)}`
-            : `${registryApi}/api/pkg/search?q=`;
-          const res = await fetch(url);
-          const data = await res.json();
-          allPackages = Array.isArray(data) ? data : [];
-          refreshAuthors();
-          renderPackages();
-          renderSuggest(searchInput.value.trim());
-        } catch {
-          renderEmpty('Could not reach the registry. Try again in a moment.');
+        async function fetchPackages(query) {
+          try {
+            const url = query
+              ? `${registryApi}/api/pkg/search?q=${encodeURIComponent(query)}`
+              : `${registryApi}/api/pkg/search?q=`;
+            const res = await fetch(url);
+            const data = await res.json();
+            allPackages = Array.isArray(data) ? data : [];
+            refreshAuthors();
+            renderPackages();
+            renderSuggest(searchInput.value.trim());
+          } catch {
+            renderEmpty('Could not reach the registry. Try again in a moment.');
+          }
         }
-      }
 
-      // Author filter options derive from the result set: the search API
-      // has no author query, so filtering happens client-side.
-      function refreshAuthors() {
-        const authors = [...new Set(allPackages.map((p) => p.author).filter(Boolean))].sort();
-        if (authorFilter && !authors.includes(authorFilter)) {
-          authorFilter = '';
-          authorLabel.textContent = 'All authors';
+        // Author filter options derive from the result set: the search API
+        // has no author query, so filtering happens client-side.
+        function refreshAuthors() {
+          const authors = [...new Set(allPackages.map((p) => p.author).filter(Boolean))].sort();
+          if (authorFilter && !authors.includes(authorFilter)) {
+            authorFilter = '';
+            authorLabel.textContent = 'All authors';
+          }
+          authorMenu.innerHTML =
+            `<button data-author="" role="option" class="filter-item">All authors${authorFilter === '' ? checkMark() : ''}</button>` +
+            authors
+              .map(
+                (a) =>
+                  `<button data-author="${esc(a)}" role="option" class="filter-item">${esc(a)}${authorFilter === a ? checkMark() : ''}</button>`,
+              )
+              .join('');
+          authorMenu.querySelectorAll('[data-author]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+              authorFilter = btn.dataset.author;
+              authorLabel.textContent = authorFilter || 'All authors';
+              closeMenus();
+              renderPackages();
+            });
+          });
         }
-        authorMenu.innerHTML =
-          `<button data-author="" role="option" class="filter-item">All authors${authorFilter === '' ? checkMark() : ''}</button>` +
-          authors
-            .map(
-              (a) =>
-                `<button data-author="${esc(a)}" role="option" class="filter-item">${esc(a)}${authorFilter === a ? checkMark() : ''}</button>`,
-            )
-            .join('');
-        authorMenu.querySelectorAll('[data-author]').forEach((btn) => {
+
+        function checkMark() {
+          return '<svg class="ml-auto" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
+        }
+
+        function closeMenus() {
+          authorMenu.classList.add('hidden');
+          sortMenu.classList.add('hidden');
+          authorBtn.setAttribute('aria-expanded', 'false');
+          sortBtn.setAttribute('aria-expanded', 'false');
+        }
+
+        function toggleMenu(menu, btn) {
+          const open = menu.classList.contains('hidden');
+          closeMenus();
+          if (open) {
+            menu.classList.remove('hidden');
+            btn.setAttribute('aria-expanded', 'true');
+          }
+        }
+
+        authorBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          toggleMenu(authorMenu, authorBtn);
+        });
+        sortBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          toggleMenu(sortMenu, sortBtn);
+        });
+        document.addEventListener('click', (e) => {
+          if (!authorMenu.contains(e.target) && !sortMenu.contains(e.target)) closeMenus();
+        });
+        sortMenu.innerHTML = SORTS.map(
+          ([v, label]) =>
+            `<button data-sort="${v}" role="option" class="filter-item">${label}${sortMode === v ? checkMark() : ''}</button>`,
+        ).join('');
+        sortMenu.querySelectorAll('[data-sort]').forEach((btn) => {
           btn.addEventListener('click', () => {
-            authorFilter = btn.dataset.author;
-            authorLabel.textContent = authorFilter || 'All authors';
+            sortMode = btn.dataset.sort;
+            sortLabel.textContent = SORTS.find(([v]) => v === sortMode)[1];
+            sortMenu.querySelectorAll('[data-sort]').forEach((b) => {
+              const on = b.dataset.sort === sortMode;
+              b.querySelector('svg')?.remove();
+              if (on) b.insertAdjacentHTML('beforeend', checkMark());
+            });
             closeMenus();
             renderPackages();
           });
         });
-      }
 
-      function checkMark() {
-        return '<svg class="ml-auto" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
-      }
-
-      function closeMenus() {
-        authorMenu.classList.add('hidden');
-        sortMenu.classList.add('hidden');
-        authorBtn.setAttribute('aria-expanded', 'false');
-        sortBtn.setAttribute('aria-expanded', 'false');
-      }
-
-      function toggleMenu(menu, btn) {
-        const open = menu.classList.contains('hidden');
-        closeMenus();
-        if (open) {
-          menu.classList.remove('hidden');
-          btn.setAttribute('aria-expanded', 'true');
+        function visiblePackages() {
+          let list = authorFilter ? allPackages.filter((p) => p.author === authorFilter) : allPackages.slice();
+          if (sortMode === 'name') list.sort((a, b) => String(a.name).localeCompare(String(b.name)));
+          return list;
         }
-      }
 
-      authorBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        toggleMenu(authorMenu, authorBtn);
-      });
-      sortBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        toggleMenu(sortMenu, sortBtn);
-      });
-      document.addEventListener('click', (e) => {
-        if (!authorMenu.contains(e.target) && !sortMenu.contains(e.target)) closeMenus();
-      });
-      sortMenu.innerHTML = SORTS.map(
-        ([v, label]) =>
-          `<button data-sort="${v}" role="option" class="filter-item">${label}${sortMode === v ? checkMark() : ''}</button>`,
-      ).join('');
-      sortMenu.querySelectorAll('[data-sort]').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          sortMode = btn.dataset.sort;
-          sortLabel.textContent = SORTS.find(([v]) => v === sortMode)[1];
-          sortMenu.querySelectorAll('[data-sort]').forEach((b) => {
-            const on = b.dataset.sort === sortMode;
-            b.querySelector('svg')?.remove();
-            if (on) b.insertAdjacentHTML('beforeend', checkMark());
-          });
-          closeMenus();
-          renderPackages();
-        });
-      });
-
-      function visiblePackages() {
-        let list = authorFilter ? allPackages.filter((p) => p.author === authorFilter) : allPackages.slice();
-        if (sortMode === 'name') list.sort((a, b) => String(a.name).localeCompare(String(b.name)));
-        return list;
-      }
-
-      function renderPackages() {
-        const packages = visiblePackages();
-        if (packages.length === 0) {
-          renderEmpty();
-          return;
-        }
-        pkgList.innerHTML = packages
-          .map(
-            (pkg) => `
-          <div class="rounded-xl border border-border bg-surface p-5 shadow-lg transition-all hover:border-blue-500/50">
-            <a href="/pkg/view?name=${encodeURIComponent(pkg.name)}" class="block group">
-              <div class="flex items-start justify-between gap-3">
-                <h3 class="font-mono font-bold text-foreground group-hover:text-blue-400">${esc(pkg.name)}</h3>
-                <span class="shrink-0 bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 text-xs rounded-full font-mono">v${esc(pkg.latest)}</span>
-              </div>
-              <p class="text-sm mt-1.5 leading-relaxed text-muted">${esc(pkg.description) || 'No description'}</p>
-            </a>
-            <div class="flex items-center justify-between mt-4 text-xs">
-              <a href="/pkg/author?login=${encodeURIComponent(pkg.author || '')}" class="flex items-center gap-1.5 text-muted hover:text-blue-400">
-                <span class="flex items-center justify-center w-5 h-5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 font-mono text-[10px] font-semibold">${esc((pkg.author || '?').slice(0, 1).toUpperCase())}</span>
-                ${esc(pkg.author)}
+        function renderPackages() {
+          const packages = visiblePackages();
+          if (packages.length === 0) {
+            renderEmpty();
+            return;
+          }
+          pkgList.innerHTML = packages
+            .map(
+              (pkg) => `
+            <div class="rounded-xl border border-border bg-surface p-5 shadow-lg transition-all hover:border-blue-500/50">
+              <a href="/pkg/view?name=${encodeURIComponent(pkg.name)}" class="block group">
+                <div class="flex items-start justify-between gap-3">
+                  <h3 class="font-mono font-bold text-foreground group-hover:text-blue-400">${esc(pkg.name)}</h3>
+                  <span class="shrink-0 bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 text-xs rounded-full font-mono">v${esc(pkg.latest)}</span>
+                </div>
+                <p class="text-sm mt-1.5 leading-relaxed text-muted">${esc(pkg.description) || 'No description'}</p>
               </a>
-              <button data-copy="zz add ${esc(pkg.name)}" class="copy-btn bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg border border-slate-700/50 flex items-center gap-2"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>copy install</span></button>
-            </div>
-          </div>`,
-          )
-          .join('');
-        pkgList.querySelectorAll('.copy-btn').forEach((btn) => {
-          btn.addEventListener('click', async () => {
-            const label = btn.querySelector('span');
-            try {
-              await navigator.clipboard.writeText(btn.dataset.copy);
-              if (label) label.textContent = 'copied!';
-              setTimeout(() => {
-                if (label) label.textContent = 'copy install';
-              }, 1500);
-            } catch {
-              if (label) label.textContent = 'copy failed';
-            }
+              <div class="flex items-center justify-between mt-4 text-xs">
+                <a href="/pkg/author?login=${encodeURIComponent(pkg.author || '')}" class="flex items-center gap-1.5 text-muted hover:text-blue-400">
+                  <span class="flex items-center justify-center w-5 h-5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 font-mono text-[10px] font-semibold">${esc((pkg.author || '?').slice(0, 1).toUpperCase())}</span>
+                  ${esc(pkg.author)}
+                </a>
+                <button data-copy="zz add ${esc(pkg.name)}" class="copy-btn bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg border border-slate-700/50 flex items-center gap-2"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>copy install</span></button>
+              </div>
+            </div>`,
+            )
+            .join('');
+          pkgList.querySelectorAll('.copy-btn').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+              const label = btn.querySelector('span');
+              try {
+                await navigator.clipboard.writeText(btn.dataset.copy);
+                if (label) label.textContent = 'copied!';
+                setTimeout(() => {
+                  if (label) label.textContent = 'copy install';
+                }, 1500);
+              } catch {
+                if (label) label.textContent = 'copy failed';
+              }
+            });
           });
-        });
-      }
-
-      function renderEmpty(note) {
-        pkgList.innerHTML = `
-          <div class="rounded-lg border border-border bg-surface p-8 text-center md:col-span-2 lg:col-span-3">
-            <p class="text-foreground font-medium mb-1">No packages found</p>
-            <p class="text-muted text-sm mb-4">${note || 'Be the first to publish a package.'}</p>
-            <code class="inline-block px-3 py-1.5 bg-background border border-border rounded-md text-accent text-sm font-mono">zz publish</code>
-          </div>`;
-      }
-
-      function esc(s) {
-        return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-      }
-
-      let timeout;
-      const suggestBox = document.getElementById('pkg-suggest');
-
-      function renderSuggest(query) {
-        const q = query.toLowerCase();
-        const hits = q
-          ? allPackages.filter((p) => String(p.name).toLowerCase().includes(q)).slice(0, 6)
-          : [];
-        if (hits.length === 0) {
-          suggestBox.classList.add('hidden');
-          searchInput.setAttribute('aria-expanded', 'false');
-          return;
         }
-        suggestBox.innerHTML = hits
-          .map(
-            (p) => `<a href="/pkg/view?name=${encodeURIComponent(p.name)}" role="option" class="flex items-center justify-between gap-3 px-3 py-2 text-sm hover:bg-raised"><span class="font-mono text-foreground">${esc(p.name)}</span><span class="font-mono text-xs text-faint">v${esc(p.latest)}</span></a>`,
-          )
-          .join('');
-        suggestBox.classList.remove('hidden');
-        searchInput.setAttribute('aria-expanded', 'true');
-      }
 
-      searchInput.addEventListener('input', (e) => {
-        const q = e.target.value.trim();
-        renderSuggest(q);
-        clearTimeout(timeout);
-        timeout = setTimeout(() => fetchPackages(q), 300);
-      });
-      searchInput.addEventListener('blur', () => {
-        setTimeout(() => suggestBox.classList.add('hidden'), 150);
-      });
-      searchInput.addEventListener('focus', (e) => renderSuggest(e.target.value.trim()));
+        function renderEmpty(note) {
+          pkgList.innerHTML = `
+            <div class="rounded-lg border border-border bg-surface p-8 text-center md:col-span-2 lg:col-span-3">
+              <p class="text-foreground font-medium mb-1">No packages found</p>
+              <p class="text-muted text-sm mb-4">${note || 'Be the first to publish a package.'}</p>
+              <code class="inline-block px-3 py-1.5 bg-background border border-border rounded-md text-accent text-sm font-mono">zz publish</code>
+            </div>`;
+        }
 
-      fetchPackages('');
+        function esc(s) {
+          return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        let timeout;
+        const suggestBox = document.getElementById('pkg-suggest');
+
+        function renderSuggest(query) {
+          const q = query.toLowerCase();
+          const hits = q
+            ? allPackages.filter((p) => String(p.name).toLowerCase().includes(q)).slice(0, 6)
+            : [];
+          if (hits.length === 0) {
+            suggestBox.classList.add('hidden');
+            searchInput.setAttribute('aria-expanded', 'false');
+            return;
+          }
+          suggestBox.innerHTML = hits
+            .map(
+              (p) => `<a href="/pkg/view?name=${encodeURIComponent(p.name)}" role="option" class="flex items-center justify-between gap-3 px-3 py-2 text-sm hover:bg-raised"><span class="font-mono text-foreground">${esc(p.name)}</span><span class="font-mono text-xs text-faint">v${esc(p.latest)}</span></a>`,
+            )
+            .join('');
+          suggestBox.classList.remove('hidden');
+          searchInput.setAttribute('aria-expanded', 'true');
+        }
+
+        searchInput.addEventListener('input', (e) => {
+          const q = e.target.value.trim();
+          renderSuggest(q);
+          clearTimeout(timeout);
+          timeout = setTimeout(() => fetchPackages(q), 300);
+        });
+        searchInput.addEventListener('blur', () => {
+          setTimeout(() => suggestBox.classList.add('hidden'), 150);
+        });
+        searchInput.addEventListener('focus', (e) => renderSuggest(e.target.value.trim()));
+
+        fetchPackages('');
+    }
+    document.addEventListener('astro:page-load', main);
     </script>
   </body>
 </html>

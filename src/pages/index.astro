@@ -315,92 +315,96 @@ const codeHtml = `<span class="text-blue-400">struct</span> <span class="text-zi
     <Footer />
 
     <script>
-      document.getElementById('code-copy')?.addEventListener('click', async (e) => {
-        const btn = e.currentTarget;
-        try {
-          await navigator.clipboard.writeText(document.querySelector('#users-code code')?.textContent ?? '');
-          btn.textContent = 'copied!';
-          setTimeout(() => (btn.textContent = 'copy'), 1500);
-        } catch {
-          btn.textContent = 'copy failed';
-        }
-      });
-      // Animated terminal. Single-flight: a generation counter kills stale
-      // loops (e.g. re-executed scripts under HMR), which used to overlap text.
-      (function () {
-        var w = window;
-        w.__zzHeroGen = (w.__zzHeroGen || 0) + 1;
-        var gen = w.__zzHeroGen;
-
-        var LINES = [
-          { text: '$ zz run hello.zz', cls: 'text-zinc-100', type: true },
-          { text: 'Hello, Ada!', cls: 'text-muted', type: false },
-          { text: '$ zz add hellopkg', cls: 'text-zinc-100', type: true },
-          { text: 'added hellopkg ^0.1.1 · vendor/ + zz.lock', cls: 'text-muted', type: false },
-        ];
-        var box = document.getElementById('term-lines');
-        var caret = document.getElementById('term-caret');
-        if (!box) return;
-        var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-        function alive() {
-          return w.__zzHeroGen === gen && document.contains(box);
-        }
-        function esc(s) {
-          return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        }
-        function renderStatic() {
-          box.innerHTML = LINES.map(function (l) {
-            return '<div class="' + l.cls + '">' + esc(l.text) + '</div>';
-          }).join('');
-          if (caret) caret.remove();
-        }
-        if (reduceMotion) {
-          renderStatic();
-          return;
-        }
-
-        function wait(ms) {
-          return new Promise(function (r) {
-            setTimeout(r, ms);
-          });
-        }
-
-        async function play() {
-          while (alive()) {
-            box.innerHTML = '';
-            if (caret && !document.contains(caret)) {
-              var term = box.parentElement;
-              if (term) term.appendChild(caret);
-            }
-            for (var li = 0; li < LINES.length; li++) {
-              if (!alive()) return;
-              var line = LINES[li];
-              var div = document.createElement('div');
-              div.className = line.cls;
-              // Caret rides the line being typed so it never floats elsewhere.
-              if (caret) div.appendChild(caret);
-              box.appendChild(div);
-              if (line.type) {
-                var textNode = document.createTextNode('');
-                div.insertBefore(textNode, div.firstChild);
-                for (var i = 1; i <= line.text.length; i++) {
-                  if (!alive()) return;
-                  textNode.data = line.text.slice(0, i);
-                  await wait(line.text.length > 40 ? 18 : 34);
-                }
-                await wait(450);
-              } else {
-                div.insertBefore(document.createTextNode(line.text), div.firstChild);
-                if (!alive()) return;
-                await wait(700);
+    function main() {
+    if (!document.getElementById('term-lines')) return;
+            document.getElementById('code-copy')?.addEventListener('click', async (e) => {
+              const btn = e.currentTarget;
+              try {
+                await navigator.clipboard.writeText(document.querySelector('#users-code code')?.textContent ?? '');
+                btn.textContent = 'copied!';
+                setTimeout(() => (btn.textContent = 'copy'), 1500);
+              } catch {
+                btn.textContent = 'copy failed';
               }
-            }
-            await wait(2600);
-          }
-        }
-        play();
-      })();
+            });
+            // Animated terminal. Single-flight: a generation counter kills stale
+            // loops (e.g. re-executed scripts under HMR), which used to overlap text.
+            (function () {
+              var w = window;
+              w.__zzHeroGen = (w.__zzHeroGen || 0) + 1;
+              var gen = w.__zzHeroGen;
+
+              var LINES = [
+                { text: '$ zz run hello.zz', cls: 'text-zinc-100', type: true },
+                { text: 'Hello, Ada!', cls: 'text-muted', type: false },
+                { text: '$ zz add hellopkg', cls: 'text-zinc-100', type: true },
+                { text: 'added hellopkg ^0.1.1 · vendor/ + zz.lock', cls: 'text-muted', type: false },
+              ];
+              var box = document.getElementById('term-lines');
+              var caret = document.getElementById('term-caret');
+              if (!box) return;
+              var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+              function alive() {
+                return w.__zzHeroGen === gen && document.contains(box);
+              }
+              function esc(s) {
+                return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+              }
+              function renderStatic() {
+                box.innerHTML = LINES.map(function (l) {
+                  return '<div class="' + l.cls + '">' + esc(l.text) + '</div>';
+                }).join('');
+                if (caret) caret.remove();
+              }
+              if (reduceMotion) {
+                renderStatic();
+                return;
+              }
+
+              function wait(ms) {
+                return new Promise(function (r) {
+                  setTimeout(r, ms);
+                });
+              }
+
+              async function play() {
+                while (alive()) {
+                  box.innerHTML = '';
+                  if (caret && !document.contains(caret)) {
+                    var term = box.parentElement;
+                    if (term) term.appendChild(caret);
+                  }
+                  for (var li = 0; li < LINES.length; li++) {
+                    if (!alive()) return;
+                    var line = LINES[li];
+                    var div = document.createElement('div');
+                    div.className = line.cls;
+                    // Caret rides the line being typed so it never floats elsewhere.
+                    if (caret) div.appendChild(caret);
+                    box.appendChild(div);
+                    if (line.type) {
+                      var textNode = document.createTextNode('');
+                      div.insertBefore(textNode, div.firstChild);
+                      for (var i = 1; i <= line.text.length; i++) {
+                        if (!alive()) return;
+                        textNode.data = line.text.slice(0, i);
+                        await wait(line.text.length > 40 ? 18 : 34);
+                      }
+                      await wait(450);
+                    } else {
+                      div.insertBefore(document.createTextNode(line.text), div.firstChild);
+                      if (!alive()) return;
+                      await wait(700);
+                    }
+                  }
+                  await wait(2600);
+                }
+              }
+              play();
+            })();
+    }
+    document.addEventListener('astro:page-load', main);
     </script>
   </body>
 </html>
