@@ -1,5 +1,6 @@
 ---
 import CustomHeader from '../components/header/CustomHeader.astro';
+import { ClientRouter } from 'astro:transitions';
 import ThemeInit from '../components/ThemeInit.astro';
 import Footer from '../components/Footer.astro';
 import site from '../config/site.json';
@@ -8,8 +9,10 @@ import '../styles/global.css';
 
 <html lang="en">
   <head>
+    <ClientRouter />
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>Terms of Service | {site.siteName}</title>
     <meta name="description" content="ZZ Language website terms of service" />
     <ThemeInit />

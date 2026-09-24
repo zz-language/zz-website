@@ -6,6 +6,26 @@ import Footer from '../../components/Footer.astro';
 import Icon from '../../components/icons/Icon.astro';
 import site from '../../config/site.json';
 import '../../styles/global.css';
+
+const routeLogin = Astro.params.username ?? '';
+
+export async function getStaticPaths() {
+  // Retry: a registry cold-start during build/dev-start must not silently
+  // yield zero pretty URLs (Astro caches the first result).
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const res = await fetch(`${site.registryApi}/api/pkg/search?q=`);
+      const data = await res.json();
+      const logins = [...new Set((Array.isArray(data) ? data : []).map((p) => p.author).filter(Boolean))];
+      if (logins.length > 0) {
+        return logins.map((username) => ({ params: { username } }));
+      }
+    } catch {}
+    await new Promise((r) => setTimeout(r, 2000 * attempt));
+  }
+  console.warn('[u/[username]] registry unreachable after retries: no pretty author URLs prerendered');
+  return [];
+}
 ---
 
 <html lang="en">
@@ -35,11 +55,11 @@ import '../../styles/global.css';
 
     <Footer />
 
-    <script define:vars={{ registryApi: site.registryApi }}>
+    <script define:vars={{ registryApi: site.registryApi, routeLogin }}>
     function main() {
     if (!document.getElementById('author-content')) return;
         const content = document.getElementById('author-content');
-        const login = new URLSearchParams(window.location.search).get('login');
+        const login = routeLogin || new URLSearchParams(window.location.search).get('login');
 
         function esc(s) {
           return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');

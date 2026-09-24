@@ -1,0 +1,12 @@
+---
+/**
+ * Starlight `Head` override: extends the default head tags with the
+ * client-side router, so docs transitions match the rest of the site
+ * (no full document reloads, persistent header).
+ */
+import Default from '@astrojs/starlight/components/Head.astro';
+import { ClientRouter } from 'astro:transitions';
+---
+
+<Default />
+<ClientRouter />

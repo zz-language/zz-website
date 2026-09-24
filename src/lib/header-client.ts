@@ -73,7 +73,7 @@ export function renderAuth(): void {
   if (homeLink) homeLink.classList.toggle('hidden', !session);
   if (!session) {
     slot.innerHTML =
-      '<a href="/login" class="px-3 py-1.5 rounded-md text-sm text-muted hover:text-foreground hover:bg-raised">Log in</a>';
+      '<a href="/login" class="flex h-9 items-center px-3 rounded-lg bg-surface/80 border border-border text-sm text-muted hover:text-foreground hover:border-accent-border transition">Log in</a>';
     document.querySelectorAll('.nav-auth-link').forEach((a) => {
       (a as HTMLElement).style.display = '';
     });
@@ -89,7 +89,7 @@ export function renderAuth(): void {
     `<div class="px-3 py-2.5 border-b border-slate-800 mb-1"><div class="text-[11px] text-slate-400">Signed in as</div>` +
     `<div class="font-mono font-medium text-slate-100 truncate">${escName(session.login)}</div></div>` +
     `<div class="p-1.5">` +
-    `<a href="/pkg/author?login=${encodeURIComponent(session.login)}" class="user-menu-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 9.4 7.55 4.24"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" y1="22" x2="12" y2="12"/></svg>My packages</a>` +
+    `<a href="/u/${encodeURIComponent(session.login)}" class="user-menu-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 9.4 7.55 4.24"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" y1="22" x2="12" y2="12"/></svg>My packages</a>` +
     `<a href="/pkg/tokens" class="user-menu-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>API tokens</a>` +
     `<button id="user-menu-logout" class="hover:bg-red-500/10 text-red-400 hover:text-red-300 rounded-md p-2 w-full text-left transition flex items-center gap-2 text-sm"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 5"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Log out</button>` +
     `</div></div>`;
@@ -107,11 +107,16 @@ export function renderAuth(): void {
     clearSession();
     window.location.reload();
   });
-  document.addEventListener('click', (e) => {
-    if (menu && !menu.classList.contains('hidden') && !menu.contains(e.target as Node)) {
-      menu.classList.add('hidden');
-    }
-  });
+  // Registered once: renderAuth re-runs on every client navigation, but the
+  // document handler must not pile up (stale closures over detached menus).
+  if (!document.body.hasAttribute('data-zz-menu-wired')) {
+    document.body.setAttribute('data-zz-menu-wired', '');
+    document.addEventListener('click', (e) => {
+      document.querySelectorAll('#user-menu:not(.hidden)').forEach((m) => {
+        if (!m.contains(e.target as Node)) m.classList.add('hidden');
+      });
+    });
+  }
 }
 
 function focusSearch(): boolean {
@@ -128,16 +133,22 @@ function focusSearch(): boolean {
   return false;
 }
 
-/** Highlight the nav link matching the current route. */
+/** Highlight the nav link matching the current route. Clears stale marks
+ * first: with a persisted header the old underline would otherwise stick
+ * across navigations. */
 function markActiveNav(): void {
-  const path = window.location.pathname;
+  const raw = window.location.pathname;
+  const path = raw.length > 1 && raw.endsWith('/') ? raw.slice(0, -1) : raw;
   const section =
     path.startsWith('/playground') ? 'playground'
     : path.startsWith('/pkg') ? 'packages'
     : path === '/home' ? 'home'
     : path === '/login' || path === '/terms' || path === '/privacy' || path === '/' ? '' : 'docs';
   document.querySelectorAll('[data-nav]').forEach((a) => {
-    if ((a as HTMLElement).dataset.nav === section) a.classList.add('nav-link-active');
+    (a as HTMLElement).classList.toggle(
+      'nav-link-active',
+      (a as HTMLElement).dataset.nav === section,
+    );
   });
 }
 
@@ -175,7 +186,9 @@ export function initHeader(): void {
   const openPalette = () => window.dispatchEvent(new Event('zz-open-palette'));
   document.getElementById('nav-search')?.addEventListener('click', openPalette);
   document.addEventListener('keydown', (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+    // e.code is layout-independent: Arabic ن sits on the physical K key,
+    // so Ctrl+ن opens the palette exactly like Ctrl+K.
+    if ((e.metaKey || e.ctrlKey) && (e.key.toLowerCase() === 'k' || e.code === 'KeyK')) {
       e.preventDefault();
       if (document.querySelector('#zz-palette:not(.hidden)') || focusSearch()) return;
       openPalette();
@@ -184,4 +197,10 @@ export function initHeader(): void {
 
   window.addEventListener('zz-theme-change', (e) => applyThemeSetting((e as CustomEvent).detail));
   window.addEventListener('zz-session-change', renderAuth);
+  // Persisted header: re-mark the active link after every client-side
+  // navigation (full re-init doesn't re-run on swapped pages).
+  document.addEventListener('astro:page-load', () => {
+    renderAuth();
+    markActiveNav();
+  });
 }

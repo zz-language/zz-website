@@ -1,5 +1,6 @@
 ---
 import CustomHeader from '../../components/header/CustomHeader.astro';
+import { ClientRouter } from 'astro:transitions';
 import ThemeInit from '../../components/ThemeInit.astro';
 import Footer from '../../components/Footer.astro';
 import Icon from '../../components/icons/Icon.astro';
@@ -9,9 +10,11 @@ import '../../styles/global.css';
 
 <html lang="en">
   <head>
+    <ClientRouter />
     <ThemeInit />
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>Packages | {site.siteName}</title>
     <meta name="description" content="Discover and install ZZ packages" />
   </head>
@@ -20,14 +23,20 @@ import '../../styles/global.css';
 
     <main class="pt-14">
       <div class="max-w-6xl mx-auto px-4 md:px-6 py-10 md:py-14">
+        <div class="relative">
+          <div aria-hidden="true" class="pointer-events-none absolute -top-24 left-1/4 h-64 w-[36rem] rounded-full bg-blue-600/10 blur-3xl"></div>
+        </div>
         <p class="text-sm font-mono text-accent mb-2">Registry</p>
-        <h1 class="text-2xl md:text-3xl font-semibold tracking-tight">Packages</h1>
+        <div class="flex flex-wrap items-end justify-between gap-4">
+          <h1 class="text-2xl md:text-3xl font-semibold tracking-tight">Packages</h1>
+          <span id="pkg-count" class="text-xs font-mono text-faint"></span>
+        </div>
         <p class="text-muted mt-2 mb-8">Libraries for ZZ. <code class="font-mono text-sm text-foreground">zz add &lt;name&gt;</code> to install.</p>
 
-        <div class="flex flex-wrap items-center gap-3 max-w-3xl mb-8 rounded-xl border border-border bg-surface p-3 shadow-lg">
-          <div class="relative flex-1 min-w-52">
-            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-faint">
-              <Icon name="search" size={16} />
+        <div class="max-w-3xl mb-3 rounded-xl border border-border bg-surface shadow-lg transition focus-within:border-blue-500/50 focus-within:shadow-[0_0_0_1px_rgba(0,128,255,0.3),0_8px_40px_-12px_rgba(0,128,255,0.25)]">
+          <div class="relative">
+            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-faint">
+              <Icon name="search" size={18} />
             </span>
             <label for="pkg-search" class="sr-only">Search packages</label>
             <input
@@ -38,25 +47,47 @@ import '../../styles/global.css';
               role="combobox"
               aria-expanded="false"
               aria-controls="pkg-suggest"
-              class="w-full bg-transparent py-2 pl-10 pr-3 text-sm text-foreground placeholder:text-faint focus:outline-none"
+              class="w-full bg-transparent py-3.5 pl-11 pr-4 text-[15px] text-foreground placeholder:text-faint focus:outline-none"
             />
-            <div id="pkg-suggest" class="hidden absolute left-0 right-0 top-full mt-1 rounded-lg border border-border bg-surface shadow-xl overflow-hidden z-10" role="listbox"></div>
+            <div id="pkg-suggest" class="hidden absolute left-0 right-0 top-full mt-2 rounded-xl border border-border bg-surface shadow-2xl overflow-hidden z-10" role="listbox"></div>
           </div>
-          <div class="h-6 w-px bg-border hidden sm:block" aria-hidden="true"></div>
+        </div>
+        <div class="flex flex-wrap items-center gap-2 max-w-3xl mb-8">
           <div class="relative">
-            <button id="pkg-author-btn" class="flex items-center gap-2 px-3 py-2 rounded-md bg-surface border border-border text-foreground text-sm hover:border-accent-border" aria-haspopup="listbox" aria-expanded="false">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <button id="pkg-author-btn" class="flex items-center gap-2 px-3.5 py-2 rounded-full bg-blue-500/[0.07] border border-blue-500/20 text-[13px] text-foreground hover:border-blue-500/50 hover:bg-blue-500/[0.12] transition" aria-haspopup="listbox" aria-expanded="false">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" class="text-blue-400"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
               <span id="pkg-author-label">All authors</span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" class="text-faint"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
-            <div id="pkg-author-menu" class="hidden absolute left-0 top-[calc(100%+6px)] min-w-44 max-h-64 overflow-y-auto rounded-lg border border-border bg-surface shadow-2xl shadow-black/50 p-1 z-20" role="listbox" aria-label="Filter by author"></div>
+            <div id="pkg-author-menu" class="hidden absolute left-0 top-[calc(100%+6px)] min-w-52 max-h-72 overflow-y-auto rounded-xl border border-border bg-surface shadow-2xl shadow-black/50 p-1.5 z-20" role="listbox" aria-label="Filter by author">
+              <div class="p-1">
+                <input id="pkg-author-search" type="text" placeholder="Filter authors..." autocomplete="off" class="w-full bg-background border border-border rounded-lg px-3 py-2 text-[13px] text-foreground placeholder:text-faint focus:outline-none focus:border-blue-500/50" />
+              </div>
+              <div id="pkg-author-opts"></div>
+            </div>
           </div>
           <div class="relative">
-            <button id="pkg-sort-btn" class="flex items-center gap-2 px-3 py-2 rounded-md bg-surface border border-border text-foreground text-sm hover:border-accent-border" aria-haspopup="listbox" aria-expanded="false">
-              <span id="pkg-sort-label">Recently updated</span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+            <button id="pkg-license-btn" class="flex items-center gap-2 px-3.5 py-2 rounded-full bg-blue-500/[0.07] border border-blue-500/20 text-[13px] text-foreground hover:border-blue-500/50 hover:bg-blue-500/[0.12] transition" aria-haspopup="listbox" aria-expanded="false">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" class="text-blue-400"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1 1 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>
+              <span id="pkg-license-label">All licenses</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" class="text-faint"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
-            <div id="pkg-sort-menu" class="hidden absolute left-0 top-[calc(100%+6px)] min-w-44 rounded-lg border border-border bg-surface shadow-2xl shadow-black/50 p-1 z-20" role="listbox" aria-label="Sort packages"></div>
+            <div id="pkg-license-menu" class="hidden absolute left-0 top-[calc(100%+6px)] min-w-44 rounded-xl border border-border bg-surface shadow-2xl shadow-black/50 p-1.5 z-20" role="listbox" aria-label="Filter by license"></div>
+          </div>
+          <div class="relative">
+            <button id="pkg-maturity-btn" class="flex items-center gap-2 px-3.5 py-2 rounded-full bg-blue-500/[0.07] border border-blue-500/20 text-[13px] text-foreground hover:border-blue-500/50 hover:bg-blue-500/[0.12] transition" aria-haspopup="listbox" aria-expanded="false">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" class="text-blue-400"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg>
+              <span id="pkg-maturity-label">Any maturity</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" class="text-faint"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div id="pkg-maturity-menu" class="hidden absolute left-0 top-[calc(100%+6px)] min-w-44 rounded-xl border border-border bg-surface shadow-2xl shadow-black/50 p-1.5 z-20" role="listbox" aria-label="Filter by maturity"></div>
+          </div>
+          <div class="relative">
+            <button id="pkg-sort-btn" class="flex items-center gap-2 px-3.5 py-2 rounded-full bg-blue-500/[0.07] border border-blue-500/20 text-[13px] text-foreground hover:border-blue-500/50 hover:bg-blue-500/[0.12] transition" aria-haspopup="listbox" aria-expanded="false">
+              <span id="pkg-sort-label">Recently updated</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" class="text-faint"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div id="pkg-sort-menu" class="hidden absolute left-0 top-[calc(100%+6px)] min-w-44 rounded-xl border border-border bg-surface shadow-2xl shadow-black/50 p-1.5 z-20" role="listbox" aria-label="Sort packages"></div>
           </div>
         </div>
 
@@ -69,209 +100,313 @@ import '../../styles/global.css';
     <Footer />
 
     <script define:vars={{ registryApi: site.registryApi }}>
-      const searchInput = document.getElementById('pkg-search');
-      const authorBtn = document.getElementById('pkg-author-btn');
-      const authorLabel = document.getElementById('pkg-author-label');
-      const authorMenu = document.getElementById('pkg-author-menu');
-      const sortBtn = document.getElementById('pkg-sort-btn');
-      const sortLabel = document.getElementById('pkg-sort-label');
-      const sortMenu = document.getElementById('pkg-sort-menu');
-      const pkgList = document.getElementById('pkg-list');
-      let allPackages = [];
-      let authorFilter = '';
-      let sortMode = 'recent';
-      const SORTS = [
-        ['recent', 'Recently updated'],
-        ['name', 'Name A–Z'],
-      ];
+    function main() {
+    if (!document.getElementById('pkg-search')) return;
+        const searchInput = document.getElementById('pkg-search');
+        const authorBtn = document.getElementById('pkg-author-btn');
+        const authorLabel = document.getElementById('pkg-author-label');
+        const authorMenu = document.getElementById('pkg-author-menu');
+        const authorSearch = document.getElementById('pkg-author-search');
+        const authorOpts = document.getElementById('pkg-author-opts');
+        const licenseBtn = document.getElementById('pkg-license-btn');
+        const licenseLabel = document.getElementById('pkg-license-label');
+        const licenseMenu = document.getElementById('pkg-license-menu');
+        const maturityBtn = document.getElementById('pkg-maturity-btn');
+        const maturityLabel = document.getElementById('pkg-maturity-label');
+        const maturityMenu = document.getElementById('pkg-maturity-menu');
+        const sortBtn = document.getElementById('pkg-sort-btn');
+        const sortLabel = document.getElementById('pkg-sort-label');
+        const sortMenu = document.getElementById('pkg-sort-menu');
+        const pkgList = document.getElementById('pkg-list');
+        let allPackages = [];
+        let authorFilter = '';
+        let licenseFilter = '';
+        let maturityFilter = '';
+        let sortMode = 'recent';
+        // License lookup cache (name -> license): the search rows don't
+        // carry licenses, so one batched info round per unseen package.
+        const licenseCache = new Map();
+        const SORTS = [
+          ['recent', 'Recently updated'],
+          ['name', 'Name A–Z'],
+        ];
+        const MATURITIES = [
+          ['', 'Any maturity'],
+          ['stable', 'Stable (1.x+)'],
+          ['early', 'Early (0.x)'],
+        ];
 
-      async function fetchPackages(query) {
-        try {
-          const url = query
-            ? `${registryApi}/api/pkg/search?q=${encodeURIComponent(query)}`
-            : `${registryApi}/api/pkg/search?q=`;
-          const res = await fetch(url);
-          const data = await res.json();
-          allPackages = Array.isArray(data) ? data : [];
-          refreshAuthors();
-          renderPackages();
-          renderSuggest(searchInput.value.trim());
-        } catch {
-          renderEmpty('Could not reach the registry. Try again in a moment.');
+        function majorOf(v) {
+          const n = parseInt(String(v || '0').split('.')[0], 10);
+          return Number.isFinite(n) ? n : 0;
         }
-      }
 
-      // Author filter options derive from the result set: the search API
-      // has no author query, so filtering happens client-side.
-      function refreshAuthors() {
-        const authors = [...new Set(allPackages.map((p) => p.author).filter(Boolean))].sort();
-        if (authorFilter && !authors.includes(authorFilter)) {
-          authorFilter = '';
-          authorLabel.textContent = 'All authors';
+        async function fetchPackages(query) {
+          try {
+            const url = query
+              ? `${registryApi}/api/pkg/search?q=${encodeURIComponent(query)}`
+              : `${registryApi}/api/pkg/search?q=`;
+            const res = await fetch(url);
+            const data = await res.json();
+            allPackages = Array.isArray(data) ? data : [];
+            refreshAuthors();
+            refreshLicenses();
+            renderPackages();
+            renderSuggest(searchInput.value.trim());
+          } catch {
+            renderEmpty('Could not reach the registry. Try again in a moment.');
+          }
         }
-        authorMenu.innerHTML =
-          `<button data-author="" role="option" class="filter-item">All authors${authorFilter === '' ? checkMark() : ''}</button>` +
-          authors
-            .map(
-              (a) =>
-                `<button data-author="${esc(a)}" role="option" class="filter-item">${esc(a)}${authorFilter === a ? checkMark() : ''}</button>`,
-            )
-            .join('');
-        authorMenu.querySelectorAll('[data-author]').forEach((btn) => {
+
+        async function licenseOf(name) {
+          if (licenseCache.has(name)) return licenseCache.get(name);
+          try {
+            const res = await fetch(`${registryApi}/api/pkg/${encodeURIComponent(name)}`);
+            if (!res.ok) return '';
+            const pkg = await res.json();
+            const lic = (pkg.metadata && pkg.metadata.license) || '';
+            licenseCache.set(name, lic);
+            return lic;
+          } catch {
+            return '';
+          }
+        }
+
+        async function refreshLicenses() {
+          const missing = allPackages.map((p) => p.name).filter((n) => !licenseCache.has(n));
+          await Promise.all(missing.map((n) => licenseOf(n)));
+          const licenses = [...new Set(allPackages.map((p) => licenseCache.get(p.name) || '').filter(Boolean))].sort();
+          if (licenseFilter && !licenses.includes(licenseFilter)) {
+            licenseFilter = '';
+            licenseLabel.textContent = 'All licenses';
+          }
+          licenseMenu.innerHTML =
+            `<button data-license="" role="option" class="filter-item">All licenses${licenseFilter === '' ? checkMark() : ''}</button>` +
+            licenses
+              .map(
+                (l) =>
+                  `<button data-license="${esc(l)}" role="option" class="filter-item">${esc(l)}${licenseFilter === l ? checkMark() : ''}</button>`,
+              )
+              .join('');
+          licenseMenu.querySelectorAll('[data-license]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+              licenseFilter = btn.dataset.license;
+              licenseLabel.textContent = licenseFilter || 'All licenses';
+              closeMenus();
+              renderPackages();
+            });
+          });
+        }
+
+        // Author filter with fuzzy search: type to narrow, click to pick.
+        // (The search API matches name/description only, so author options
+        // derive from the result set client-side.)
+        function authorList() {
+          return [...new Set(allPackages.map((p) => p.author).filter(Boolean))].sort();
+        }
+
+        function refreshAuthors() {
+          const authors = authorList();
+          if (authorFilter && !authors.includes(authorFilter)) {
+            authorFilter = '';
+            authorLabel.textContent = 'All authors';
+          }
+          if (authorSearch) authorSearch.value = '';
+          renderAuthorOpts('');
+        }
+
+        function renderAuthorOpts(q) {
+          const query = q.trim().toLowerCase();
+          const authors = authorList().filter((a) => !query || a.toLowerCase().includes(query));
+          authorOpts.innerHTML =
+            `<button data-author="" role="option" class="filter-item">All authors${authorFilter === '' ? checkMark() : ''}</button>` +
+            authors
+              .map(
+                (a) =>
+                  `<button data-author="${esc(a)}" role="option" class="filter-item">${esc(a)}${authorFilter === a ? checkMark() : ''}</button>`,
+              )
+              .join('') +
+            (authors.length === 0 ? '<div class="px-3 py-2 text-xs text-faint">No authors match</div>' : '');
+          authorOpts.querySelectorAll('[data-author]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+              authorFilter = btn.dataset.author;
+              authorLabel.textContent = authorFilter || 'All authors';
+              closeMenus();
+              renderPackages();
+            });
+          });
+        }
+
+        function checkMark() {
+          return '<svg class="ml-auto" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
+        }
+
+        function closeMenus() {
+          [authorMenu, licenseMenu, maturityMenu, sortMenu].forEach((m) => m.classList.add('hidden'));
+          [authorBtn, licenseBtn, maturityBtn, sortBtn].forEach((b) => b.setAttribute('aria-expanded', 'false'));
+        }
+
+        function toggleMenu(menu, btn) {
+          const open = menu.classList.contains('hidden');
+          closeMenus();
+          if (open) {
+            menu.classList.remove('hidden');
+            btn.setAttribute('aria-expanded', 'true');
+          }
+        }
+
+        function wireMenu(btn, menu) {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleMenu(menu, btn);
+          });
+        }
+
+        wireMenu(authorBtn, authorMenu);
+        wireMenu(licenseBtn, licenseMenu);
+        wireMenu(maturityBtn, maturityMenu);
+        wireMenu(sortBtn, sortMenu);
+        document.addEventListener('click', (e) => {
+          if (![authorMenu, licenseMenu, maturityMenu, sortMenu].some((m) => m.contains(e.target))) closeMenus();
+        });
+        if (authorSearch) {
+          authorSearch.addEventListener('click', (e) => e.stopPropagation());
+          authorSearch.addEventListener('input', (e) => renderAuthorOpts(e.target.value));
+        }
+        maturityMenu.innerHTML = MATURITIES.map(
+          ([v, label]) =>
+            `<button data-maturity="${v}" role="option" class="filter-item">${label}${maturityFilter === v ? checkMark() : ''}</button>`,
+        ).join('');
+        maturityMenu.querySelectorAll('[data-maturity]').forEach((btn) => {
           btn.addEventListener('click', () => {
-            authorFilter = btn.dataset.author;
-            authorLabel.textContent = authorFilter || 'All authors';
+            maturityFilter = btn.dataset.maturity;
+            maturityLabel.textContent = MATURITIES.find(([v]) => v === maturityFilter)[1];
             closeMenus();
             renderPackages();
           });
         });
-      }
-
-      function checkMark() {
-        return '<svg class="ml-auto" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
-      }
-
-      function closeMenus() {
-        authorMenu.classList.add('hidden');
-        sortMenu.classList.add('hidden');
-        authorBtn.setAttribute('aria-expanded', 'false');
-        sortBtn.setAttribute('aria-expanded', 'false');
-      }
-
-      function toggleMenu(menu, btn) {
-        const open = menu.classList.contains('hidden');
-        closeMenus();
-        if (open) {
-          menu.classList.remove('hidden');
-          btn.setAttribute('aria-expanded', 'true');
-        }
-      }
-
-      authorBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        toggleMenu(authorMenu, authorBtn);
-      });
-      sortBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        toggleMenu(sortMenu, sortBtn);
-      });
-      document.addEventListener('click', (e) => {
-        if (!authorMenu.contains(e.target) && !sortMenu.contains(e.target)) closeMenus();
-      });
-      sortMenu.innerHTML = SORTS.map(
-        ([v, label]) =>
-          `<button data-sort="${v}" role="option" class="filter-item">${label}${sortMode === v ? checkMark() : ''}</button>`,
-      ).join('');
-      sortMenu.querySelectorAll('[data-sort]').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          sortMode = btn.dataset.sort;
-          sortLabel.textContent = SORTS.find(([v]) => v === sortMode)[1];
-          sortMenu.querySelectorAll('[data-sort]').forEach((b) => {
-            const on = b.dataset.sort === sortMode;
-            b.querySelector('svg')?.remove();
-            if (on) b.insertAdjacentHTML('beforeend', checkMark());
+        sortMenu.innerHTML = SORTS.map(
+          ([v, label]) =>
+            `<button data-sort="${v}" role="option" class="filter-item">${label}${sortMode === v ? checkMark() : ''}</button>`,
+        ).join('');
+        sortMenu.querySelectorAll('[data-sort]').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            sortMode = btn.dataset.sort;
+            sortLabel.textContent = SORTS.find(([v]) => v === sortMode)[1];
+            sortMenu.querySelectorAll('[data-sort]').forEach((b) => {
+              const on = b.dataset.sort === sortMode;
+              b.querySelector('svg')?.remove();
+              if (on) b.insertAdjacentHTML('beforeend', checkMark());
+            });
+            closeMenus();
+            renderPackages();
           });
-          closeMenus();
-          renderPackages();
         });
-      });
 
-      function visiblePackages() {
-        let list = authorFilter ? allPackages.filter((p) => p.author === authorFilter) : allPackages.slice();
-        if (sortMode === 'name') list.sort((a, b) => String(a.name).localeCompare(String(b.name)));
-        return list;
-      }
-
-      function renderPackages() {
-        const packages = visiblePackages();
-        if (packages.length === 0) {
-          renderEmpty();
-          return;
+        function visiblePackages() {
+          let list = allPackages.slice();
+          if (authorFilter) list = list.filter((p) => p.author === authorFilter);
+          if (licenseFilter) list = list.filter((p) => (licenseCache.get(p.name) || '') === licenseFilter);
+          if (maturityFilter === 'stable') list = list.filter((p) => majorOf(p.latest) >= 1);
+          if (maturityFilter === 'early') list = list.filter((p) => majorOf(p.latest) < 1);
+          if (sortMode === 'name') list.sort((a, b) => String(a.name).localeCompare(String(b.name)));
+          return list;
         }
-        pkgList.innerHTML = packages
-          .map(
-            (pkg) => `
-          <div class="rounded-xl border border-border bg-surface p-5 shadow-lg transition-all hover:border-blue-500/50">
-            <a href="/pkg/view?name=${encodeURIComponent(pkg.name)}" class="block group">
-              <div class="flex items-start justify-between gap-3">
-                <h3 class="font-mono font-bold text-foreground group-hover:text-blue-400">${esc(pkg.name)}</h3>
-                <span class="shrink-0 bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 text-xs rounded-full font-mono">v${esc(pkg.latest)}</span>
-              </div>
-              <p class="text-sm mt-1.5 leading-relaxed text-muted">${esc(pkg.description) || 'No description'}</p>
-            </a>
-            <div class="flex items-center justify-between mt-4 text-xs">
-              <a href="/pkg/author?login=${encodeURIComponent(pkg.author || '')}" class="flex items-center gap-1.5 text-muted hover:text-blue-400">
-                <span class="flex items-center justify-center w-5 h-5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 font-mono text-[10px] font-semibold">${esc((pkg.author || '?').slice(0, 1).toUpperCase())}</span>
-                ${esc(pkg.author)}
+
+        function renderPackages() {
+          const packages = visiblePackages();
+          const counter = document.getElementById('pkg-count');
+          if (counter) counter.textContent = packages.length === 1 ? '1 package' : `${packages.length} packages`;
+          if (packages.length === 0) {
+            renderEmpty();
+            return;
+          }
+          pkgList.innerHTML = packages
+            .map(
+              (pkg) => `
+            <div class="rounded-xl border border-border bg-surface p-5 shadow-lg transition-all duration-200 motion-safe:hover:-translate-y-1 hover:border-blue-500/50 hover:shadow-[0_16px_50px_-12px_rgba(0,128,255,0.35)]">
+              <a href="/pkg/${encodeURIComponent(pkg.name)}" class="block group">
+                <div class="flex items-start justify-between gap-3">
+                  <h3 class="font-mono font-bold text-foreground group-hover:text-blue-400">${esc(pkg.name)}</h3>
+                  <span class="shrink-0 bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 text-xs rounded-full font-mono">v${esc(pkg.latest)}</span>
+                </div>
+                <p class="text-sm mt-1.5 leading-relaxed text-muted">${esc(pkg.description) || 'No description'}</p>
               </a>
-              <button data-copy="zz add ${esc(pkg.name)}" class="copy-btn bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg border border-slate-700/50 flex items-center gap-2"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>copy install</span></button>
-            </div>
-          </div>`,
-          )
-          .join('');
-        pkgList.querySelectorAll('.copy-btn').forEach((btn) => {
-          btn.addEventListener('click', async () => {
-            const label = btn.querySelector('span');
-            try {
-              await navigator.clipboard.writeText(btn.dataset.copy);
-              if (label) label.textContent = 'copied!';
-              setTimeout(() => {
-                if (label) label.textContent = 'copy install';
-              }, 1500);
-            } catch {
-              if (label) label.textContent = 'copy failed';
-            }
+              <div class="flex items-center justify-between mt-4 text-xs">
+                <a href="/u/${encodeURIComponent(pkg.author || '')}" class="flex items-center gap-1.5 text-muted hover:text-blue-400">
+                  <span class="flex items-center justify-center w-5 h-5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 font-mono text-[10px] font-semibold">${esc((pkg.author || '?').slice(0, 1).toUpperCase())}</span>
+                  ${esc(pkg.author)}
+                </a>
+                <button data-copy="zz add ${esc(pkg.name)}" class="copy-btn bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg border border-slate-700/50 flex items-center gap-2"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>copy install</span></button>
+              </div>
+            </div>`,
+            )
+            .join('');
+          pkgList.querySelectorAll('.copy-btn').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+              const label = btn.querySelector('span');
+              try {
+                await navigator.clipboard.writeText(btn.dataset.copy);
+                if (label) label.textContent = 'copied!';
+                setTimeout(() => {
+                  if (label) label.textContent = 'copy install';
+                }, 1500);
+              } catch {
+                if (label) label.textContent = 'copy failed';
+              }
+            });
           });
-        });
-      }
-
-      function renderEmpty(note) {
-        pkgList.innerHTML = `
-          <div class="rounded-lg border border-border bg-surface p-8 text-center md:col-span-2 lg:col-span-3">
-            <p class="text-foreground font-medium mb-1">No packages found</p>
-            <p class="text-muted text-sm mb-4">${note || 'Be the first to publish a package.'}</p>
-            <code class="inline-block px-3 py-1.5 bg-background border border-border rounded-md text-accent text-sm font-mono">zz publish</code>
-          </div>`;
-      }
-
-      function esc(s) {
-        return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-      }
-
-      let timeout;
-      const suggestBox = document.getElementById('pkg-suggest');
-
-      function renderSuggest(query) {
-        const q = query.toLowerCase();
-        const hits = q
-          ? allPackages.filter((p) => String(p.name).toLowerCase().includes(q)).slice(0, 6)
-          : [];
-        if (hits.length === 0) {
-          suggestBox.classList.add('hidden');
-          searchInput.setAttribute('aria-expanded', 'false');
-          return;
         }
-        suggestBox.innerHTML = hits
-          .map(
-            (p) => `<a href="/pkg/view?name=${encodeURIComponent(p.name)}" role="option" class="flex items-center justify-between gap-3 px-3 py-2 text-sm hover:bg-raised"><span class="font-mono text-foreground">${esc(p.name)}</span><span class="font-mono text-xs text-faint">v${esc(p.latest)}</span></a>`,
-          )
-          .join('');
-        suggestBox.classList.remove('hidden');
-        searchInput.setAttribute('aria-expanded', 'true');
-      }
 
-      searchInput.addEventListener('input', (e) => {
-        const q = e.target.value.trim();
-        renderSuggest(q);
-        clearTimeout(timeout);
-        timeout = setTimeout(() => fetchPackages(q), 300);
-      });
-      searchInput.addEventListener('blur', () => {
-        setTimeout(() => suggestBox.classList.add('hidden'), 150);
-      });
-      searchInput.addEventListener('focus', (e) => renderSuggest(e.target.value.trim()));
+        function renderEmpty(note) {
+          pkgList.innerHTML = `
+            <div class="rounded-lg border border-border bg-surface p-8 text-center md:col-span-2 lg:col-span-3">
+              <p class="text-foreground font-medium mb-1">No packages found</p>
+              <p class="text-muted text-sm mb-4">${note || 'Be the first to publish a package.'}</p>
+              <code class="inline-block px-3 py-1.5 bg-background border border-border rounded-md text-accent text-sm font-mono">zz publish</code>
+            </div>`;
+        }
 
-      fetchPackages('');
+        function esc(s) {
+          return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        let timeout;
+        const suggestBox = document.getElementById('pkg-suggest');
+
+        function renderSuggest(query) {
+          const q = query.toLowerCase();
+          const hits = q
+            ? allPackages.filter((p) => String(p.name).toLowerCase().includes(q)).slice(0, 6)
+            : [];
+          if (hits.length === 0) {
+            suggestBox.classList.add('hidden');
+            searchInput.setAttribute('aria-expanded', 'false');
+            return;
+          }
+          suggestBox.innerHTML = hits
+            .map(
+              (p) => `<a href="/pkg/${encodeURIComponent(p.name)}" role="option" class="flex items-center justify-between gap-3 px-3 py-2 text-sm hover:bg-raised"><span class="font-mono text-foreground">${esc(p.name)}</span><span class="font-mono text-xs text-faint">v${esc(p.latest)}</span></a>`,
+            )
+            .join('');
+          suggestBox.classList.remove('hidden');
+          searchInput.setAttribute('aria-expanded', 'true');
+        }
+
+        searchInput.addEventListener('input', (e) => {
+          const q = e.target.value.trim();
+          renderSuggest(q);
+          clearTimeout(timeout);
+          timeout = setTimeout(() => fetchPackages(q), 300);
+        });
+        searchInput.addEventListener('blur', () => {
+          setTimeout(() => suggestBox.classList.add('hidden'), 150);
+        });
+        searchInput.addEventListener('focus', (e) => renderSuggest(e.target.value.trim()));
+
+        fetchPackages('');
+    }
+    document.addEventListener('astro:page-load', main);
     </script>
   </body>
 </html>

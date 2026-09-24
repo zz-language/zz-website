@@ -1,5 +1,6 @@
 ---
 import CustomHeader from '../../components/header/CustomHeader.astro';
+import { ClientRouter } from 'astro:transitions';
 import ThemeInit from '../../components/ThemeInit.astro';
 import Footer from '../../components/Footer.astro';
 import site from '../../config/site.json';
@@ -8,9 +9,11 @@ import '../../styles/global.css';
 
 <html lang="en">
   <head>
+    <ClientRouter />
     <ThemeInit />
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>API Tokens | {site.siteName}</title>
     <meta name="description" content="Manage ZZ registry API tokens" />
   </head>
@@ -84,149 +87,153 @@ import '../../styles/global.css';
     <Footer />
 
     <script define:vars={{ registryApi: site.registryApi }}>
-      const loginPane = document.getElementById('tokens-login');
-      const appPane = document.getElementById('tokens-app');
-      const listPane = document.getElementById('tokens-list');
-      const newPane = document.getElementById('new-token');
+    function main() {
+    if (!document.getElementById('tokens-login')) return;
+        const loginPane = document.getElementById('tokens-login');
+        const appPane = document.getElementById('tokens-app');
+        const listPane = document.getElementById('tokens-list');
+        const newPane = document.getElementById('new-token');
 
-      function esc(s) {
-        return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-      }
-
-      function savedToken() {
-        try {
-          return localStorage.getItem('zz_token') || '';
-        } catch {
-          return '';
+        function esc(s) {
+          return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         }
-      }
 
-      function showApp() {
-        loginPane.classList.add('hidden');
-        appPane.classList.remove('hidden');
-        refreshList();
-      }
-
-      function showLogin() {
-        appPane.classList.add('hidden');
-        loginPane.classList.remove('hidden');
-      }
-
-      async function refreshList() {
-        const token = savedToken();
-        if (!token) {
-          showLogin();
-          return;
+        function savedToken() {
+          try {
+            return localStorage.getItem('zz_token') || '';
+          } catch {
+            return '';
+          }
         }
-        try {
-          const res = await fetch(`${registryApi}/api/tokens`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          if (res.status === 401) {
-            try {
-              localStorage.removeItem('zz_token');
-            } catch {}
+
+        function showApp() {
+          loginPane.classList.add('hidden');
+          appPane.classList.remove('hidden');
+          refreshList();
+        }
+
+        function showLogin() {
+          appPane.classList.add('hidden');
+          loginPane.classList.remove('hidden');
+        }
+
+        async function refreshList() {
+          const token = savedToken();
+          if (!token) {
             showLogin();
             return;
           }
-          const tokens = await res.json();
-          if (!Array.isArray(tokens) || tokens.length === 0) {
-            listPane.innerHTML = '<div class="text-muted text-sm py-4">No tokens yet — create one above.</div>';
+          try {
+            const res = await fetch(`${registryApi}/api/tokens`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (res.status === 401) {
+              try {
+                localStorage.removeItem('zz_token');
+              } catch {}
+              showLogin();
+              return;
+            }
+            const tokens = await res.json();
+            if (!Array.isArray(tokens) || tokens.length === 0) {
+              listPane.innerHTML = '<div class="text-muted text-sm py-4">No tokens yet — create one above.</div>';
+              return;
+            }
+            listPane.innerHTML = tokens
+              .map(
+                (t) => `
+              <div class="flex items-center justify-between gap-3 py-2.5 border-b border-border last:border-0">
+                <div>
+                  <div class="font-mono text-sm">${esc(t.prefix)}…</div>
+                  <div class="text-xs text-faint">${esc(t.created_at || '')}</div>
+                </div>
+                <button data-revoke="${esc(t.prefix)}" class="shrink-0 px-3 py-1 rounded-md border border-border text-xs hover:border-accent-border">Revoke</button>
+              </div>`,
+              )
+              .join('');
+            listPane.querySelectorAll('[data-revoke]').forEach((btn) => {
+              btn.addEventListener('click', () => revokeToken(btn.getAttribute('data-revoke')));
+            });
+          } catch {
+            listPane.innerHTML = '<div class="text-muted text-sm py-4">Could not reach the registry.</div>';
+          }
+        }
+
+        async function revokeToken(prefix) {
+          const token = savedToken();
+          if (!token || !prefix) return;
+          try {
+            await fetch(`${registryApi}/api/tokens/revoke`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+              body: JSON.stringify({ prefix }),
+            });
+          } catch {}
+          refreshList();
+        }
+
+        function receiveToken(token, login) {
+          if (!token) return;
+          try {
+            localStorage.setItem('zz_token', token);
+            if (login) localStorage.setItem('zz_login', login);
+          } catch {}
+          window.dispatchEvent(new Event('zz-session-change'));
+          document.getElementById('new-token-value').textContent = token;
+          document.getElementById('new-token-login').textContent = login || '';
+          newPane.classList.remove('hidden');
+          showApp();
+        }
+
+        document.getElementById('github-login').addEventListener('click', () => {
+          window.open(`${registryApi}/api/auth/github`, 'zz_oauth', 'width=640,height=720');
+        });
+
+        document.getElementById('create-token').addEventListener('click', () => {
+          window.open(`${registryApi}/api/auth/github`, 'zz_oauth', 'width=640,height=720');
+        });
+
+        document.getElementById('sign-out').addEventListener('click', () => {
+          try {
+            localStorage.removeItem('zz_token');
+            localStorage.removeItem('zz_login');
+          } catch {}
+          window.dispatchEvent(new Event('zz-session-change'));
+          newPane.classList.add('hidden');
+          showLogin();
+        });
+
+        document.getElementById('copy-token').addEventListener('click', async (e) => {
+          const v = document.getElementById('new-token-value').textContent;
+          try {
+            await navigator.clipboard.writeText(v);
+            e.target.textContent = 'Copied';
+          } catch {
+            e.target.textContent = 'Select + copy';
+          }
+        });
+
+        window.addEventListener('message', (e) => {
+          // Only accept tokens from the registry itself — a hostile frame
+          // could otherwise plant its own token in this browser.
+          try {
+            if (e.origin !== new URL(registryApi).origin) return;
+          } catch {
             return;
           }
-          listPane.innerHTML = tokens
-            .map(
-              (t) => `
-            <div class="flex items-center justify-between gap-3 py-2.5 border-b border-border last:border-0">
-              <div>
-                <div class="font-mono text-sm">${esc(t.prefix)}…</div>
-                <div class="text-xs text-faint">${esc(t.created_at || '')}</div>
-              </div>
-              <button data-revoke="${esc(t.prefix)}" class="shrink-0 px-3 py-1 rounded-md border border-border text-xs hover:border-accent-border">Revoke</button>
-            </div>`,
-            )
-            .join('');
-          listPane.querySelectorAll('[data-revoke]').forEach((btn) => {
-            btn.addEventListener('click', () => revokeToken(btn.getAttribute('data-revoke')));
-          });
-        } catch {
-          listPane.innerHTML = '<div class="text-muted text-sm py-4">Could not reach the registry.</div>';
+          // Registry posts "zz_pat_…|login" (pipe-delimited, no JSON).
+          if (typeof e.data !== 'string') return;
+          if (!e.data.startsWith('zz_pat_')) return;
+          const sep = e.data.indexOf('|');
+          if (sep < 0) return;
+          receiveToken(e.data.slice(0, sep), e.data.slice(sep + 1));
+        });
+
+        if (savedToken()) {
+          showApp();
         }
-      }
-
-      async function revokeToken(prefix) {
-        const token = savedToken();
-        if (!token || !prefix) return;
-        try {
-          await fetch(`${registryApi}/api/tokens/revoke`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ prefix }),
-          });
-        } catch {}
-        refreshList();
-      }
-
-      function receiveToken(token, login) {
-        if (!token) return;
-        try {
-          localStorage.setItem('zz_token', token);
-          if (login) localStorage.setItem('zz_login', login);
-        } catch {}
-        window.dispatchEvent(new Event('zz-session-change'));
-        document.getElementById('new-token-value').textContent = token;
-        document.getElementById('new-token-login').textContent = login || '';
-        newPane.classList.remove('hidden');
-        showApp();
-      }
-
-      document.getElementById('github-login').addEventListener('click', () => {
-        window.open(`${registryApi}/api/auth/github`, 'zz_oauth', 'width=640,height=720');
-      });
-
-      document.getElementById('create-token').addEventListener('click', () => {
-        window.open(`${registryApi}/api/auth/github`, 'zz_oauth', 'width=640,height=720');
-      });
-
-      document.getElementById('sign-out').addEventListener('click', () => {
-        try {
-          localStorage.removeItem('zz_token');
-          localStorage.removeItem('zz_login');
-        } catch {}
-        window.dispatchEvent(new Event('zz-session-change'));
-        newPane.classList.add('hidden');
-        showLogin();
-      });
-
-      document.getElementById('copy-token').addEventListener('click', async (e) => {
-        const v = document.getElementById('new-token-value').textContent;
-        try {
-          await navigator.clipboard.writeText(v);
-          e.target.textContent = 'Copied';
-        } catch {
-          e.target.textContent = 'Select + copy';
-        }
-      });
-
-      window.addEventListener('message', (e) => {
-        // Only accept tokens from the registry itself — a hostile frame
-        // could otherwise plant its own token in this browser.
-        try {
-          if (e.origin !== new URL(registryApi).origin) return;
-        } catch {
-          return;
-        }
-        // Registry posts "zz_pat_…|login" (pipe-delimited, no JSON).
-        if (typeof e.data !== 'string') return;
-        if (!e.data.startsWith('zz_pat_')) return;
-        const sep = e.data.indexOf('|');
-        if (sep < 0) return;
-        receiveToken(e.data.slice(0, sep), e.data.slice(sep + 1));
-      });
-
-      if (savedToken()) {
-        showApp();
-      }
+    }
+    document.addEventListener('astro:page-load', main);
     </script>
   </body>
 </html>

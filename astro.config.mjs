@@ -18,6 +18,11 @@ import site from './src/config/site.json';
 // https://astro.build/config
 export default defineConfig({
   site: site.domain,
+  // NOTE: pretty registry URLs (/pkg/[name], /u/[username]) are
+  // prerendered at build time from the live catalog (getStaticPaths).
+  // The query-param pages (/pkg/view?name=, /pkg/author?login=) stay as
+  // eternal fallbacks for packages published after the last site build.
+  // No SSR adapter: the site remains fully static on Cloudflare Pages.
   // Starlight serves docs at site root; redirect spec /docs/* URLs there.
   redirects: {
     '/docs': '/getting-started',
@@ -49,6 +54,7 @@ export default defineConfig({
       // Docs chrome reuses the main-site bar (same height, blur, controls).
       components: {
         Header: './src/components/starlight/SiteHeader.astro',
+        Head: './src/components/starlight/Head.astro',
       },
       social: [
         { icon: 'github', label: 'GitHub', href: site.githubRepo },
