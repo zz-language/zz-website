@@ -54,19 +54,40 @@ import '../../styles/global.css';
         </div>
         <div class="flex flex-wrap items-center gap-2 max-w-3xl mb-8">
           <div class="relative">
-            <button id="pkg-author-btn" class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface border border-border text-[13px] text-muted hover:text-foreground hover:border-blue-500/40 transition" aria-haspopup="listbox" aria-expanded="false">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <button id="pkg-author-btn" class="flex items-center gap-2 px-3.5 py-2 rounded-full bg-blue-500/[0.07] border border-blue-500/20 text-[13px] text-foreground hover:border-blue-500/50 hover:bg-blue-500/[0.12] transition" aria-haspopup="listbox" aria-expanded="false">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" class="text-blue-400"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
               <span id="pkg-author-label">All authors</span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" class="text-faint"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
-            <div id="pkg-author-menu" class="hidden absolute left-0 top-[calc(100%+6px)] min-w-44 max-h-64 overflow-y-auto rounded-lg border border-border bg-surface shadow-2xl shadow-black/50 p-1 z-20" role="listbox" aria-label="Filter by author"></div>
+            <div id="pkg-author-menu" class="hidden absolute left-0 top-[calc(100%+6px)] min-w-52 max-h-72 overflow-y-auto rounded-xl border border-border bg-surface shadow-2xl shadow-black/50 p-1.5 z-20" role="listbox" aria-label="Filter by author">
+              <div class="p-1">
+                <input id="pkg-author-search" type="text" placeholder="Filter authors..." autocomplete="off" class="w-full bg-background border border-border rounded-lg px-3 py-2 text-[13px] text-foreground placeholder:text-faint focus:outline-none focus:border-blue-500/50" />
+              </div>
+              <div id="pkg-author-opts"></div>
+            </div>
           </div>
           <div class="relative">
-            <button id="pkg-sort-btn" class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface border border-border text-[13px] text-muted hover:text-foreground hover:border-blue-500/40 transition" aria-haspopup="listbox" aria-expanded="false">
-              <span id="pkg-sort-label">Recently updated</span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+            <button id="pkg-license-btn" class="flex items-center gap-2 px-3.5 py-2 rounded-full bg-blue-500/[0.07] border border-blue-500/20 text-[13px] text-foreground hover:border-blue-500/50 hover:bg-blue-500/[0.12] transition" aria-haspopup="listbox" aria-expanded="false">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" class="text-blue-400"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1 1 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>
+              <span id="pkg-license-label">All licenses</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" class="text-faint"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
-            <div id="pkg-sort-menu" class="hidden absolute left-0 top-[calc(100%+6px)] min-w-44 rounded-lg border border-border bg-surface shadow-2xl shadow-black/50 p-1 z-20" role="listbox" aria-label="Sort packages"></div>
+            <div id="pkg-license-menu" class="hidden absolute left-0 top-[calc(100%+6px)] min-w-44 rounded-xl border border-border bg-surface shadow-2xl shadow-black/50 p-1.5 z-20" role="listbox" aria-label="Filter by license"></div>
+          </div>
+          <div class="relative">
+            <button id="pkg-maturity-btn" class="flex items-center gap-2 px-3.5 py-2 rounded-full bg-blue-500/[0.07] border border-blue-500/20 text-[13px] text-foreground hover:border-blue-500/50 hover:bg-blue-500/[0.12] transition" aria-haspopup="listbox" aria-expanded="false">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" class="text-blue-400"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg>
+              <span id="pkg-maturity-label">Any maturity</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" class="text-faint"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div id="pkg-maturity-menu" class="hidden absolute left-0 top-[calc(100%+6px)] min-w-44 rounded-xl border border-border bg-surface shadow-2xl shadow-black/50 p-1.5 z-20" role="listbox" aria-label="Filter by maturity"></div>
+          </div>
+          <div class="relative">
+            <button id="pkg-sort-btn" class="flex items-center gap-2 px-3.5 py-2 rounded-full bg-blue-500/[0.07] border border-blue-500/20 text-[13px] text-foreground hover:border-blue-500/50 hover:bg-blue-500/[0.12] transition" aria-haspopup="listbox" aria-expanded="false">
+              <span id="pkg-sort-label">Recently updated</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" class="text-faint"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div id="pkg-sort-menu" class="hidden absolute left-0 top-[calc(100%+6px)] min-w-44 rounded-xl border border-border bg-surface shadow-2xl shadow-black/50 p-1.5 z-20" role="listbox" aria-label="Sort packages"></div>
           </div>
         </div>
 
@@ -85,17 +106,40 @@ import '../../styles/global.css';
         const authorBtn = document.getElementById('pkg-author-btn');
         const authorLabel = document.getElementById('pkg-author-label');
         const authorMenu = document.getElementById('pkg-author-menu');
+        const authorSearch = document.getElementById('pkg-author-search');
+        const authorOpts = document.getElementById('pkg-author-opts');
+        const licenseBtn = document.getElementById('pkg-license-btn');
+        const licenseLabel = document.getElementById('pkg-license-label');
+        const licenseMenu = document.getElementById('pkg-license-menu');
+        const maturityBtn = document.getElementById('pkg-maturity-btn');
+        const maturityLabel = document.getElementById('pkg-maturity-label');
+        const maturityMenu = document.getElementById('pkg-maturity-menu');
         const sortBtn = document.getElementById('pkg-sort-btn');
         const sortLabel = document.getElementById('pkg-sort-label');
         const sortMenu = document.getElementById('pkg-sort-menu');
         const pkgList = document.getElementById('pkg-list');
         let allPackages = [];
         let authorFilter = '';
+        let licenseFilter = '';
+        let maturityFilter = '';
         let sortMode = 'recent';
+        // License lookup cache (name -> license): the search rows don't
+        // carry licenses, so one batched info round per unseen package.
+        const licenseCache = new Map();
         const SORTS = [
           ['recent', 'Recently updated'],
           ['name', 'Name A–Z'],
         ];
+        const MATURITIES = [
+          ['', 'Any maturity'],
+          ['stable', 'Stable (1.x+)'],
+          ['early', 'Early (0.x)'],
+        ];
+
+        function majorOf(v) {
+          const n = parseInt(String(v || '0').split('.')[0], 10);
+          return Number.isFinite(n) ? n : 0;
+        }
 
         async function fetchPackages(query) {
           try {
@@ -106,6 +150,7 @@ import '../../styles/global.css';
             const data = await res.json();
             allPackages = Array.isArray(data) ? data : [];
             refreshAuthors();
+            refreshLicenses();
             renderPackages();
             renderSuggest(searchInput.value.trim());
           } catch {
@@ -113,23 +158,76 @@ import '../../styles/global.css';
           }
         }
 
-        // Author filter options derive from the result set: the search API
-        // has no author query, so filtering happens client-side.
+        async function licenseOf(name) {
+          if (licenseCache.has(name)) return licenseCache.get(name);
+          try {
+            const res = await fetch(`${registryApi}/api/pkg/${encodeURIComponent(name)}`);
+            if (!res.ok) return '';
+            const pkg = await res.json();
+            const lic = (pkg.metadata && pkg.metadata.license) || '';
+            licenseCache.set(name, lic);
+            return lic;
+          } catch {
+            return '';
+          }
+        }
+
+        async function refreshLicenses() {
+          const missing = allPackages.map((p) => p.name).filter((n) => !licenseCache.has(n));
+          await Promise.all(missing.map((n) => licenseOf(n)));
+          const licenses = [...new Set(allPackages.map((p) => licenseCache.get(p.name) || '').filter(Boolean))].sort();
+          if (licenseFilter && !licenses.includes(licenseFilter)) {
+            licenseFilter = '';
+            licenseLabel.textContent = 'All licenses';
+          }
+          licenseMenu.innerHTML =
+            `<button data-license="" role="option" class="filter-item">All licenses${licenseFilter === '' ? checkMark() : ''}</button>` +
+            licenses
+              .map(
+                (l) =>
+                  `<button data-license="${esc(l)}" role="option" class="filter-item">${esc(l)}${licenseFilter === l ? checkMark() : ''}</button>`,
+              )
+              .join('');
+          licenseMenu.querySelectorAll('[data-license]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+              licenseFilter = btn.dataset.license;
+              licenseLabel.textContent = licenseFilter || 'All licenses';
+              closeMenus();
+              renderPackages();
+            });
+          });
+        }
+
+        // Author filter with fuzzy search: type to narrow, click to pick.
+        // (The search API matches name/description only, so author options
+        // derive from the result set client-side.)
+        function authorList() {
+          return [...new Set(allPackages.map((p) => p.author).filter(Boolean))].sort();
+        }
+
         function refreshAuthors() {
-          const authors = [...new Set(allPackages.map((p) => p.author).filter(Boolean))].sort();
+          const authors = authorList();
           if (authorFilter && !authors.includes(authorFilter)) {
             authorFilter = '';
             authorLabel.textContent = 'All authors';
           }
-          authorMenu.innerHTML =
+          if (authorSearch) authorSearch.value = '';
+          renderAuthorOpts('');
+        }
+
+        function renderAuthorOpts(q) {
+          const query = q.trim().toLowerCase();
+          const authors = authorList().filter((a) => !query || a.toLowerCase().includes(query));
+          authorOpts.innerHTML =
             `<button data-author="" role="option" class="filter-item">All authors${authorFilter === '' ? checkMark() : ''}</button>` +
             authors
               .map(
                 (a) =>
                   `<button data-author="${esc(a)}" role="option" class="filter-item">${esc(a)}${authorFilter === a ? checkMark() : ''}</button>`,
               )
-              .join('');
-          authorMenu.querySelectorAll('[data-author]').forEach((btn) => {
+              .join('') +
+            (authors.length === 0 ? '<div class="px-3 py-2 text-xs text-faint">No authors match</div>' : '');
+          authorOpts.querySelectorAll('[data-author]').forEach((btn) => {
             btn.addEventListener('click', () => {
               authorFilter = btn.dataset.author;
               authorLabel.textContent = authorFilter || 'All authors';
@@ -144,10 +242,8 @@ import '../../styles/global.css';
         }
 
         function closeMenus() {
-          authorMenu.classList.add('hidden');
-          sortMenu.classList.add('hidden');
-          authorBtn.setAttribute('aria-expanded', 'false');
-          sortBtn.setAttribute('aria-expanded', 'false');
+          [authorMenu, licenseMenu, maturityMenu, sortMenu].forEach((m) => m.classList.add('hidden'));
+          [authorBtn, licenseBtn, maturityBtn, sortBtn].forEach((b) => b.setAttribute('aria-expanded', 'false'));
         }
 
         function toggleMenu(menu, btn) {
@@ -159,16 +255,35 @@ import '../../styles/global.css';
           }
         }
 
-        authorBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          toggleMenu(authorMenu, authorBtn);
-        });
-        sortBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          toggleMenu(sortMenu, sortBtn);
-        });
+        function wireMenu(btn, menu) {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleMenu(menu, btn);
+          });
+        }
+
+        wireMenu(authorBtn, authorMenu);
+        wireMenu(licenseBtn, licenseMenu);
+        wireMenu(maturityBtn, maturityMenu);
+        wireMenu(sortBtn, sortMenu);
         document.addEventListener('click', (e) => {
-          if (!authorMenu.contains(e.target) && !sortMenu.contains(e.target)) closeMenus();
+          if (![authorMenu, licenseMenu, maturityMenu, sortMenu].some((m) => m.contains(e.target))) closeMenus();
+        });
+        if (authorSearch) {
+          authorSearch.addEventListener('click', (e) => e.stopPropagation());
+          authorSearch.addEventListener('input', (e) => renderAuthorOpts(e.target.value));
+        }
+        maturityMenu.innerHTML = MATURITIES.map(
+          ([v, label]) =>
+            `<button data-maturity="${v}" role="option" class="filter-item">${label}${maturityFilter === v ? checkMark() : ''}</button>`,
+        ).join('');
+        maturityMenu.querySelectorAll('[data-maturity]').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            maturityFilter = btn.dataset.maturity;
+            maturityLabel.textContent = MATURITIES.find(([v]) => v === maturityFilter)[1];
+            closeMenus();
+            renderPackages();
+          });
         });
         sortMenu.innerHTML = SORTS.map(
           ([v, label]) =>
@@ -189,7 +304,11 @@ import '../../styles/global.css';
         });
 
         function visiblePackages() {
-          let list = authorFilter ? allPackages.filter((p) => p.author === authorFilter) : allPackages.slice();
+          let list = allPackages.slice();
+          if (authorFilter) list = list.filter((p) => p.author === authorFilter);
+          if (licenseFilter) list = list.filter((p) => (licenseCache.get(p.name) || '') === licenseFilter);
+          if (maturityFilter === 'stable') list = list.filter((p) => majorOf(p.latest) >= 1);
+          if (maturityFilter === 'early') list = list.filter((p) => majorOf(p.latest) < 1);
           if (sortMode === 'name') list.sort((a, b) => String(a.name).localeCompare(String(b.name)));
           return list;
         }
