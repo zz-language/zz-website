@@ -38,7 +38,8 @@ import '../../styles/global.css';
     function main() {
     if (!document.getElementById('pkg-content')) return;
         const content = document.getElementById('pkg-content');
-        const pkgName = new URLSearchParams(window.location.search).get('name');
+        const pkgName =
+          window.__PKG_NAME__ || new URLSearchParams(window.location.search).get('name');
 
         function esc(s) {
           return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');

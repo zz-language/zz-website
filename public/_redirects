@@ -1,0 +1,23 @@
+# Edge redirects (Cloudflare Pages). Source of truth: the
+# `redirects` map in astro.config.mjs — keep in sync.
+/docs  /getting-started  308
+/docs/getting-started  /getting-started  308
+/docs/syntax  /syntax  308
+/docs/modules  /stdlib/overview  308
+/docs/language-reference  /language-reference  308
+/docs/error-handling  /error-handling  308
+/docs/best-practices  /best-practices  308
+/docs/async-sockets  /async-sockets  308
+/docs/advanced  /advanced  308
+/docs/stdlib  /stdlib/overview  308
+/docs/stdlib/overview  /stdlib/overview  308
+/docs/stdlib/str  /stdlib/str  308
+/docs/stdlib/vec  /stdlib/vec  308
+/docs/stdlib/json  /stdlib/json  308
+/docs/stdlib/http  /stdlib/http  308
+/docs/stdlib/fs  /stdlib/fs  308
+/docs/stdlib/env  /stdlib/env  308
+/docs/stdlib/math  /stdlib/math  308
+/docs/stdlib/time  /stdlib/time  308
+/docs/stdlib/encoding  /stdlib/encoding  308
+/docs/stdlib/net  /stdlib/net  308
