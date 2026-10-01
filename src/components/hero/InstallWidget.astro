@@ -2,7 +2,8 @@
 import CopyButton from './CopyButton';
 import site from '../../config/site.json';
 
-const cmd = `curl -fsSL ${site.installScript} | sh`;
+const unixCmd = `curl -fsSL ${site.installScript} | sh`;
+const winCmd = `irm ${site.installScriptPs1} | iex`;
 ---
 
 <div class="rounded-lg border border-border bg-surface p-4 md:p-5 shadow-xl shadow-black/40">
@@ -10,8 +11,14 @@ const cmd = `curl -fsSL ${site.installScript} | sh`;
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
     <span>Install ZZ</span>
   </div>
-  <div class="flex items-center gap-2">
-    <code class="flex-1 min-w-0 text-foreground font-mono text-sm overflow-x-auto whitespace-nowrap">{cmd}</code>
-    <CopyButton text={cmd} client:load />
+  <div class="flex flex-col gap-2">
+    <div class="flex items-center gap-2">
+      <code class="flex-1 min-w-0 text-foreground font-mono text-sm overflow-x-auto whitespace-nowrap">{unixCmd}</code>
+      <CopyButton text={unixCmd} client:load />
+    </div>
+    <div class="flex items-center gap-2">
+      <code class="flex-1 min-w-0 text-faint font-mono text-xs overflow-x-auto whitespace-nowrap">{winCmd}</code>
+      <CopyButton text={winCmd} client:load />
+    </div>
   </div>
 </div>
