@@ -41,6 +41,18 @@ Verify the install:
 
 ```bash
 zz --version
+zz setup    # PATH + shell completions for bash/zsh/fish (run once)
+```
+
+`zz setup` creates `~/.zz/bin`, wires it into your shell, and installs
+tab completion (`zz run <TAB>` completes `.zz` files). Installed from
+source instead? The first `zz` run heals `~/.zz/bin` automatically and
+points you at `zz setup` when PATH needs it.
+
+Install a project as a tool:
+
+```bash
+zz install --path .   # release-build this project into ~/.zz/bin
 ```
 
 ## Hello world

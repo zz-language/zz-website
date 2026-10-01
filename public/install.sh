@@ -74,7 +74,7 @@ need_cmd() {
 banner
 
 # ---------- 1/5 detect platform ----------
-step 1 5 "Detecting platform…"
+step 1 6 "Detecting platform…"
 OS="$(uname -s)"
 ARCH="$(uname -m)"
 case "$OS" in
@@ -95,7 +95,7 @@ command -v curl >/dev/null 2>&1 || command -v wget >/dev/null 2>&1 ||
 command -v unzip >/dev/null 2>&1 || fatal "need unzip to extract (install it and re-run)"
 
 # ---------- 2/5 resolve version ----------
-step 2 5 "Resolving version…"
+step 2 6 "Resolving version…"
 TAG="$WANT_VERSION"
 if [ "$TAG" = "latest" ]; then
 	if command -v curl >/dev/null 2>&1; then
@@ -134,7 +134,7 @@ if command -v zz >/dev/null 2>&1; then
 fi
 
 # ---------- 3/5 download ----------
-step 3 5 "Downloading zz $TAG…"
+step 3 6 "Downloading zz $TAG…"
 ZIP="zz-${VER}-${OS_ID}-${ARCH_ID}.zip"
 URL="https://github.com/${REPO}/releases/download/${TAG}/${ZIP}"
 TMPDIR="$(mktemp -d)"
@@ -150,7 +150,7 @@ fi
 ok "downloaded $ZIP"
 
 # ---------- 4/5 install ----------
-step 4 5 "Installing to $INSTALL_DIR…"
+step 4 6 "Installing to $INSTALL_DIR…"
 unzip -q -o "$TMPDIR/$ZIP" -d "$TMPDIR/pkg" ||
 	fatal "could not unzip $ZIP"
 # Asset layout: zip contains zz (+ zz-lsp) at top level or under dist/.
@@ -168,7 +168,7 @@ fi
 ok "installed zz $TAG"
 
 # ---------- 5/5 PATH ----------
-step 5 5 "Setting up PATH…"
+step 5 6 "Setting up PATH…"
 EXPORT_LINE='export PATH="$HOME/.zz/bin:$PATH"'
 MARK_BEGIN="# >>> zz-lang installer >>>"
 MARK_END="# <<< zz-lang installer <<<"
@@ -207,6 +207,12 @@ if [ "$ON_PATH" = "0" ]; then
 	export PATH="$INSTALL_DIR:$PATH"
 	warn "current shell updated for this session only."
 	printf "  restart your shell, or run:\n  %b%s%b\n" "$BOLD" "$EXPORT_LINE" "$RESET"
+fi
+
+# ---------- setup: PATH + completions ----------
+step 6 6 "Wiring up shell (zz setup)…"
+if [ -x "$INSTALL_DIR/zz" ]; then
+	"$INSTALL_DIR/zz" setup --yes || warn "zz setup needs attention — run 'zz setup' manually."
 fi
 
 # ---------- verify ----------

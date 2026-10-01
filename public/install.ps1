@@ -119,6 +119,14 @@ if ($env:Path -notlike "*$WantDir*") {
   Write-Warn "current session PATH updated; restart your terminal for new windows."
 }
 
+# ---------- setup: PATH + completions ----------
+Write-Step "[6/6] Wiring up shell (zz setup)…"
+try {
+  & (Join-Path $WantDir "zz.exe") setup --yes
+} catch {
+  Write-Warn "zz setup needs attention — run 'zz setup' manually."
+}
+
 # ---------- verify ----------
 try {
   $VersionLine = (& (Join-Path $WantDir "zz.exe") --version) | Select-Object -First 1
