@@ -7,5 +7,6 @@
   "pkgRegistryPath": "/pkg",
   "registryApi": "https://zz-registry.onrender.com",
   "installScript": "https://zz-lang.pages.dev/install.sh",
+  "installScriptPs1": "https://zz-lang.pages.dev/install.ps1",
   "ogImage": "/899-899-logo.png"
 }
