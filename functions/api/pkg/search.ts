@@ -67,12 +67,22 @@ export async function onRequestGet(context: any) {
     const data = await upstream.json();
     // Envelope passes through verbatim; legacy arrays pass as-is.
     const body = data && typeof data === 'object' && Array.isArray((data as any).items) ? data : Array.isArray(data) ? data : [];
-    return new Response(JSON.stringify(body), {
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
-      },
-    });
+    const etag = upstream.headers.get('etag');
+    if (etag && request.headers.get('if-none-match') === etag) {
+      return new Response(null, {
+        status: 304,
+        headers: {
+          ETag: etag,
+          'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+        },
+      });
+    }
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+    };
+    if (etag) headers['ETag'] = etag;
+    return new Response(JSON.stringify(body), { headers });
   } catch {
     if (ray) console.error(`[pkg-search] network failure ray=${ray}`);
     return new Response(JSON.stringify({ error: 'registry unreachable' }), {
