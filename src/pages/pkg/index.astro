@@ -91,6 +91,8 @@ import '../../styles/global.css';
           </div>
         </div>
 
+        <div id="pkg-cats" class="flex flex-wrap gap-2 max-w-3xl mb-8" role="group" aria-label="Filter by category"></div>
+
         <div id="pkg-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div class="rounded-lg border border-border bg-surface p-6 text-muted text-sm">Loading packages…</div>
         </div>
@@ -132,6 +134,11 @@ import '../../styles/global.css';
         let inFlight = null;
         let debounce = 0;
 
+        const CATEGORIES = ['backend', 'cli', 'frameworks', 'math', 'gui', 'utilities'];
+        let categoryFilter = new URLSearchParams(window.location.search).get('category') || '';
+        if (categoryFilter && !CATEGORIES.includes(categoryFilter.toLowerCase())) categoryFilter = '';
+        categoryFilter = categoryFilter.toLowerCase();
+
         const SORTS = [
           ['recent', 'Recently updated'],
           ['name', 'Name A–Z'],
@@ -149,23 +156,23 @@ import '../../styles/global.css';
 
         // Same-origin search (F-06): one request per settle, abortable so
         // fast typing never races (F-04: rows already carry license —
-        // zero per-package detail fetches).
+        // zero per-package detail fetches). Category filters server-side.
         async function fetchPackages(query) {
           if (inFlight) inFlight.abort();
           inFlight = new AbortController();
           const signal = inFlight.signal;
           const timer = setTimeout(() => inFlight.abort(), 10000);
           try {
-            const url = query
-              ? `/api/pkg/search?q=${encodeURIComponent(query)}&limit=100`
-              : `/api/pkg/search?q=&limit=100`;
-            const res = await fetch(url, { signal, headers: { Accept: 'application/json' } });
+            const params = new URLSearchParams({ q: query || '', limit: '100' });
+            if (categoryFilter) params.set('category', categoryFilter);
+            const res = await fetch(`/api/pkg/search?${params.toString()}`, { signal, headers: { Accept: 'application/json' } });
             if (!res.ok) throw new Error(`search ${res.status}`);
             const data = await res.json();
             if (signal.aborted) return;
             allPackages = Array.isArray(data) ? data : [];
             refreshAuthors();
             refreshLicenseMenu();
+            renderCategoryPills();
             renderPackages();
             renderSuggest(searchInput.value.trim());
           } catch (e) {
@@ -175,6 +182,25 @@ import '../../styles/global.css';
           } finally {
             clearTimeout(timer);
           }
+        }
+
+        function renderCategoryPills() {
+          const box = document.getElementById('pkg-cats');
+          const pill = (value, label) => {
+            const on = categoryFilter === value;
+            return `<button data-cat="${escAttr(value)}" aria-pressed="${on}" class="px-3 py-1.5 rounded-full border text-[13px] font-mono transition ${on ? 'border-accent-border bg-accent-soft text-accent' : 'border-border text-muted hover:text-foreground hover:border-accent-border'}">${esc(label)}</button>`;
+          };
+          box.innerHTML = pill('', 'All') + CATEGORIES.map((c) => pill(c, c)).join('');
+          box.querySelectorAll('[data-cat]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+              categoryFilter = btn.dataset.cat;
+              const url = new URL(window.location.href);
+              if (categoryFilter) url.searchParams.set('category', categoryFilter);
+              else url.searchParams.delete('category');
+              window.history.replaceState(null, '', url.toString());
+              fetchPackages(searchInput.value.trim());
+            });
+          });
         }
 
         // License options derive from the search rows directly (F-04).

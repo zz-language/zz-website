@@ -5,7 +5,7 @@
 // is forwarded verbatim so listing pages never need per-package detail
 // fetches (see F-04). Failures are 502s, never empty arrays: an empty
 // array means "zero matches", not "registry is down" (F-07).
-import { PKG_NAME_RE } from '../_validate';
+import { PKG_NAME_RE, CATEGORIES } from '../_validate';
 
 const FALLBACK_UPSTREAM = 'https://zz-registry.onrender.com';
 
@@ -20,6 +20,7 @@ export async function onRequestGet(context: any) {
   const url = new URL(request.url);
   const limit = Math.min(Math.max(parseInt(url.searchParams.get('limit') || '20', 10) || 20, 1), 100);
   const author = url.searchParams.get('author') || '';
+  const category = (url.searchParams.get('category') || '').toLowerCase();
 
   if (author && !PKG_NAME_RE.test(author)) {
     return new Response(JSON.stringify({ error: 'Invalid author' }), {
@@ -28,10 +29,18 @@ export async function onRequestGet(context: any) {
     });
   }
 
+  if (category && !CATEGORIES.includes(category)) {
+    return new Response(JSON.stringify({ error: 'Invalid category' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+    });
+  }
+
   const upstreamUrl =
     `${upstreamBase(env)}/api/pkg/search?q=${encodeURIComponent(url.searchParams.get('q') || '')}` +
     `&limit=${limit}` +
-    (author ? `&author=${encodeURIComponent(author)}` : '');
+    (author ? `&author=${encodeURIComponent(author)}` : '') +
+    (category ? `&category=${encodeURIComponent(category)}` : '');
 
   try {
     const upstream = await fetch(upstreamUrl, { headers: { Accept: 'application/json' } });

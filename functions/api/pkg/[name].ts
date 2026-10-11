@@ -81,3 +81,58 @@ export async function onRequestGet(context: any) {
     },
   });
 }
+
+// PUT /api/pkg/[name] — owner settings (proxy).
+//
+// Forwards the owner's Bearer credential + JSON body to the authoritative
+// registry, which owns the ownership gate (403 for non-owners and unknown
+// names alike). Upstream status/body pass through verbatim.
+export async function onRequestPut(context: any) {
+  const { env, params, request } = context;
+  const name = params.name as string;
+  const ray = request.headers.get('cf-ray');
+
+  if (!name || !PKG_NAME_RE.test(name)) {
+    return new Response(JSON.stringify({ error: 'Invalid package name' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+    });
+  }
+  const auth = request.headers.get('Authorization');
+  if (!auth?.startsWith('Bearer zz_pat_')) {
+    return new Response(JSON.stringify({ error: 'Invalid token format' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+    });
+  }
+
+  let raw: string;
+  try {
+    raw = await request.text();
+    JSON.parse(raw || '{}');
+  } catch {
+    return new Response(JSON.stringify({ error: 'Invalid JSON body' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+    });
+  }
+
+  try {
+    const upstream = await fetch(`${upstreamBase(env)}/api/pkg/${encodeURIComponent(name)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json', Authorization: auth },
+      body: raw,
+    });
+    const text = await upstream.text();
+    return new Response(text, {
+      status: upstream.status,
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+    });
+  } catch {
+    if (ray) console.error(`[pkg-settings] upstream unreachable ray=${ray} pkg=${name}`);
+    return new Response(JSON.stringify({ error: 'registry unreachable' }), {
+      status: 502,
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+    });
+  }
+}

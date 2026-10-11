@@ -1,0 +1,201 @@
+---
+import CustomHeader from '../../components/header/CustomHeader.astro';
+import { ClientRouter } from 'astro:transitions';
+import ThemeInit from '../../components/ThemeInit.astro';
+import Footer from '../../components/Footer.astro';
+import Icon from '../../components/icons/Icon.astro';
+import site from '../../config/site.json';
+import '../../styles/global.css';
+
+// Static shell (like /pkg/view): the package name travels via ?name= so
+// no per-package prerender — and no rebuild — is ever required.
+const categories = ['backend', 'cli', 'frameworks', 'math', 'gui', 'utilities'];
+---
+
+<html lang="en">
+  <head>
+    <ClientRouter />
+    <ThemeInit />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>Edit package | {site.siteName}</title>
+    <meta name="description" content="Edit your ZZ package metadata and docs." />
+    <meta name="robots" content="noindex" />
+  </head>
+  <body class="bg-background text-foreground font-sans antialiased">
+    <CustomHeader />
+
+    <main class="pt-14">
+      <div class="max-w-3xl mx-auto px-4 md:px-6 py-10 md:py-14">
+        <a href="/pkg" class="inline-flex items-center gap-1.5 text-sm text-accent hover:underline mb-6">
+          <Icon name="chevron-right" size={16} class="rotate-180" />
+          Back to packages
+        </a>
+        <div id="edit-content">
+          <div class="text-muted text-sm">Loading…</div>
+        </div>
+      </div>
+    </main>
+
+    <Footer />
+
+    <script define:vars={{ categories }}>
+      import { esc, escAttr, apiFetch, announce } from '../../lib/pkg-api';
+      import { renderMarkdown } from '../../lib/md';
+
+      function boot() {
+        const content = document.getElementById('edit-content');
+        if (!content || content.dataset.wired) return;
+        content.dataset.wired = '1';
+        init(content);
+      }
+
+      async function init(content) {
+        const name = new URLSearchParams(window.location.search).get('name') || '';
+        let session = null;
+        try {
+          const login = localStorage.getItem('zz_login') || '';
+          const token = localStorage.getItem('zz_token') || '';
+          if (login && token) session = { login, token };
+        } catch {}
+
+        if (!name) {
+          content.innerHTML = '<div class="rounded-lg border border-border bg-surface p-8 text-center"><p class="font-medium mb-1">No package specified</p><p class="text-muted text-sm">Open the edit link from your package page.</p></div>';
+          return;
+        }
+        if (!session) {
+          content.innerHTML = `<div class="rounded-lg border border-border bg-surface p-8 text-center"><p class="font-medium mb-1">Log in to edit ${esc(name)}</p><p class="text-muted text-sm mb-4">Only package owners can change metadata.</p><a href="/login?next=${encodeURIComponent(`/pkg/edit?name=${name}`)}" class="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium">Log in with GitHub</a></div>`;
+          return;
+        }
+
+        content.innerHTML = '<p class="text-muted text-sm">Loading package…</p>';
+        let pkg;
+        try {
+          pkg = await apiFetch(`/api/pkg/${encodeURIComponent(name)}`);
+        } catch {
+          content.innerHTML = '<div class="rounded-lg border border-border bg-surface p-8 text-center"><p class="font-medium mb-1">Could not load package</p><p class="text-muted text-sm">Try again in a moment.</p></div>';
+          return;
+        }
+        const md = pkg.metadata;
+        const owners = Array.isArray(md.owners) ? md.owners : [];
+        if (session.login !== md.author && !owners.includes(session.login)) {
+          content.innerHTML = `<div class="rounded-lg border border-border bg-surface p-8 text-center"><p class="font-medium mb-1">Not an owner</p><p class="text-muted text-sm">Only owners of ${esc(name)} can edit it. Ask an owner to add you via <code class="font-mono text-xs text-accent">zz owner add</code>.</p></div>`;
+          return;
+        }
+
+        const kw = Array.isArray(md.keywords) ? md.keywords.filter((t) => typeof t === 'string') : [];
+        content.innerHTML = `
+          <p class="text-sm font-mono text-accent mb-2">Settings</p>
+          <h1 class="text-2xl md:text-3xl font-semibold tracking-tight font-mono mb-1">${esc(md.name)}</h1>
+          <p class="text-muted text-sm mb-8">Changes apply immediately and survive the next <code class="font-mono text-xs text-foreground">zz publish</code>.</p>
+          <div id="edit-status" class="hidden mb-4 rounded-lg border px-4 py-3 text-sm" role="status"></div>
+          <div class="space-y-5">
+            <div>
+              <label for="f-desc" class="block text-sm font-medium mb-1.5">Description</label>
+              <textarea id="f-desc" rows="2" maxlength="2000" class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent-border">${esc(md.description || '')}</textarea>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label for="f-repo" class="block text-sm font-medium mb-1.5">Repository URL</label>
+                <input id="f-repo" type="url" value="${escAttr(md.repo || '')}" placeholder="https://…" class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:border-accent-border" />
+              </div>
+              <div>
+                <label for="f-home" class="block text-sm font-medium mb-1.5">Homepage URL</label>
+                <input id="f-home" type="url" value="${escAttr(md.homepage || '')}" placeholder="https://…" class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:border-accent-border" />
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label for="f-cat" class="block text-sm font-medium mb-1.5">Category</label>
+                <select id="f-cat" class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent-border">
+                  <option value="">Uncategorized</option>
+                  ${categories.map((c) => `<option value="${c}"${md.category === c ? ' selected' : ''}>${c}</option>`).join('')}
+                </select>
+              </div>
+              <div>
+                <label for="f-tags" class="block text-sm font-medium mb-1.5">Tags <span class="text-faint font-normal">(comma separated, max 10)</span></label>
+                <input id="f-tags" value="${escAttr(kw.join(', '))}" placeholder="async, json, cli" class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:border-accent-border" />
+              </div>
+            </div>
+            <div>
+              <label for="f-lang" class="block text-sm font-medium mb-1.5">Languages <span class="text-faint font-normal">(JSON, e.g. {"ZZ": 82, "C": 18})</span></label>
+              <input id="f-lang" value="${escAttr(JSON.stringify(md.languages || {}))}" spellcheck="false" class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:border-accent-border" />
+            </div>
+            <div>
+              <label for="f-docs" class="block text-sm font-medium mb-1.5">Documentation <span class="text-faint font-normal">(Markdown — shown on the Docs tab)</span></label>
+              <textarea id="f-docs" rows="12" spellcheck="false" class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:border-accent-border">${esc(typeof pkg.docs === 'string' ? pkg.docs : '')}</textarea>
+              <details class="mt-2"><summary class="cursor-pointer text-sm text-muted hover:text-accent">Preview</summary><div id="docs-preview" class="mt-2 rounded-lg border border-border bg-surface p-4 md-prose"></div></details>
+            </div>
+            <div class="flex items-center gap-3">
+              <button id="edit-save" class="px-5 py-2.5 rounded-lg bg-accent text-white text-sm font-medium hover:opacity-90">Save changes</button>
+              <a href="/pkg/${encodeURIComponent(md.name)}" class="text-sm text-muted hover:text-accent">Cancel</a>
+            </div>
+          </div>`;
+
+        const status = document.getElementById('edit-status');
+        const say = (ok, msg) => {
+          status.classList.remove('hidden');
+          status.className = `mb-4 rounded-lg border px-4 py-3 text-sm ${ok ? 'border-accent-border bg-accent-soft' : 'border-danger/40 bg-danger/10'}`;
+          status.textContent = msg;
+          announce(msg);
+        };
+
+        const docsInput = document.getElementById('f-docs');
+        const preview = document.getElementById('docs-preview');
+        const renderPreview = () => {
+          preview.innerHTML = renderMarkdown(docsInput.value).html;
+        };
+        docsInput.addEventListener('input', renderPreview);
+        renderPreview();
+
+        document.getElementById('edit-save').addEventListener('click', async () => {
+          const tags = document.getElementById('f-tags').value.split(',').map((t) => t.trim().toLowerCase()).filter(Boolean).slice(0, 10);
+          let langs = {};
+          try {
+            const parsed = JSON.parse(document.getElementById('f-lang').value || '{}');
+            if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) langs = parsed;
+            else throw new Error('bad');
+          } catch {
+            say(false, 'Languages must be a JSON object like {"ZZ": 82, "C": 18}.');
+            return;
+          }
+          const payload = {
+            description: document.getElementById('f-desc').value,
+            repo: document.getElementById('f-repo').value.trim(),
+            homepage: document.getElementById('f-home').value.trim(),
+            category: document.getElementById('f-cat').value,
+            keywords: tags,
+            languages: langs,
+            docs_md: docsInput.value,
+          };
+          const btn = document.getElementById('edit-save');
+          btn.disabled = true;
+          btn.textContent = 'Saving…';
+          try {
+            const res = await fetch(`/api/pkg/${encodeURIComponent(md.name)}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.token}` },
+              body: JSON.stringify(payload),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || `save failed (${res.status})`);
+            try { sessionStorage.removeItem(`zz:pkg:${md.name}`); } catch {}
+            say(true, 'Saved. Your package page updates immediately.');
+          } catch (e) {
+            say(false, e.message || 'Save failed.');
+          } finally {
+            btn.disabled = false;
+            btn.textContent = 'Save changes';
+          }
+        });
+      }
+
+      boot();
+      if (!(window as any).__zzEditNav) {
+        (window as any).__zzEditNav = true;
+        document.addEventListener('astro:page-load', boot);
+      }
+    </script>
+  </body>
+</html>

@@ -12,6 +12,9 @@ export const SEMVER_RE = /^\d+\.\d+\.\d+$/;
 // Hex SHA-256 for client-claimed tarball hashes.
 export const SHA256_HEX_RE = /^[0-9a-f]{64}$/;
 
+// Fixed category vocabulary (mirrors registry + CLI allowlists).
+export const CATEGORIES = ['backend', 'cli', 'frameworks', 'math', 'gui', 'utilities'];
+
 export function jsonError(message: string, status: number): Response {
   return new Response(JSON.stringify({ error: message }), {
     status,
