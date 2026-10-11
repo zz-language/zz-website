@@ -96,6 +96,7 @@ import '../../styles/global.css';
         <div id="pkg-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div class="rounded-lg border border-border bg-surface p-6 text-muted text-sm">Loading packages…</div>
         </div>
+        <div id="pkg-pager"></div>
       </div>
     </main>
 
@@ -127,6 +128,10 @@ import '../../styles/global.css';
         const suggestBox = document.getElementById('pkg-suggest');
 
         let allPackages = [];
+        let totalPackages = 0;
+        let page = 0;
+        let serverMode = true;
+        const PAGE_SIZE = 24;
         let authorFilter = '';
         let licenseFilter = '';
         let maturityFilter = '';
@@ -141,6 +146,7 @@ import '../../styles/global.css';
 
         const SORTS = [
           ['recent', 'Recently updated'],
+          ['downloads', 'Most downloaded'],
           ['name', 'Name A–Z'],
         ];
         const MATURITIES = [
@@ -154,22 +160,44 @@ import '../../styles/global.css';
           return Number.isFinite(n) ? n : 0;
         }
 
-        // Same-origin search (F-06): one request per settle, abortable so
-        // fast typing never races (F-04: rows already carry license —
-        // zero per-package detail fetches). Category filters server-side.
+        function serverSort() {
+          return sortMode === 'downloads' ? 'downloads' : sortMode === 'name' ? 'name' : 'updated';
+        }
+
+        // Same-origin search: one request per settle, abortable so fast
+        // typing never races. All filters + sort + paging run server-side
+        // (envelope carries the total). Legacy array responses (old
+        // registry) fall back to client-side filtering over the page.
         async function fetchPackages(query) {
           if (inFlight) inFlight.abort();
           inFlight = new AbortController();
           const signal = inFlight.signal;
           const timer = setTimeout(() => inFlight.abort(), 10000);
           try {
-            const params = new URLSearchParams({ q: query || '', limit: '100' });
+            const params = new URLSearchParams({
+              q: query || '',
+              limit: String(PAGE_SIZE),
+              offset: String(page * PAGE_SIZE),
+              sort: serverSort(),
+              envelope: '1',
+            });
+            if (authorFilter) params.set('author', authorFilter);
             if (categoryFilter) params.set('category', categoryFilter);
+            if (licenseFilter) params.set('license', licenseFilter);
+            if (maturityFilter) params.set('maturity', maturityFilter);
             const res = await fetch(`/api/pkg/search?${params.toString()}`, { signal, headers: { Accept: 'application/json' } });
             if (!res.ok) throw new Error(`search ${res.status}`);
             const data = await res.json();
             if (signal.aborted) return;
-            allPackages = Array.isArray(data) ? data : [];
+            if (Array.isArray(data)) {
+              serverMode = false;
+              allPackages = data;
+              totalPackages = applyClientFilters(data).length;
+            } else {
+              serverMode = true;
+              allPackages = Array.isArray(data.items) ? data.items : [];
+              totalPackages = Number(data.total) || 0;
+            }
             refreshAuthors();
             refreshLicenseMenu();
             renderCategoryPills();
@@ -184,6 +212,16 @@ import '../../styles/global.css';
           }
         }
 
+        // Legacy path: exact-match filters over fetched rows.
+        function applyClientFilters(rows) {
+          let list = rows.slice();
+          if (authorFilter) list = list.filter((p) => p.author === authorFilter);
+          if (licenseFilter) list = list.filter((p) => (p.license || '') === licenseFilter);
+          if (maturityFilter === 'stable') list = list.filter((p) => majorOf(p.latest) >= 1);
+          if (maturityFilter === 'early') list = list.filter((p) => majorOf(p.latest) < 1);
+          return list;
+        }
+
         function renderCategoryPills() {
           const box = document.getElementById('pkg-cats');
           const pill = (value, label) => {
@@ -194,6 +232,7 @@ import '../../styles/global.css';
           box.querySelectorAll('[data-cat]').forEach((btn) => {
             btn.addEventListener('click', () => {
               categoryFilter = btn.dataset.cat;
+              page = 0;
               const url = new URL(window.location.href);
               if (categoryFilter) url.searchParams.set('category', categoryFilter);
               else url.searchParams.delete('category');
@@ -226,8 +265,9 @@ import '../../styles/global.css';
             btn.addEventListener('click', () => {
               licenseFilter = btn.dataset.license;
               licenseLabel.textContent = licenseFilter || 'All licenses';
+              page = 0;
               closeMenus();
-              renderPackages();
+              fetchPackages(searchInput.value.trim());
             });
           });
         }
@@ -262,8 +302,9 @@ import '../../styles/global.css';
             btn.addEventListener('click', () => {
               authorFilter = btn.dataset.author;
               authorLabel.textContent = authorFilter || 'All authors';
+              page = 0;
               closeMenus();
-              renderPackages();
+              fetchPackages(searchInput.value.trim());
             });
           });
         }
@@ -312,8 +353,9 @@ import '../../styles/global.css';
           btn.addEventListener('click', () => {
             maturityFilter = btn.dataset.maturity;
             maturityLabel.textContent = MATURITIES.find(([v]) => v === maturityFilter)[1];
+            page = 0;
             closeMenus();
-            renderPackages();
+            fetchPackages(searchInput.value.trim());
           });
         });
         sortMenu.innerHTML = SORTS.map(
@@ -330,25 +372,80 @@ import '../../styles/global.css';
               b.querySelector('svg')?.remove();
               if (on) b.insertAdjacentHTML('beforeend', checkMark());
             });
+            page = 0;
             closeMenus();
-            renderPackages();
+            fetchPackages(searchInput.value.trim());
           });
         });
 
         function visiblePackages() {
-          let list = allPackages.slice();
-          if (authorFilter) list = list.filter((p) => p.author === authorFilter);
-          if (licenseFilter) list = list.filter((p) => (p.license || '') === licenseFilter);
-          if (maturityFilter === 'stable') list = list.filter((p) => majorOf(p.latest) >= 1);
-          if (maturityFilter === 'early') list = list.filter((p) => majorOf(p.latest) < 1);
-          if (sortMode === 'name') list.sort((a, b) => String(a.name).localeCompare(String(b.name)));
-          return list;
+          if (serverMode) return allPackages;
+          const filtered = applyClientFilters(allPackages);
+          totalPackages = filtered.length;
+          return filtered.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
+        }
+
+        function totalPages() {
+          return Math.max(1, Math.ceil(totalPackages / PAGE_SIZE));
+        }
+
+        function renderPager() {
+          const pager = document.getElementById('pkg-pager');
+          const pages = totalPages();
+          if (pages <= 1) {
+            pager.innerHTML = '';
+            return;
+          }
+          const btn = (p, label, opts = {}) => {
+            const isCurrent = p === page;
+            const disabled = opts.disabled ? 'disabled' : '';
+            return `<button data-page="${p}" ${disabled} ${isCurrent ? 'aria-current="page"' : ''} class="min-w-9 px-2.5 py-1.5 rounded-lg border text-sm font-mono transition ${isCurrent ? 'border-accent-border bg-accent-soft text-accent' : 'border-border text-muted hover:text-foreground hover:border-accent-border'} disabled:opacity-40">${label}</button>`;
+          };
+          let nums = [];
+          const win = [];
+          for (let p = 0; p < pages; p++) {
+            if (p === 0 || p === pages - 1 || Math.abs(p - page) <= 2) win.push(p);
+          }
+          let last = -1;
+          for (const p of win) {
+            if (p - last > 1) nums.push('<span class="px-1 text-faint">…</span>');
+            nums.push(btn(p, String(p + 1)));
+            last = p;
+          }
+          pager.innerHTML = `
+            <div class="mt-8 flex flex-wrap items-center justify-between gap-3">
+              <span class="text-xs font-mono text-faint">Showing ${page * PAGE_SIZE + 1}–${Math.min((page + 1) * PAGE_SIZE, totalPackages)} of ${totalPackages}</span>
+              <div class="flex items-center gap-1.5" role="navigation" aria-label="Package pages">
+                ${btn(Math.max(0, page - 1), 'Previous', { disabled: page === 0 })}
+                ${nums.join('')}
+                ${btn(Math.min(pages - 1, page + 1), 'Next', { disabled: page >= pages - 1 })}
+              </div>
+            </div>`;
+          pager.querySelectorAll('[data-page]').forEach((b) => {
+            b.addEventListener('click', () => {
+              const next = Number(b.dataset.page);
+              if (next === page) return;
+              page = next;
+              fetchPackages(searchInput.value.trim());
+              document.getElementById('pkg-list').scrollIntoView({ block: 'start' });
+            });
+          });
         }
 
         function renderPackages() {
           const packages = visiblePackages();
           const counter = document.getElementById('pkg-count');
-          if (counter) counter.textContent = packages.length === 1 ? '1 package' : `${packages.length} packages`;
+          if (counter) {
+            counter.textContent =
+              totalPackages === 0
+                ? '0 packages'
+                : totalPackages === packages.length && totalPages() === 1
+                  ? totalPackages === 1
+                    ? '1 package'
+                    : `${totalPackages} packages`
+                  : `Showing ${page * PAGE_SIZE + 1}–${page * PAGE_SIZE + packages.length} of ${totalPackages}`;
+          }
+          renderPager();
           if (packages.length === 0) {
             renderEmpty();
             return;
@@ -409,7 +506,7 @@ import '../../styles/global.css';
           const q = e.target.value.trim();
           renderSuggest(q);
           clearTimeout(debounce);
-          debounce = setTimeout(() => fetchPackages(q), 300);
+          debounce = setTimeout(() => { page = 0; fetchPackages(q); }, 300);
         });
         searchInput.addEventListener('blur', () => {
           setTimeout(() => suggestBox.classList.add('hidden'), 150);
