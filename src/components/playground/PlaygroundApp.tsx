@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { runZZ } from '../../lib/zz/interpreter';
 import { ZZ_EXAMPLES } from '../../lib/zz/examples';
 import { zzMonarch, zzLangConfig } from '../../config/monaco-zz-config';
 import { cn } from '../../lib/cn';
@@ -112,6 +111,9 @@ export default function PlaygroundApp() {
   const pendingRef = React.useRef<number | null>(null);
   const abortRef = React.useRef(false);
   const runningRef = React.useRef(false);
+  // The 2k-line interpreter loads on first Run, not on mount (F-12):
+  // initial page JS stays lean; status covers the async gap.
+  const engineRef = React.useRef<Promise<any> | null>(null);
   const promptResolveRef = React.useRef<((v: string | null) => void) | null>(null);
   const truncatedRef = React.useRef(false);
 
@@ -194,6 +196,18 @@ export default function PlaygroundApp() {
     pendingRef.current = null;
     truncatedRef.current = false;
     setLines([]);
+    setStatus('loading engine…');
+    let runZZ: any;
+    try {
+      if (!engineRef.current) engineRef.current = import('../../lib/zz/interpreter');
+      ({ runZZ } = await engineRef.current);
+    } catch {
+      pushLine('err', 'error: execution engine failed to load — check your connection and retry');
+      setStatus('engine failed to load');
+      runningRef.current = false;
+      setRunning(false);
+      return;
+    }
     setStatus('running…');
     const t0 = performance.now();
     const io = {

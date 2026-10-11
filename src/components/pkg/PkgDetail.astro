@@ -1,0 +1,31 @@
+---
+/**
+ * PkgDetail shell (F-08): static frame shared by `/pkg/[name]` and
+ * `/pkg/view`. Content is painted client-side by `renderPkgDetail`
+ * (src/lib/pkg-detail.ts), wired from each page's own inline script.
+ * `routeName` is stamped as data-route so navigation handlers always
+ * read the current page's slug from the DOM (no stale closures).
+ */
+interface Props {
+  routeName?: string;
+}
+const { routeName = '' } = Astro.props;
+---
+
+<a href="/pkg" class="inline-flex items-center gap-1.5 text-sm text-accent hover:underline mb-6">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="rotate-180" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+  Back to packages
+</a>
+<div id="pkg-content" data-route={routeName}>
+  <div role="status" aria-busy="true" aria-label="Loading package">
+    <div class="animate-pulse">
+      <div class="h-8 w-2/3 rounded bg-raised mb-3"></div>
+      <div class="h-4 w-full rounded bg-raised mb-6"></div>
+      <div class="rounded-lg border border-border bg-surface p-4 mb-4">
+        <div class="h-3 w-16 rounded bg-raised mb-2"></div>
+        <div class="h-5 w-48 rounded bg-raised"></div>
+      </div>
+    </div>
+    <p class="text-muted text-sm mt-2">Loading package…</p>
+  </div>
+</div>

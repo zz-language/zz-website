@@ -99,9 +99,13 @@ import '../../styles/global.css';
 
     <Footer />
 
-    <script define:vars={{ registryApi: site.registryApi }}>
-    function main() {
-    if (!document.getElementById('pkg-search')) return;
+    <script>
+      import { esc, escAttr, wireCopyButton, announce } from '../../lib/pkg-api';
+
+      function boot() {
+        if (!document.getElementById('pkg-search') || document.getElementById('pkg-search').dataset.wired) return;
+        document.getElementById('pkg-search').dataset.wired = '1';
+
         const searchInput = document.getElementById('pkg-search');
         const authorBtn = document.getElementById('pkg-author-btn');
         const authorLabel = document.getElementById('pkg-author-label');
@@ -118,14 +122,16 @@ import '../../styles/global.css';
         const sortLabel = document.getElementById('pkg-sort-label');
         const sortMenu = document.getElementById('pkg-sort-menu');
         const pkgList = document.getElementById('pkg-list');
+        const suggestBox = document.getElementById('pkg-suggest');
+
         let allPackages = [];
         let authorFilter = '';
         let licenseFilter = '';
         let maturityFilter = '';
         let sortMode = 'recent';
-        // License lookup cache (name -> license): the search rows don't
-        // carry licenses, so one batched info round per unseen package.
-        const licenseCache = new Map();
+        let inFlight = null;
+        let debounce = 0;
+
         const SORTS = [
           ['recent', 'Recently updated'],
           ['name', 'Name A–Z'],
@@ -141,51 +147,53 @@ import '../../styles/global.css';
           return Number.isFinite(n) ? n : 0;
         }
 
+        // Same-origin search (F-06): one request per settle, abortable so
+        // fast typing never races (F-04: rows already carry license —
+        // zero per-package detail fetches).
         async function fetchPackages(query) {
+          if (inFlight) inFlight.abort();
+          inFlight = new AbortController();
+          const signal = inFlight.signal;
+          const timer = setTimeout(() => inFlight.abort(), 10000);
           try {
             const url = query
-              ? `${registryApi}/api/pkg/search?q=${encodeURIComponent(query)}`
-              : `${registryApi}/api/pkg/search?q=`;
-            const res = await fetch(url);
+              ? `/api/pkg/search?q=${encodeURIComponent(query)}&limit=100`
+              : `/api/pkg/search?q=&limit=100`;
+            const res = await fetch(url, { signal, headers: { Accept: 'application/json' } });
+            if (!res.ok) throw new Error(`search ${res.status}`);
             const data = await res.json();
+            if (signal.aborted) return;
             allPackages = Array.isArray(data) ? data : [];
             refreshAuthors();
-            refreshLicenses();
+            refreshLicenseMenu();
             renderPackages();
             renderSuggest(searchInput.value.trim());
-          } catch {
+          } catch (e) {
+            if (signal.aborted) return;
             renderEmpty('Could not reach the registry. Try again in a moment.');
+            announce('Could not reach the registry');
+          } finally {
+            clearTimeout(timer);
           }
         }
 
-        async function licenseOf(name) {
-          if (licenseCache.has(name)) return licenseCache.get(name);
-          try {
-            const res = await fetch(`${registryApi}/api/pkg/${encodeURIComponent(name)}`);
-            if (!res.ok) return '';
-            const pkg = await res.json();
-            const lic = (pkg.metadata && pkg.metadata.license) || '';
-            licenseCache.set(name, lic);
-            return lic;
-          } catch {
-            return '';
-          }
+        // License options derive from the search rows directly (F-04).
+        function licenseList() {
+          return [...new Set(allPackages.map((p) => p.license).filter(Boolean))].sort();
         }
 
-        async function refreshLicenses() {
-          const missing = allPackages.map((p) => p.name).filter((n) => !licenseCache.has(n));
-          await Promise.all(missing.map((n) => licenseOf(n)));
-          const licenses = [...new Set(allPackages.map((p) => licenseCache.get(p.name) || '').filter(Boolean))].sort();
+        function refreshLicenseMenu() {
+          const licenses = licenseList();
           if (licenseFilter && !licenses.includes(licenseFilter)) {
             licenseFilter = '';
             licenseLabel.textContent = 'All licenses';
           }
           licenseMenu.innerHTML =
-            `<button data-license="" role="option" class="filter-item">All licenses${licenseFilter === '' ? checkMark() : ''}</button>` +
+            `<button data-license="" role="option" aria-selected="${licenseFilter === ''}" class="filter-item">All licenses${licenseFilter === '' ? checkMark() : ''}</button>` +
             licenses
               .map(
                 (l) =>
-                  `<button data-license="${esc(l)}" role="option" class="filter-item">${esc(l)}${licenseFilter === l ? checkMark() : ''}</button>`,
+                  `<button data-license="${escAttr(l)}" role="option" aria-selected="${licenseFilter === l}" class="filter-item">${esc(l)}${licenseFilter === l ? checkMark() : ''}</button>`,
               )
               .join('');
           licenseMenu.querySelectorAll('[data-license]').forEach((btn) => {
@@ -198,9 +206,6 @@ import '../../styles/global.css';
           });
         }
 
-        // Author filter with fuzzy search: type to narrow, click to pick.
-        // (The search API matches name/description only, so author options
-        // derive from the result set client-side.)
         function authorList() {
           return [...new Set(allPackages.map((p) => p.author).filter(Boolean))].sort();
         }
@@ -219,11 +224,11 @@ import '../../styles/global.css';
           const query = q.trim().toLowerCase();
           const authors = authorList().filter((a) => !query || a.toLowerCase().includes(query));
           authorOpts.innerHTML =
-            `<button data-author="" role="option" class="filter-item">All authors${authorFilter === '' ? checkMark() : ''}</button>` +
+            `<button data-author="" role="option" aria-selected="${authorFilter === ''}" class="filter-item">All authors${authorFilter === '' ? checkMark() : ''}</button>` +
             authors
               .map(
                 (a) =>
-                  `<button data-author="${esc(a)}" role="option" class="filter-item">${esc(a)}${authorFilter === a ? checkMark() : ''}</button>`,
+                  `<button data-author="${escAttr(a)}" role="option" aria-selected="${authorFilter === a}" class="filter-item">${esc(a)}${authorFilter === a ? checkMark() : ''}</button>`,
               )
               .join('') +
             (authors.length === 0 ? '<div class="px-3 py-2 text-xs text-faint">No authors match</div>' : '');
@@ -241,9 +246,12 @@ import '../../styles/global.css';
           return '<svg class="ml-auto" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
         }
 
-        function closeMenus() {
+        function closeMenus(returnFocus) {
           [authorMenu, licenseMenu, maturityMenu, sortMenu].forEach((m) => m.classList.add('hidden'));
           [authorBtn, licenseBtn, maturityBtn, sortBtn].forEach((b) => b.setAttribute('aria-expanded', 'false'));
+          if (returnFocus && document.activeElement && document.activeElement.closest('[role="listbox"]')) {
+            returnFocus.focus();
+          }
         }
 
         function toggleMenu(menu, btn) {
@@ -266,16 +274,13 @@ import '../../styles/global.css';
         wireMenu(licenseBtn, licenseMenu);
         wireMenu(maturityBtn, maturityMenu);
         wireMenu(sortBtn, sortMenu);
-        document.addEventListener('click', (e) => {
-          if (![authorMenu, licenseMenu, maturityMenu, sortMenu].some((m) => m.contains(e.target))) closeMenus();
-        });
         if (authorSearch) {
           authorSearch.addEventListener('click', (e) => e.stopPropagation());
           authorSearch.addEventListener('input', (e) => renderAuthorOpts(e.target.value));
         }
         maturityMenu.innerHTML = MATURITIES.map(
           ([v, label]) =>
-            `<button data-maturity="${v}" role="option" class="filter-item">${label}${maturityFilter === v ? checkMark() : ''}</button>`,
+            `<button data-maturity="${escAttr(v)}" role="option" aria-selected="${maturityFilter === v}" class="filter-item">${esc(label)}${maturityFilter === v ? checkMark() : ''}</button>`,
         ).join('');
         maturityMenu.querySelectorAll('[data-maturity]').forEach((btn) => {
           btn.addEventListener('click', () => {
@@ -287,7 +292,7 @@ import '../../styles/global.css';
         });
         sortMenu.innerHTML = SORTS.map(
           ([v, label]) =>
-            `<button data-sort="${v}" role="option" class="filter-item">${label}${sortMode === v ? checkMark() : ''}</button>`,
+            `<button data-sort="${escAttr(v)}" role="option" aria-selected="${sortMode === v}" class="filter-item">${esc(label)}${sortMode === v ? checkMark() : ''}</button>`,
         ).join('');
         sortMenu.querySelectorAll('[data-sort]').forEach((btn) => {
           btn.addEventListener('click', () => {
@@ -295,6 +300,7 @@ import '../../styles/global.css';
             sortLabel.textContent = SORTS.find(([v]) => v === sortMode)[1];
             sortMenu.querySelectorAll('[data-sort]').forEach((b) => {
               const on = b.dataset.sort === sortMode;
+              b.setAttribute('aria-selected', String(on));
               b.querySelector('svg')?.remove();
               if (on) b.insertAdjacentHTML('beforeend', checkMark());
             });
@@ -306,7 +312,7 @@ import '../../styles/global.css';
         function visiblePackages() {
           let list = allPackages.slice();
           if (authorFilter) list = list.filter((p) => p.author === authorFilter);
-          if (licenseFilter) list = list.filter((p) => (licenseCache.get(p.name) || '') === licenseFilter);
+          if (licenseFilter) list = list.filter((p) => (p.license || '') === licenseFilter);
           if (maturityFilter === 'stable') list = list.filter((p) => majorOf(p.latest) >= 1);
           if (maturityFilter === 'early') list = list.filter((p) => majorOf(p.latest) < 1);
           if (sortMode === 'name') list.sort((a, b) => String(a.name).localeCompare(String(b.name)));
@@ -337,42 +343,22 @@ import '../../styles/global.css';
                   <span class="flex items-center justify-center w-5 h-5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 font-mono text-[10px] font-semibold">${esc((pkg.author || '?').slice(0, 1).toUpperCase())}</span>
                   ${esc(pkg.author)}
                 </a>
-                <button data-copy="zz add ${esc(pkg.name)}" class="copy-btn bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg border border-slate-700/50 flex items-center gap-2"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>copy install</span></button>
+                <button data-copy="zz add ${escAttr(pkg.name)}" class="copy-btn bg-surface hover:bg-raised text-muted hover:text-accent text-xs px-3 py-1.5 rounded-lg border border-border flex items-center gap-2"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>copy install</span></button>
               </div>
             </div>`,
             )
             .join('');
-          pkgList.querySelectorAll('.copy-btn').forEach((btn) => {
-            btn.addEventListener('click', async () => {
-              const label = btn.querySelector('span');
-              try {
-                await navigator.clipboard.writeText(btn.dataset.copy);
-                if (label) label.textContent = 'copied!';
-                setTimeout(() => {
-                  if (label) label.textContent = 'copy install';
-                }, 1500);
-              } catch {
-                if (label) label.textContent = 'copy failed';
-              }
-            });
-          });
+          pkgList.querySelectorAll('.copy-btn').forEach((btn) => wireCopyButton(btn, 'copy install'));
         }
 
         function renderEmpty(note) {
           pkgList.innerHTML = `
             <div class="rounded-lg border border-border bg-surface p-8 text-center md:col-span-2 lg:col-span-3">
               <p class="text-foreground font-medium mb-1">No packages found</p>
-              <p class="text-muted text-sm mb-4">${note || 'Be the first to publish a package.'}</p>
+              <p class="text-muted text-sm mb-4">${esc(note || 'Be the first to publish a package.')}</p>
               <code class="inline-block px-3 py-1.5 bg-background border border-border rounded-md text-accent text-sm font-mono">zz publish</code>
             </div>`;
         }
-
-        function esc(s) {
-          return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-        }
-
-        let timeout;
-        const suggestBox = document.getElementById('pkg-suggest');
 
         function renderSuggest(query) {
           const q = query.toLowerCase();
@@ -396,8 +382,8 @@ import '../../styles/global.css';
         searchInput.addEventListener('input', (e) => {
           const q = e.target.value.trim();
           renderSuggest(q);
-          clearTimeout(timeout);
-          timeout = setTimeout(() => fetchPackages(q), 300);
+          clearTimeout(debounce);
+          debounce = setTimeout(() => fetchPackages(q), 300);
         });
         searchInput.addEventListener('blur', () => {
           setTimeout(() => suggestBox.classList.add('hidden'), 150);
@@ -405,8 +391,38 @@ import '../../styles/global.css';
         searchInput.addEventListener('focus', (e) => renderSuggest(e.target.value.trim()));
 
         fetchPackages('');
-    }
-    document.addEventListener('astro:page-load', main);
+      }
+
+      boot();
+      // Document-level handlers registered once (F-10): Escape closes
+      // menus, outside clicks dismiss. Per-menu buttons wire in boot().
+      if (!(window as any).__zzPkgIndexNav) {
+        (window as any).__zzPkgIndexNav = true;
+        document.addEventListener('astro:page-load', boot);
+        document.addEventListener('click', (e) => {
+          const menus = ['pkg-author-menu', 'pkg-license-menu', 'pkg-maturity-menu', 'pkg-sort-menu'];
+          const open = menus.map((id) => document.getElementById(id)).filter((m) => m && !m.classList.contains('hidden'));
+          if (open.length === 0) return;
+          if (open.some((m) => m.contains(e.target))) return;
+          open.forEach((m) => m.classList.add('hidden'));
+        });
+        document.addEventListener('keydown', (e) => {
+          if (e.key !== 'Escape') return;
+          const menus = ['pkg-author-menu', 'pkg-license-menu', 'pkg-maturity-menu', 'pkg-sort-menu'];
+          const btns = ['pkg-author-btn', 'pkg-license-btn', 'pkg-maturity-btn', 'pkg-sort-btn'];
+          let focused = false;
+          menus.forEach((id, i) => {
+            const m = document.getElementById(id);
+            if (m && !m.classList.contains('hidden')) {
+              m.classList.add('hidden');
+              if (!focused) {
+                document.getElementById(btns[i])?.focus();
+                focused = true;
+              }
+            }
+          });
+        });
+      }
     </script>
   </body>
 </html>

@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "include": ["/pkg/*", "/u/*"],
+  "exclude": ["/pkg/", "/pkg/view", "/pkg/author", "/pkg/tokens", "/assets/*", "/*.ico", "/*.svg", "/*.png", "/*.webp", "/*.avif"]
+}

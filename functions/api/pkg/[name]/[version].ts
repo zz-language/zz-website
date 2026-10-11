@@ -13,13 +13,15 @@
 // - `Cache-Control: public, max-age=31536000, immutable` (tarballs are
 //   content-addressed and never mutated; republishing the same version
 //   is rejected at publish time)
+import { PKG_NAME_RE, SEMVER_RE } from '../../_validate';
+
 export async function onRequestGet(context: any) {
   const { env, params } = context;
   const rawName = params.name as string;
   const rawVersion = params.version as string;
 
   // Validate package name (same allowlist as publish).
-  if (!rawName || !/^[a-z0-9-_]+$/.test(rawName)) {
+  if (!rawName || !PKG_NAME_RE.test(rawName)) {
     return new Response(JSON.stringify({ error: 'Invalid package name' }), {
       status: 400,
       headers: { 'Content-Type': 'application/json' },
@@ -32,7 +34,7 @@ export async function onRequestGet(context: any) {
     : rawVersion;
 
   // Strict semver (same allowlist as publish) — rejects `..`, `/`, etc.
-  if (!version || !/^\d+\.\d+\.\d+$/.test(version)) {
+  if (!version || !SEMVER_RE.test(version)) {
     return new Response(JSON.stringify({ error: 'Invalid version (use semver)' }), {
       status: 400,
       headers: { 'Content-Type': 'application/json' },
@@ -66,9 +68,10 @@ export async function onRequestGet(context: any) {
       // D1 lookup is best-effort here; the bytes are authoritative.
     }
 
+    const filename = `${rawName}-${version}.tar.gz`;
     const headers: Record<string, string> = {
       'Content-Type': 'application/gzip',
-      'Content-Disposition': `attachment; filename="${rawName}-${version}.tar.gz"`,
+      'Content-Disposition': `attachment; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`,
       'Cache-Control': 'public, max-age=31536000, immutable',
     };
     if (etag) {
