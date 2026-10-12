@@ -276,6 +276,14 @@ export function packageHtml(pkg: any, stale = false): string {
     ${versionsHtml(md)}`;
 }
 
+/** Wire interactivity for SSR-painted detail content (no fetching). */
+export function wirePkgDetail(content: HTMLElement): void {
+  content.querySelectorAll('.copy-btn').forEach((b) => wireCopyButton(b as HTMLElement, 'copy'));
+  wireMdCopy(content);
+  wireTabs(content, 'deptab', 'deptab');
+  wireTabs(content, 'doctab', 'doctab');
+}
+
 /** Load + render a package into `content`. Handles cache, retry, states. */
 export async function renderPkgDetail(content: HTMLElement, name: string): Promise<void> {
   if (!name) {
@@ -294,10 +302,7 @@ export async function renderPkgDetail(content: HTMLElement, name: string): Promi
     const md = pkg.metadata;
     document.title = `${md.name} v${md.latest} | ZZ Packages`;
     content.innerHTML = packageHtml(pkg, stale);
-    content.querySelectorAll('.copy-btn').forEach((b) => wireCopyButton(b as HTMLElement, 'copy'));
-    wireMdCopy(content);
-    wireTabs(content, 'deptab', 'deptab');
-    wireTabs(content, 'doctab', 'doctab');
+    wirePkgDetail(content);
   };
 
   if (cached) {

@@ -23,6 +23,42 @@ function cardHtml(pkg: any): string {
     </div>`;
 }
 
+/** Pure content HTML for a loaded author list (server- and client-safe). */
+export function authorListHtml(login: string, list: any[]): string {
+  if (list.length === 0) {
+    return `
+      <p class="text-sm font-mono text-accent mb-2">Author</p>
+      <h1 class="text-2xl md:text-3xl font-semibold tracking-tight font-mono mb-6">${esc(login)}</h1>
+      <div class="rounded-lg border border-border bg-surface p-8 text-center">
+        <p class="text-foreground font-medium mb-1">No packages yet</p>
+        <p class="text-muted text-sm">${esc(login)} has not published anything.</p>
+      </div>`;
+  }
+  return `
+    <p class="text-sm font-mono text-accent mb-2">Developer</p>
+    <h1 class="text-2xl md:text-3xl font-semibold tracking-tight font-mono mb-6">${esc(login)}</h1>
+    <div class="grid grid-cols-2 gap-4 mb-8">
+      <div class="rounded-lg border border-border bg-surface p-4">
+        <div class="text-xs text-faint mb-1">Published packages</div>
+        <div class="font-mono text-2xl text-foreground">${list.length}</div>
+      </div>
+      <div class="rounded-lg border border-border bg-surface p-4">
+        <div class="text-xs text-faint mb-1">Latest update</div>
+        <div class="font-mono text-sm text-foreground truncate">${esc(list[0].name)} v${esc(list[0].latest)}</div>
+        <a href="/pkg/${encodeURIComponent(list[0].name)}" class="text-xs text-accent hover:underline">Open →</a>
+      </div>
+    </div>
+    <h2 class="font-medium mb-3">Packages</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      ${list.map(cardHtml).join('')}
+    </div>`;
+}
+
+/** Wire interactivity for painted author content (no fetching). */
+export function wireAuthor(content: HTMLElement): void {
+  content.querySelectorAll('.copy-btn').forEach((b) => wireCopyButton(b as HTMLElement, 'copy install'));
+}
+
 export async function renderAuthorPage(content: HTMLElement, login: string): Promise<void> {
   if (!login) {
     content.innerHTML = `
@@ -52,35 +88,8 @@ export async function renderAuthorPage(content: HTMLElement, login: string): Pro
     // also correct while older registry releases ignore `?author=`.
     const list = (Array.isArray(packages) ? packages : []).filter((p) => p?.author === login);
     document.title = `${login} | ZZ Packages`;
-    if (list.length === 0) {
-      content.innerHTML = `
-        <p class="text-sm font-mono text-accent mb-2">Author</p>
-        <h1 class="text-2xl md:text-3xl font-semibold tracking-tight font-mono mb-6">${esc(login)}</h1>
-        <div class="rounded-lg border border-border bg-surface p-8 text-center">
-          <p class="text-foreground font-medium mb-1">No packages yet</p>
-          <p class="text-muted text-sm">${esc(login)} has not published anything.</p>
-        </div>`;
-      return;
-    }
-    content.innerHTML = `
-      <p class="text-sm font-mono text-accent mb-2">Developer</p>
-      <h1 class="text-2xl md:text-3xl font-semibold tracking-tight font-mono mb-6">${esc(login)}</h1>
-      <div class="grid grid-cols-2 gap-4 mb-8">
-        <div class="rounded-lg border border-border bg-surface p-4">
-          <div class="text-xs text-faint mb-1">Published packages</div>
-          <div class="font-mono text-2xl text-foreground">${list.length}</div>
-        </div>
-        <div class="rounded-lg border border-border bg-surface p-4">
-          <div class="text-xs text-faint mb-1">Latest update</div>
-          <div class="font-mono text-sm text-foreground truncate">${esc(list[0].name)} v${esc(list[0].latest)}</div>
-          <a href="/pkg/${encodeURIComponent(list[0].name)}" class="text-xs text-accent hover:underline">Open →</a>
-        </div>
-      </div>
-      <h2 class="font-medium mb-3">Packages</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        ${list.map(cardHtml).join('')}
-      </div>`;
-    content.querySelectorAll('.copy-btn').forEach((b) => wireCopyButton(b as HTMLElement, 'copy install'));
+    content.innerHTML = authorListHtml(login, list);
+    wireAuthor(content);
   } catch (e) {
     if (e instanceof ApiError && e.status === 400) {
       content.innerHTML = `

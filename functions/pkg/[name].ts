@@ -26,7 +26,10 @@ export async function onRequestGet(context: any) {
     });
   }
 
-  const shellUrl = new URL('/pkg/view', request.url);
+  // Fetch the canonical trailing-slash shell URL: Pages 308-redirects
+  // extensionless and `.html` URLs to clean form, and ASSETS.fetch
+  // surfaces those redirects instead of following them.
+  const shellUrl = new URL('/pkg/view/', request.url);
   let shell: Response;
   try {
     // ASSETS serves static files directly (no function re-entry, no loop).

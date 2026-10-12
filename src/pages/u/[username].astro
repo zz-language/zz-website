@@ -7,26 +7,13 @@ import Icon from '../../components/icons/Icon.astro';
 import site from '../../config/site.json';
 import '../../styles/global.css';
 
-const routeLogin = Astro.params.username ?? '';
-
+// Intentionally NOT prerendered: functions/u/[username].ts serves this
+// shell for every login — no rebuild, no registry crawl at build time.
 export async function getStaticPaths() {
-  // Warm-start seed for known authors; functions/u/[username].ts (F-01)
-  // serves the rest without a rebuild.
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    try {
-      const res = await fetch(`${site.registryApi}/api/pkg/search?q=`);
-      const data = await res.json();
-      const logins = [...new Set((Array.isArray(data) ? data : []).map((p) => p.author).filter(Boolean))];
-      if (logins.length > 0) {
-        return logins.map((username) => ({ params: { username } }));
-      }
-    } catch {}
-    await new Promise((r) => setTimeout(r, 2000 * attempt));
-  }
-  console.warn('[u/[username]] registry unreachable after retries: no pretty author URLs prerendered');
   return [];
 }
 
+const routeLogin = Astro.params.username ?? '';
 const pageTitle = routeLogin ? `${routeLogin} | ZZ Packages` : `Author | ${site.siteName}`;
 ---
 
@@ -50,7 +37,7 @@ const pageTitle = routeLogin ? `${routeLogin} | ZZ Packages` : `Author | ${site.
           <Icon name="chevron-right" size={16} class="rotate-180" />
           Back to packages
         </a>
-        <div id="author-content" data-login={routeLogin}>
+        <div id="author-content" data-login={routeLogin} data-ssr="">
           <div class="text-muted text-sm">Loading packages…</div>
         </div>
       </div>
@@ -60,13 +47,17 @@ const pageTitle = routeLogin ? `${routeLogin} | ZZ Packages` : `Author | ${site.
 
     <script>
       import { resolveSlug } from '../../lib/pkg-api';
-      import { renderAuthorPage } from '../../lib/pkg-author';
+      import { renderAuthorPage, wireAuthor } from '../../lib/pkg-author';
 
       function boot() {
         const content = document.getElementById('author-content');
         if (!content || content.dataset.wired) return;
         content.dataset.wired = '1';
-        renderAuthorPage(content, resolveSlug(content.dataset.login || '', 'login'));
+        if (content.dataset.ssr === '1') {
+          wireAuthor(content);
+        } else {
+          renderAuthorPage(content, resolveSlug(content.dataset.login || '', 'login'));
+        }
       }
       boot();
       if (!(window as any).__zzAuthorNav) {
