@@ -30,7 +30,7 @@ export async function onRequestPost(context: any) {
   const ray = request.headers.get('cf-ray');
 
   const authHeader = request.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer zz_pat_')) {
+  if (!authHeader?.startsWith('Bearer zz_')) {
     return new Response(JSON.stringify({ error: 'Invalid token format' }), {
       status: 401,
       headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },

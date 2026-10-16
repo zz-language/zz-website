@@ -13,17 +13,16 @@
 // Rollback: delete this file to restore pure-static behavior.
 import { PKG_NAME_RE } from '../api/_validate';
 
-const RESERVED = new Set(['view', 'author', 'tokens']);
+const RESERVED = new Set(['view', 'author', 'tokens', 'edit']);
 
 export async function onRequestGet(context: any) {
   const { request, env, params } = context;
   const name = params.name as string;
 
+  // Reserved shells + tool pages are real static assets, not packages:
+  // pass through so Pages serves them normally.
   if (!name || RESERVED.has(name) || !PKG_NAME_RE.test(name)) {
-    return new Response(JSON.stringify({ error: 'Package not found' }), {
-      status: 404,
-      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-    });
+    return await context.next();
   }
 
   // Fetch the canonical trailing-slash shell URL: Pages 308-redirects

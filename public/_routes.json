@@ -1,5 +1,5 @@
 {
   "version": 1,
   "include": ["/pkg/*", "/u/*", "/api/*", "/docs/*"],
-  "exclude": ["/pkg/", "/pkg/view", "/pkg/view/", "/pkg/author", "/pkg/author/", "/pkg/tokens", "/pkg/tokens/", "/docs/", "/assets/*", "/*.ico", "/*.svg", "/*.png", "/*.webp", "/*.avif"]
+  "exclude": ["/pkg/", "/pkg/view", "/pkg/view/", "/pkg/author", "/pkg/author/", "/pkg/tokens", "/pkg/tokens/", "/pkg/edit", "/pkg/edit/", "/docs/", "/assets/*", "/*.ico", "/*.svg", "/*.png", "/*.webp", "/*.avif"]
 }

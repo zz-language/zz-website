@@ -118,6 +118,81 @@ export function wireCopyButton(btn: HTMLElement, idleLabel = 'copy'): void {
   });
 }
 
+/** Fixed category vocabulary (mirrors registry + CLI). */
+export const CATEGORIES = ['backend', 'cli', 'frameworks', 'math', 'gui', 'utilities'];
+
+export interface Session {
+  login: string;
+  token: string;
+}
+
+/** Stored session as-is (login is self-asserted — verify before trusting). */
+export function getSession(): Session | null {
+  try {
+    const login = localStorage.getItem('zz_login') || '';
+    const token = localStorage.getItem('zz_token') || '';
+    return login && token ? { login, token } : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearSession(): void {
+  try {
+    localStorage.removeItem('zz_token');
+    localStorage.removeItem('zz_login');
+    sessionStorage.removeItem('zz:verified_at');
+  } catch {}
+  window.dispatchEvent(new Event('zz-session-change'));
+}
+
+function verifiedRecently(): boolean {
+  try {
+    const at = Number(sessionStorage.getItem('zz:verified_at') || '0');
+    return Date.now() - at < 10 * 60 * 1000;
+  } catch {
+    return false;
+  }
+}
+
+function markVerified(): void {
+  try {
+    sessionStorage.setItem('zz:verified_at', String(Date.now()));
+  } catch {}
+}
+
+/**
+ * Prove the stored token is still valid AND which login it owns.
+ * Returns the verified login, or null (clearing spoofed/expired sessions).
+ * Cached 10 minutes to avoid a ping per page view.
+ */
+export async function verifySession(): Promise<string | null> {
+  const s = getSession();
+  if (!s) return null;
+  if (verifiedRecently()) return s.login;
+  try {
+    const res = await fetch('/api/auth/me', {
+      headers: { Authorization: `Bearer ${s.token}` },
+    });
+    if (!res.ok) throw new Error(`session ${res.status}`);
+    const me = await res.json();
+    if (!me || me.login !== s.login) throw new Error('login mismatch');
+    markVerified();
+    return me.login;
+  } catch {
+    clearSession();
+    return null;
+  }
+}
+
+/** Owner check against public package metadata (display gating only —
+ *  the registry re-verifies on every write, so spoofed logins gain nothing). */
+export function isOwnerOf(md: any, login: string | null): boolean {
+  if (!login || !md) return false;
+  if (md.author === login) return true;
+  return Array.isArray(md.owners) && md.owners.includes(login);
+}
+
 /**
  * Resolve a package/author slug for detail shells from, in order:
  * explicit route param (pretty prerendered page), `?name=`/`?login=`

@@ -99,7 +99,7 @@ export async function onRequestPut(context: any) {
     });
   }
   const auth = request.headers.get('Authorization');
-  if (!auth?.startsWith('Bearer zz_pat_')) {
+  if (!auth?.startsWith('Bearer zz_')) {
     return new Response(JSON.stringify({ error: 'Invalid token format' }), {
       status: 401,
       headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },

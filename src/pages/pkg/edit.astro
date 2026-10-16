@@ -6,10 +6,6 @@ import Footer from '../../components/Footer.astro';
 import Icon from '../../components/icons/Icon.astro';
 import site from '../../config/site.json';
 import '../../styles/global.css';
-
-// Static shell (like /pkg/view): the package name travels via ?name= so
-// no per-package prerender — and no rebuild — is ever required.
-const categories = ['backend', 'cli', 'frameworks', 'math', 'gui', 'utilities'];
 ---
 
 <html lang="en">
@@ -40,8 +36,8 @@ const categories = ['backend', 'cli', 'frameworks', 'math', 'gui', 'utilities'];
 
     <Footer />
 
-    <script define:vars={{ categories }}>
-      import { esc, escAttr, apiFetch, announce } from '../../lib/pkg-api';
+    <script>
+      import { esc, escAttr, apiFetch, announce, readCache, writeCache, CATEGORIES } from '../../lib/pkg-api';
       import { renderMarkdown } from '../../lib/md';
 
       function boot() {
@@ -69,14 +65,7 @@ const categories = ['backend', 'cli', 'frameworks', 'math', 'gui', 'utilities'];
           return;
         }
 
-        content.innerHTML = '<p class="text-muted text-sm">Loading package…</p>';
-        let pkg;
-        try {
-          pkg = await apiFetch(`/api/pkg/${encodeURIComponent(name)}`);
-        } catch {
-          content.innerHTML = '<div class="rounded-lg border border-border bg-surface p-8 text-center"><p class="font-medium mb-1">Could not load package</p><p class="text-muted text-sm">Try again in a moment.</p></div>';
-          return;
-        }
+        const paintForm = (pkg) => {
         const md = pkg.metadata;
         const owners = Array.isArray(md.owners) ? md.owners : [];
         if (session.login !== md.author && !owners.includes(session.login)) {
@@ -110,7 +99,7 @@ const categories = ['backend', 'cli', 'frameworks', 'math', 'gui', 'utilities'];
                 <label for="f-cat" class="block text-sm font-medium mb-1.5">Category</label>
                 <select id="f-cat" class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent-border">
                   <option value="">Uncategorized</option>
-                  ${categories.map((c) => `<option value="${c}"${md.category === c ? ' selected' : ''}>${c}</option>`).join('')}
+                  ${CATEGORIES.map((c) => `<option value="${c}"${md.category === c ? ' selected' : ''}>${c}</option>`).join('')}
                 </select>
               </div>
               <div>
@@ -126,6 +115,15 @@ const categories = ['backend', 'cli', 'frameworks', 'math', 'gui', 'utilities'];
               <label for="f-docs" class="block text-sm font-medium mb-1.5">Documentation <span class="text-faint font-normal">(Markdown — shown on the Docs tab)</span></label>
               <textarea id="f-docs" rows="12" spellcheck="false" class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:border-accent-border">${esc(typeof pkg.docs === 'string' ? pkg.docs : '')}</textarea>
               <details class="mt-2"><summary class="cursor-pointer text-sm text-muted hover:text-accent">Preview</summary><div id="docs-preview" class="mt-2 rounded-lg border border-border bg-surface p-4 md-prose"></div></details>
+            </div>
+            <div>
+              <span class="block text-sm font-medium mb-1.5">Collaborators <span class="text-faint font-normal">(owners can publish + edit)</span></span>
+              <div id="owners-list" class="rounded-lg border border-border bg-surface px-4 mb-2"></div>
+              <div class="flex gap-2">
+                <input id="owner-add" placeholder="GitHub login…" autocomplete="off" spellcheck="false" class="flex-1 min-w-0 bg-surface border border-border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:border-accent-border" />
+                <button id="owner-add-btn" class="px-4 py-2 rounded-lg border border-border text-sm hover:border-accent-border shrink-0">Add</button>
+              </div>
+              <p class="text-xs text-faint mt-1.5">They must have signed in once with GitHub first. You cannot remove the last owner.</p>
             </div>
             <div class="flex items-center gap-3">
               <button id="edit-save" class="px-5 py-2.5 rounded-lg bg-accent text-white text-sm font-medium hover:opacity-90">Save changes</button>
@@ -148,6 +146,64 @@ const categories = ['backend', 'cli', 'frameworks', 'math', 'gui', 'utilities'];
         };
         docsInput.addEventListener('input', renderPreview);
         renderPreview();
+
+        let coOwners = Array.isArray(md.owners) && md.owners.length > 0 ? md.owners.slice() : [md.author].filter(Boolean);
+        const ownersList = document.getElementById('owners-list');
+        const renderOwners = () => {
+          ownersList.innerHTML =
+            coOwners.length === 0
+              ? '<div class="text-xs text-faint py-2.5">No owners listed.</div>'
+              : coOwners
+                  .map(
+                    (o) => `<div class="flex items-center justify-between gap-3 py-2.5 border-b border-border last:border-0">
+                      <span class="font-mono text-sm">${esc(o)}${o === session.login ? ' <span class="text-xs text-faint">(you)</span>' : ''}</span>
+                      ${coOwners.length === 1 ? '<span class="text-xs text-faint">last owner</span>' : `<button data-unowner="${escAttr(o)}" class="text-xs text-muted hover:text-danger border border-border hover:border-danger/40 rounded-md px-2 py-1">Remove</button>`}
+                    </div>`,
+                  )
+                  .join('');
+          ownersList.querySelectorAll('[data-unowner]').forEach((b) => {
+            b.addEventListener('click', () => removeOwner(b.dataset.unowner));
+          });
+        };
+        renderOwners();
+
+        async function ownerFetch(path, method, body) {
+          const res = await fetch(path, {
+            method,
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.token}` },
+            body: body ? JSON.stringify(body) : undefined,
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(data.error || `request failed (${res.status})`);
+          return data;
+        }
+
+        async function removeOwner(login) {
+          if (!window.confirm(`Remove ${login} as owner of ${md.name}?`)) return;
+          try {
+            await ownerFetch(`/api/pkg/${encodeURIComponent(md.name)}/owners/${encodeURIComponent(login)}`, 'DELETE');
+            coOwners = coOwners.filter((o) => o !== login);
+            renderOwners();
+            say(true, `${login} removed as owner.`);
+          } catch (e) {
+            say(false, e.message || 'Remove failed.');
+          }
+        }
+
+        document.getElementById('owner-add-btn').addEventListener('click', async () => {
+          const input = document.getElementById('owner-add');
+          const login = input.value.trim();
+          if (!login) return;
+          try {
+            await ownerFetch(`/api/pkg/${encodeURIComponent(md.name)}/owners`, 'POST', { login });
+            if (!coOwners.includes(login)) coOwners.push(login);
+            input.value = '';
+            renderOwners();
+            say(true, `${login} added as owner.`);
+          } catch (e) {
+            say(false, e.message || 'Add failed.');
+          }
+        });
 
         document.getElementById('edit-save').addEventListener('click', async () => {
           const tags = document.getElementById('f-tags').value.split(',').map((t) => t.trim().toLowerCase()).filter(Boolean).slice(0, 10);
@@ -181,7 +237,12 @@ const categories = ['backend', 'cli', 'frameworks', 'math', 'gui', 'utilities'];
             const data = await res.json().catch(() => ({}));
             if (!res.ok) throw new Error(data.error || `save failed (${res.status})`);
             try { sessionStorage.removeItem(`zz:pkg:${md.name}`); } catch {}
-            say(true, 'Saved. Your package page updates immediately.');
+            say(true, 'Saved. ');
+            const view = document.createElement('a');
+            view.href = `/pkg/${encodeURIComponent(md.name)}`;
+            view.className = 'text-accent hover:underline font-medium';
+            view.textContent = 'View updated page →';
+            document.getElementById('edit-status').appendChild(view);
           } catch (e) {
             say(false, e.message || 'Save failed.');
           } finally {
@@ -189,6 +250,33 @@ const categories = ['backend', 'cli', 'frameworks', 'math', 'gui', 'utilities'];
             btn.textContent = 'Save changes';
           }
         });
+        };
+
+        // Cache-first: paint instantly from the package cache when present,
+        // then revalidate quietly — unless the user already started typing.
+        let dirtyEdit = false;
+        content.addEventListener('input', () => { dirtyEdit = true; }, true);
+        const cacheKey = `zz:pkg:${name}`;
+        const cachedPkg = readCache(cacheKey);
+        if (cachedPkg && cachedPkg.metadata) {
+          paintForm(cachedPkg);
+          apiFetch(`/api/pkg/${encodeURIComponent(name)}`)
+            .then((fresh) => {
+              writeCache(cacheKey, fresh);
+              if (!dirtyEdit) paintForm(fresh);
+            })
+            .catch(() => {});
+        } else {
+          content.innerHTML = '<p class="text-muted text-sm">Loading package…</p>';
+          try {
+            const fresh = await apiFetch(`/api/pkg/${encodeURIComponent(name)}`);
+            writeCache(cacheKey, fresh);
+            paintForm(fresh);
+          } catch {
+            content.innerHTML = '<div class="rounded-lg border border-border bg-surface p-8 text-center"><p class="font-medium mb-1">Could not load package</p><p class="text-muted text-sm">Try again in a moment.</p></div>';
+            return;
+          }
+        }
       }
 
       boot();

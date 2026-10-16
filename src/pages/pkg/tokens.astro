@@ -30,7 +30,7 @@ import '../../styles/global.css';
         </p>
 
         <div id="tokens-login" class="rounded-lg border border-border bg-surface p-6 text-center">
-          <p class="text-muted text-sm mb-4">Sign in with GitHub to create a token.</p>
+          <p class="text-muted text-sm mb-4">Sign in with GitHub to manage tokens.</p>
           <button
             id="github-login"
             class="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:opacity-90"
@@ -95,7 +95,7 @@ import '../../styles/global.css';
         const newPane = document.getElementById('new-token');
 
         function esc(s) {
-          return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+          return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         }
 
         function savedToken() {
@@ -130,7 +130,9 @@ import '../../styles/global.css';
             if (res.status === 401) {
               try {
                 localStorage.removeItem('zz_token');
+                localStorage.removeItem('zz_login');
               } catch {}
+              window.dispatchEvent(new Event('zz-session-change'));
               showLogin();
               return;
             }
@@ -139,15 +141,24 @@ import '../../styles/global.css';
               listPane.innerHTML = '<div class="text-muted text-sm py-4">No tokens yet — create one above.</div>';
               return;
             }
+            const kindOf = (prefix) => {
+              if (String(prefix).startsWith('zz_ses_')) return '<span class="ml-2 text-[11px] font-mono px-1.5 py-0.5 rounded border border-border text-faint">session</span>';
+              return '<span class="ml-2 text-[11px] font-mono px-1.5 py-0.5 rounded border border-accent-border bg-accent-soft text-accent">cli</span>';
+            };
+            const usedOf = (t) =>
+              t.last_used
+                ? `<div class="text-xs text-faint">last used ${esc(t.last_used.slice(0, 10))}</div>`
+                : '<div class="text-xs text-faint">never used</div>';
             listPane.innerHTML = tokens
               .map(
                 (t) => `
               <div class="flex items-center justify-between gap-3 py-2.5 border-b border-border last:border-0">
                 <div>
-                  <div class="font-mono text-sm">${esc(t.prefix)}…</div>
-                  <div class="text-xs text-faint">${esc(t.created_at || '')}</div>
+                  <div class="font-mono text-sm">${esc(t.prefix)}…${kindOf(t.prefix)}</div>
+                  <div class="text-xs text-faint">created ${esc(t.created_at || '')}</div>
+                  ${usedOf(t)}
                 </div>
-                <button data-revoke="${esc(t.prefix)}" class="shrink-0 px-3 py-1 rounded-md border border-border text-xs hover:border-accent-border">Revoke</button>
+                <button data-revoke="${esc(t.prefix)}" class="shrink-0 px-3 py-1 rounded-md border border-border text-xs hover:text-danger hover:border-danger/40">Revoke</button>
               </div>`,
               )
               .join('');
@@ -162,13 +173,27 @@ import '../../styles/global.css';
         async function revokeToken(prefix) {
           const token = savedToken();
           if (!token || !prefix) return;
+          if (!window.confirm(`Revoke token ${prefix}…? The CLI using it stops working immediately.`)) return;
           try {
-            await fetch(`${registryApi}/api/tokens/revoke`, {
+            const res = await fetch(`${registryApi}/api/tokens/revoke`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
               body: JSON.stringify({ prefix }),
             });
-          } catch {}
+            if (res.status === 401) {
+              try {
+                localStorage.removeItem('zz_token');
+                localStorage.removeItem('zz_login');
+              } catch {}
+              window.dispatchEvent(new Event('zz-session-change'));
+              showLogin();
+              return;
+            }
+            if (!res.ok) throw new Error(`revoke failed (${res.status})`);
+          } catch (e) {
+            listPane.innerHTML = `<div class="text-sm py-4 text-danger">${esc(e.message || 'Could not reach the registry.')}</div>`;
+            return;
+          }
           refreshList();
         }
 
@@ -189,8 +214,42 @@ import '../../styles/global.css';
           window.open(`${registryApi}/api/auth/github`, 'zz_oauth', 'width=640,height=720');
         });
 
-        document.getElementById('create-token').addEventListener('click', () => {
-          window.open(`${registryApi}/api/auth/github`, 'zz_oauth', 'width=640,height=720');
+        // Explicit creation: login never mints CLI tokens by itself.
+        // "New token" mints one publish-capable token, shown once.
+        document.getElementById('create-token').addEventListener('click', async (e) => {
+          const btn = e.currentTarget;
+          btn.disabled = true;
+          btn.textContent = 'Creating…';
+          try {
+            const res = await fetch(`${registryApi}/api/tokens`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${savedToken()}` },
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.status === 401) {
+              try {
+                localStorage.removeItem('zz_token');
+                localStorage.removeItem('zz_login');
+              } catch {}
+              window.dispatchEvent(new Event('zz-session-change'));
+              showLogin();
+              return;
+            }
+            if (!res.ok || !data.token) throw new Error(data.error || `create failed (${res.status})`);
+            // Display only: never overwrite the browser session with a
+            // publish-capable token.
+            document.getElementById('new-token-value').textContent = data.token;
+            try {
+              document.getElementById('new-token-login').textContent = localStorage.getItem('zz_login') || '';
+            } catch {}
+            newPane.classList.remove('hidden');
+          } catch (err) {
+            listPane.innerHTML = `<div class="text-sm py-4 text-danger">${esc(err.message || 'Could not reach the registry.')}</div>`;
+          } finally {
+            btn.disabled = false;
+            btn.textContent = 'New token';
+          }
+          refreshList();
         });
 
         document.getElementById('sign-out').addEventListener('click', () => {
