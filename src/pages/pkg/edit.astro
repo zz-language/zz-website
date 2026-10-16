@@ -41,7 +41,7 @@ const categories = ['backend', 'cli', 'frameworks', 'math', 'gui', 'utilities'];
     <Footer />
 
     <script define:vars={{ categories }}>
-      import { esc, escAttr, apiFetch, announce } from '../../lib/pkg-api';
+      import { esc, escAttr, apiFetch, announce, readCache, writeCache } from '../../lib/pkg-api';
       import { renderMarkdown } from '../../lib/md';
 
       function boot() {
@@ -69,14 +69,7 @@ const categories = ['backend', 'cli', 'frameworks', 'math', 'gui', 'utilities'];
           return;
         }
 
-        content.innerHTML = '<p class="text-muted text-sm">Loading package…</p>';
-        let pkg;
-        try {
-          pkg = await apiFetch(`/api/pkg/${encodeURIComponent(name)}`);
-        } catch {
-          content.innerHTML = '<div class="rounded-lg border border-border bg-surface p-8 text-center"><p class="font-medium mb-1">Could not load package</p><p class="text-muted text-sm">Try again in a moment.</p></div>';
-          return;
-        }
+        const paintForm = (pkg) => {
         const md = pkg.metadata;
         const owners = Array.isArray(md.owners) ? md.owners : [];
         if (session.login !== md.author && !owners.includes(session.login)) {
@@ -181,7 +174,12 @@ const categories = ['backend', 'cli', 'frameworks', 'math', 'gui', 'utilities'];
             const data = await res.json().catch(() => ({}));
             if (!res.ok) throw new Error(data.error || `save failed (${res.status})`);
             try { sessionStorage.removeItem(`zz:pkg:${md.name}`); } catch {}
-            say(true, 'Saved. Your package page updates immediately.');
+            say(true, 'Saved. ');
+            const view = document.createElement('a');
+            view.href = `/pkg/${encodeURIComponent(md.name)}`;
+            view.className = 'text-accent hover:underline font-medium';
+            view.textContent = 'View updated page →';
+            document.getElementById('edit-status').appendChild(view);
           } catch (e) {
             say(false, e.message || 'Save failed.');
           } finally {
@@ -189,6 +187,33 @@ const categories = ['backend', 'cli', 'frameworks', 'math', 'gui', 'utilities'];
             btn.textContent = 'Save changes';
           }
         });
+        };
+
+        // Cache-first: paint instantly from the package cache when present,
+        // then revalidate quietly — unless the user already started typing.
+        let dirtyEdit = false;
+        content.addEventListener('input', () => { dirtyEdit = true; }, true);
+        const cacheKey = `zz:pkg:${name}`;
+        const cachedPkg = readCache(cacheKey);
+        if (cachedPkg && cachedPkg.metadata) {
+          paintForm(cachedPkg);
+          apiFetch(`/api/pkg/${encodeURIComponent(name)}`)
+            .then((fresh) => {
+              writeCache(cacheKey, fresh);
+              if (!dirtyEdit) paintForm(fresh);
+            })
+            .catch(() => {});
+        } else {
+          content.innerHTML = '<p class="text-muted text-sm">Loading package…</p>';
+          try {
+            const fresh = await apiFetch(`/api/pkg/${encodeURIComponent(name)}`);
+            writeCache(cacheKey, fresh);
+            paintForm(fresh);
+          } catch {
+            content.innerHTML = '<div class="rounded-lg border border-border bg-surface p-8 text-center"><p class="font-medium mb-1">Could not load package</p><p class="text-muted text-sm">Try again in a moment.</p></div>';
+            return;
+          }
+        }
       }
 
       boot();
