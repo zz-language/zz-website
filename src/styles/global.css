@@ -14,6 +14,19 @@
   ::after {
     box-sizing: border-box;
   }
+  /* No Tailwind preflight in this codebase: links would inherit the UA
+     underline everywhere (cards, nav, tags). Opt out globally; explicit
+     `hover:underline` utilities still work. */
+  a {
+    text-decoration: none;
+  }
+  button {
+    font: inherit;
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
 }
 
 /* ——— ZZ design tokens: deep black default, soft light alternative ——— */

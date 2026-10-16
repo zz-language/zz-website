@@ -227,7 +227,7 @@ import '../../styles/global.css';
           const box = document.getElementById('pkg-cats');
           const pill = (value, label) => {
             const on = categoryFilter === value;
-            return `<button data-cat="${escAttr(value)}" aria-pressed="${on}" class="px-3 py-1.5 rounded-full border text-[13px] font-mono transition ${on ? 'border-accent-border bg-accent-soft text-accent' : 'border-border text-muted hover:text-foreground hover:border-accent-border'}">${esc(label)}</button>`;
+            return `<button data-cat="${escAttr(value)}" aria-pressed="${on}" class="px-3 py-1.5 rounded-full border text-[13px] font-mono transition ${on ? 'border-accent-border bg-accent-soft text-accent' : 'border-border bg-surface text-muted hover:text-foreground hover:border-accent-border'}">${esc(label)}</button>`;
           };
           box.innerHTML = pill('', 'All') + CATEGORIES.map((c) => pill(c, c)).join('');
           box.querySelectorAll('[data-cat]').forEach((btn) => {

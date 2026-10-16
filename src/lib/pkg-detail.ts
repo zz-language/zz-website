@@ -189,20 +189,36 @@ function docsTabsHtml(pkg: any): string {
 
 function wireTabs(root: HTMLElement, btnClass: string, prefix: string): void {
   const btns = [...root.querySelectorAll(`.${btnClass}`)] as HTMLElement[];
-  btns.forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const target = (btn as HTMLElement).dataset[prefix === 'deptab' ? 'deptab' : 'doctab'];
-      btns.forEach((b) => {
-        const on = b === btn;
-        b.setAttribute('aria-selected', String(on));
-        b.classList.toggle('text-foreground', on);
-        b.classList.toggle('border-accent', on);
-        b.classList.toggle('text-muted', !on);
-        b.classList.toggle('border-transparent', !on);
-      });
-      root.querySelectorAll(`[id^="${prefix}-"]`).forEach((p) => {
-        p.classList.toggle('hidden', p.id !== `${prefix}-${target}`);
-      });
+  const key = prefix === 'deptab' ? 'deptab' : 'doctab';
+  const activate = (btn: HTMLElement) => {
+    const target = (btn as HTMLElement).dataset[key];
+    btns.forEach((b) => {
+      const on = b === btn;
+      b.setAttribute('aria-selected', String(on));
+      b.setAttribute('tabindex', on ? '0' : '-1');
+      b.classList.toggle('text-foreground', on);
+      b.classList.toggle('border-accent', on);
+      b.classList.toggle('text-muted', !on);
+      b.classList.toggle('border-transparent', !on);
+    });
+    root.querySelectorAll(`[id^="${prefix}-"]`).forEach((p) => {
+      p.classList.toggle('hidden', p.id !== `${prefix}-${target}`);
+    });
+  };
+  btns.forEach((btn, i) => {
+    btn.setAttribute('tabindex', btn.getAttribute('aria-selected') === 'true' ? '0' : '-1');
+    btn.addEventListener('click', () => activate(btn));
+    // Roving tabindex arrow-key navigation (tabs pattern).
+    btn.addEventListener('keydown', (e) => {
+      let next: number | null = null;
+      if (e.key === 'ArrowRight') next = (i + 1) % btns.length;
+      else if (e.key === 'ArrowLeft') next = (i - 1 + btns.length) % btns.length;
+      else if (e.key === 'Home') next = 0;
+      else if (e.key === 'End') next = btns.length - 1;
+      if (next === null) return;
+      e.preventDefault();
+      btns[next].focus();
+      activate(btns[next]);
     });
   });
 }
