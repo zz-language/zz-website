@@ -116,6 +116,15 @@ import '../../styles/global.css';
               <textarea id="f-docs" rows="12" spellcheck="false" class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:border-accent-border">${esc(typeof pkg.docs === 'string' ? pkg.docs : '')}</textarea>
               <details class="mt-2"><summary class="cursor-pointer text-sm text-muted hover:text-accent">Preview</summary><div id="docs-preview" class="mt-2 rounded-lg border border-border bg-surface p-4 md-prose"></div></details>
             </div>
+            <div>
+              <span class="block text-sm font-medium mb-1.5">Collaborators <span class="text-faint font-normal">(owners can publish + edit)</span></span>
+              <div id="owners-list" class="rounded-lg border border-border bg-surface px-4 mb-2"></div>
+              <div class="flex gap-2">
+                <input id="owner-add" placeholder="GitHub login…" autocomplete="off" spellcheck="false" class="flex-1 min-w-0 bg-surface border border-border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:border-accent-border" />
+                <button id="owner-add-btn" class="px-4 py-2 rounded-lg border border-border text-sm hover:border-accent-border shrink-0">Add</button>
+              </div>
+              <p class="text-xs text-faint mt-1.5">They must have signed in once with GitHub first. You cannot remove the last owner.</p>
+            </div>
             <div class="flex items-center gap-3">
               <button id="edit-save" class="px-5 py-2.5 rounded-lg bg-accent text-white text-sm font-medium hover:opacity-90">Save changes</button>
               <a href="/pkg/${encodeURIComponent(md.name)}" class="text-sm text-muted hover:text-accent">Cancel</a>
@@ -137,6 +146,64 @@ import '../../styles/global.css';
         };
         docsInput.addEventListener('input', renderPreview);
         renderPreview();
+
+        let coOwners = Array.isArray(md.owners) && md.owners.length > 0 ? md.owners.slice() : [md.author].filter(Boolean);
+        const ownersList = document.getElementById('owners-list');
+        const renderOwners = () => {
+          ownersList.innerHTML =
+            coOwners.length === 0
+              ? '<div class="text-xs text-faint py-2.5">No owners listed.</div>'
+              : coOwners
+                  .map(
+                    (o) => `<div class="flex items-center justify-between gap-3 py-2.5 border-b border-border last:border-0">
+                      <span class="font-mono text-sm">${esc(o)}${o === session.login ? ' <span class="text-xs text-faint">(you)</span>' : ''}</span>
+                      ${coOwners.length === 1 ? '<span class="text-xs text-faint">last owner</span>' : `<button data-unowner="${escAttr(o)}" class="text-xs text-muted hover:text-danger border border-border hover:border-danger/40 rounded-md px-2 py-1">Remove</button>`}
+                    </div>`,
+                  )
+                  .join('');
+          ownersList.querySelectorAll('[data-unowner]').forEach((b) => {
+            b.addEventListener('click', () => removeOwner(b.dataset.unowner));
+          });
+        };
+        renderOwners();
+
+        async function ownerFetch(path, method, body) {
+          const res = await fetch(path, {
+            method,
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.token}` },
+            body: body ? JSON.stringify(body) : undefined,
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(data.error || `request failed (${res.status})`);
+          return data;
+        }
+
+        async function removeOwner(login) {
+          if (!window.confirm(`Remove ${login} as owner of ${md.name}?`)) return;
+          try {
+            await ownerFetch(`/api/pkg/${encodeURIComponent(md.name)}/owners/${encodeURIComponent(login)}`, 'DELETE');
+            coOwners = coOwners.filter((o) => o !== login);
+            renderOwners();
+            say(true, `${login} removed as owner.`);
+          } catch (e) {
+            say(false, e.message || 'Remove failed.');
+          }
+        }
+
+        document.getElementById('owner-add-btn').addEventListener('click', async () => {
+          const input = document.getElementById('owner-add');
+          const login = input.value.trim();
+          if (!login) return;
+          try {
+            await ownerFetch(`/api/pkg/${encodeURIComponent(md.name)}/owners`, 'POST', { login });
+            if (!coOwners.includes(login)) coOwners.push(login);
+            input.value = '';
+            renderOwners();
+            say(true, `${login} added as owner.`);
+          } catch (e) {
+            say(false, e.message || 'Add failed.');
+          }
+        });
 
         document.getElementById('edit-save').addEventListener('click', async () => {
           const tags = document.getElementById('f-tags').value.split(',').map((t) => t.trim().toLowerCase()).filter(Boolean).slice(0, 10);

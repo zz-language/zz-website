@@ -13,6 +13,8 @@ export interface ZZSession {
   token: string;
 }
 
+import { verifySession } from './pkg-api';
+
 export function zzSession(): ZZSession | null {
   try {
     const login = localStorage.getItem('zz_login') || '';
@@ -174,6 +176,11 @@ export function initHeader(): void {
   renderAuth();
   syncThemeIcons();
   markActiveNav();
+  // Background session proof: a revoked/expired token (or a hand-edited
+  // zz_login) renders a stale avatar until something 401s. Verify once —
+  // verifySession clears invalid sessions and fires zz-session-change,
+  // which re-renders the slot above. Cached 10 min, so ~1 ping per visit.
+  verifySession().catch(() => {});
 
   document.getElementById('theme-toggle')?.addEventListener('click', () => {
     const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';

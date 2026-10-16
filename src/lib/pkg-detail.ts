@@ -7,7 +7,7 @@
  * Dependents, collapsed version history, download stats with sparkline,
  * and a stacked language bar. All escaping via esc/escAttr (F-09).
  */
-import { esc, escAttr, apiFetch, ApiError, readCache, writeCache, announce, wireCopyButton } from './pkg-api';
+import { esc, escAttr, apiFetch, ApiError, readCache, writeCache, announce, wireCopyButton, getSession, verifySession, isOwnerOf } from './pkg-api';
 import { renderMarkdown, wireMdCopy } from './md';
 
 export function detailSkeletonHtml(): string {
@@ -183,7 +183,7 @@ function docsTabsHtml(pkg: any): string {
       ${tocHtml}
       <div id="doctab-readme" class="md-prose">${readme.html}</div>
       ${docs ? `<div id="doctab-docs" class="hidden md-prose">${docs.html}</div>` : ''}
-      ${!hasDocs ? `<a href="/pkg/edit?name=${encodeURIComponent(pkg.metadata?.name || '')}" class="mt-3 flex items-center gap-3 rounded-lg border border-dashed border-border hover:border-accent-border p-4 transition group"><span class="flex items-center justify-center w-8 h-8 rounded-lg border border-accent-border bg-accent-soft text-accent shrink-0"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M8 2v12M2 8h12"/></svg></span><span><span class="block text-sm font-medium group-hover:text-accent">Write the Docs page</span><span class="block text-xs text-faint mt-0.5">Owners can add long-form guides here — readers get a second tab.</span></span></a>` : ''}
+      ${!hasDocs ? `<a data-owner-only href="/pkg/edit?name=${encodeURIComponent(pkg.metadata?.name || '')}" class="mt-3 flex items-center gap-3 rounded-lg border border-dashed border-border hover:border-accent-border p-4 transition group"><span class="flex items-center justify-center w-8 h-8 rounded-lg border border-accent-border bg-accent-soft text-accent shrink-0"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M8 2v12M2 8h12"/></svg></span><span><span class="block text-sm font-medium group-hover:text-accent">Write the Docs page</span><span class="block text-xs text-faint mt-0.5">Owners can add long-form guides here — readers get a second tab.</span></span></a>` : ''}
     </div>`;
 }
 
@@ -245,7 +245,7 @@ export function packageHtml(pkg: any, stale = false): string {
         ${tags.slice(0, 5).map((t: string) => `<a href="/pkg?q=${encodeURIComponent(t)}" class="text-xs font-mono px-2 py-0.5 rounded-full border border-border text-muted hover:text-accent hover:border-accent-border">${esc(t)}</a>`).join('')}
         <span class="ml-auto flex items-center gap-2">
           <span class="shrink-0 text-accent font-mono text-sm">v${esc(md.latest)}</span>
-          <a href="/pkg/edit?name=${encodeURIComponent(md.name)}" title="Edit package metadata and docs" class="inline-flex items-center gap-1.5 text-xs font-medium text-muted hover:text-accent border border-border hover:border-accent-border rounded-lg px-2.5 py-1.5 transition">
+          <a href="/pkg/edit?name=${encodeURIComponent(md.name)}" title="Edit package metadata and docs" data-owner-only class="inline-flex items-center gap-1.5 text-xs font-medium text-muted hover:text-accent border border-border hover:border-accent-border rounded-lg px-2.5 py-1.5 transition">
             <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.013 1.427a1.75 1.75 0 0 1 2.474 0l1.086 1.086a1.75 1.75 0 0 1 0 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 0 1-.927-.928l.929-3.25c.081-.286.235-.547.445-.758l8.61-8.61Zm.176 4.823L9.75 4.81l-7.5 7.5v1.44h1.44l7.5-7.5Zm2.828.914-1.086-1.086c-.194-.194-.51-.194-.704 0L7.646 10.66l-.427 1.5 1.5-.427 4.122-4.122c.194-.194.194-.51 0-.704Z"/></svg>
             Edit
           </a>
@@ -349,7 +349,21 @@ export async function renderPkgDetail(content: HTMLElement, name: string): Promi
     const md = pkg.metadata;
     document.title = `${md.name} v${md.latest} | ZZ Packages`;
     content.innerHTML = packageHtml(pkg, stale);
+    // Owner-only chrome (Edit button, docs CTA) is display-gated on the
+    // stored login; the registry re-verifies on every write, so a spoofed
+    // login gains nothing. A background verify strips the chrome when the
+    // session is invalid or belongs to someone else.
+    const applyOwnerGate = (login: string | null) => {
+      if (!isOwnerOf(md, login)) {
+        content.querySelectorAll('[data-owner-only]').forEach((el) => el.remove());
+      }
+    };
+    applyOwnerGate(getSession()?.login ?? null);
     wirePkgDetail(content);
+    verifySession().then((verified) => {
+      const stored = getSession()?.login ?? null;
+      if (!verified || verified !== stored) applyOwnerGate(verified);
+    });
   };
 
   if (cached) {

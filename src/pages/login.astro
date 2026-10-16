@@ -61,8 +61,10 @@ import '../styles/global.css';
         // Already signed in: the dashboard is home.
         try {
           if (localStorage.getItem('zz_token') && localStorage.getItem('zz_login')) {
-            const next = new URLSearchParams(window.location.search).get('next') || '/home';
-            window.location.replace(next.startsWith('/') ? next : '/home');
+            const rawNext = new URLSearchParams(window.location.search).get('next') || '/home';
+            // Same-origin only: `//evil.com` and backslashes escape startsWith('/').
+            const next = rawNext.startsWith('/') && !rawNext.startsWith('//') && !rawNext.includes('\\') ? rawNext : '/home';
+            window.location.replace(next);
           }
         } catch {}
 
@@ -97,8 +99,9 @@ import '../styles/global.css';
             return;
           }
           window.dispatchEvent(new Event('zz-session-change'));
-          const next = new URLSearchParams(window.location.search).get('next') || '/pkg/tokens';
-          window.location.href = next.startsWith('/') ? next : '/pkg/tokens';
+          const rawNext2 = new URLSearchParams(window.location.search).get('next') || '/pkg/tokens';
+          const next = rawNext2.startsWith('/') && !rawNext2.startsWith('//') && !rawNext2.includes('\\') ? rawNext2 : '/pkg/tokens';
+          window.location.href = next;
         });
     }
     document.addEventListener('astro:page-load', main);
