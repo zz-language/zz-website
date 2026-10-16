@@ -1,0 +1,64 @@
+---
+import CustomHeader from '../components/header/CustomHeader.astro';
+import { ClientRouter } from 'astro:transitions';
+import ThemeInit from '../components/ThemeInit.astro';
+import Footer from '../components/Footer.astro';
+import site from '../config/site.json';
+import '../styles/global.css';
+---
+
+<html lang="en">
+  <head>
+    <ClientRouter />
+    <ThemeInit />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>Not found | {site.siteName}</title>
+    <meta name="robots" content="noindex" />
+  </head>
+  <body class="bg-background text-foreground font-sans antialiased">
+    <CustomHeader />
+
+    <main class="pt-14">
+      <div class="max-w-2xl mx-auto px-4 md:px-6 py-16 md:py-24 text-center">
+        <p class="font-mono text-sm text-faint mb-3" id="notfound-code">404</p>
+        <h1 class="text-3xl md:text-4xl font-semibold tracking-tight mb-4" id="notfound-title">Page not found</h1>
+        <p class="text-muted mb-2" id="notfound-body">This page wandered off.</p>
+        <p class="text-muted text-sm mb-8 hidden" id="notfound-hint"></p>
+        <div class="flex flex-wrap justify-center gap-3">
+          <a href="/pkg" class="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium">Browse packages</a>
+          <a href={site.docsPath} class="px-4 py-2 rounded-lg border border-border text-sm text-muted hover:text-foreground hover:border-accent-border">Read the docs</a>
+          <a href="/playground" class="px-4 py-2 rounded-lg border border-border text-sm text-muted hover:text-foreground hover:border-accent-border">Open playground</a>
+        </div>
+      </div>
+    </main>
+
+    <Footer />
+
+    <script>
+      (function () {
+        const path = window.location.pathname;
+        // Package URLs that missed both the prerender and the fallback
+        // function get a registry-flavored 404, not the generic one.
+        const m = path.match(/^\/(pkg|u)\/([^/]+)\/?$/);
+        if (!m) return;
+        const [, kind, slug] = m;
+        if (!/^[a-z0-9_-]+$/i.test(slug)) return;
+        document.title = 'Not found | ZZ Packages';
+        const isPkg = kind === 'pkg';
+        document.getElementById('notfound-title').textContent = isPkg
+          ? `Package "${slug}" not found`
+          : `Author "${slug}" has no page yet`;
+        document.getElementById('notfound-body').textContent = isPkg
+          ? `The package "${slug}" does not exist yet.`
+          : `No packages have been published under "${slug}" yet.`;
+        const hint = document.getElementById('notfound-hint');
+        hint.classList.remove('hidden');
+        hint.innerHTML = isPkg
+          ? 'Publishing it right now? Wait a minute for the registry, then <a href="" onclick="window.location.reload();return false" class="text-accent hover:underline">reload</a>. Otherwise ship it with <code class="font-mono text-xs text-accent">zz publish</code>.'
+          : 'If you just published, wait a minute for the registry, then reload.';
+      })();
+    </script>
+  </body>
+</html>

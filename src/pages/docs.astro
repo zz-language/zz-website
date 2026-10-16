@@ -1,0 +1,112 @@
+---
+import CustomHeader from '../components/header/CustomHeader.astro';
+import { ClientRouter } from 'astro:transitions';
+import ThemeInit from '../components/ThemeInit.astro';
+import Footer from '../components/Footer.astro';
+import Icon from '../components/icons/Icon.astro';
+import site from '../config/site.json';
+import '../styles/global.css';
+
+// Docs hub: the main /docs/ route. Individual pages live at /docs/<slug>
+// (served by the Pages rewrite middleware from the Starlight pages).
+const sections = [
+  {
+    label: 'Getting Started',
+    desc: 'Install ZZ, run your first program, ship a native binary.',
+    links: [{ label: 'Introduction', href: '/docs/getting-started' }],
+  },
+  {
+    label: 'Language',
+    desc: 'Syntax, types, errors and idioms.',
+    links: [
+      { label: 'Syntax', href: '/docs/syntax' },
+      { label: 'Language Reference', href: '/docs/language-reference' },
+      { label: 'Error Handling', href: '/docs/error-handling' },
+      { label: 'Best Practices', href: '/docs/best-practices' },
+    ],
+  },
+  {
+    label: 'Standard Library',
+    desc: 'One import away: strings, vectors, JSON, HTTP, SQL and more.',
+    links: [
+      { label: 'Overview', href: '/docs/stdlib/overview' },
+      { label: 'std.str', href: '/docs/stdlib/str' },
+      { label: 'std.vec', href: '/docs/stdlib/vec' },
+      { label: 'std.json', href: '/docs/stdlib/json' },
+      { label: 'std.http', href: '/docs/stdlib/http' },
+      { label: 'std.fs', href: '/docs/stdlib/fs' },
+      { label: 'std.env', href: '/docs/stdlib/env' },
+      { label: 'std.math', href: '/docs/stdlib/math' },
+      { label: 'std.time', href: '/docs/stdlib/time' },
+      { label: 'std.encoding', href: '/docs/stdlib/encoding' },
+      { label: 'std.net', href: '/docs/stdlib/net' },
+    ],
+  },
+  {
+    label: 'Advanced',
+    desc: 'Async I/O, sockets and power features.',
+    links: [
+      { label: 'Async Sockets', href: '/docs/async-sockets' },
+      { label: 'Advanced Features', href: '/docs/advanced' },
+    ],
+  },
+];
+---
+
+<html lang="en">
+  <head>
+    <ClientRouter />
+    <ThemeInit />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>Documentation | {site.siteName}</title>
+    <meta name="description" content="ZZ documentation: getting started, language reference, standard library and advanced guides." />
+    <link rel="canonical" href={`${site.domain}/docs/`} />
+  </head>
+  <body class="bg-background text-foreground font-sans antialiased">
+    <CustomHeader />
+
+    <main class="pt-14">
+      <div class="max-w-6xl mx-auto px-4 md:px-6 py-10 md:py-14">
+        <p class="text-sm font-mono text-accent mb-2">Docs</p>
+        <h1 class="text-3xl md:text-4xl font-semibold tracking-tight mb-3">ZZ documentation</h1>
+        <p class="text-muted max-w-2xl mb-4">
+          Everything from first install to async sockets. Prefer searching?
+          Press <kbd class="font-mono text-xs px-1.5 py-0.5 rounded border border-border bg-surface">Ctrl K</kbd> anywhere.
+        </p>
+        <div class="flex flex-wrap gap-3 mb-12">
+          <a href="/docs/getting-started" class="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium inline-flex items-center gap-2">
+            Get started
+            <Icon name="arrow-right" size={16} />
+          </a>
+          <a href="/playground" class="px-4 py-2 rounded-lg border border-border text-sm text-muted hover:text-foreground hover:border-accent-border inline-flex items-center gap-2">
+            <Icon name="play" size={16} />
+            Try it live
+          </a>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {sections.map((s) => (
+            <section class="rounded-xl border border-border bg-surface p-6" aria-label={s.label}>
+              <h2 class="font-semibold text-lg mb-1">{s.label}</h2>
+              <p class="text-sm text-muted mb-4">{s.desc}</p>
+              <ul class="grid grid-cols-1 sm:grid-cols-2 gap-1">
+                {s.links.map((l) => (
+                  <li>
+                    <a href={l.href} class="group flex items-center justify-between gap-2 px-2 -mx-2 py-1.5 rounded-md text-sm text-muted hover:text-foreground hover:bg-raised">
+                      <span class="font-mono text-[13px]">{l.label}</span>
+                      <span class="text-faint group-hover:text-accent group-hover:translate-x-0.5 transition" aria-hidden="true">→</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
+      </div>
+    </main>
+
+    <Footer />
+  </body>
+</html>

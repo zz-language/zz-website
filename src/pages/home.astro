@@ -98,7 +98,7 @@ import '../styles/global.css';
         const appPane = document.getElementById('home-app');
 
         function esc(s) {
-          return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+          return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/`/g, '&#96;');
         }
 
         function session() {
@@ -123,8 +123,11 @@ import '../styles/global.css';
 
         async function loadDashboard(s) {
           try {
+            // Public catalog via same-origin proxy, server-filtered to the
+            // owner (F-05/F-06). Tokens stay cross-origin: they need the
+            // user's Bearer header, which the public proxy never forwards.
             const [pkgsRes, toksRes] = await Promise.all([
-              fetch(`${registryApi}/api/pkg/search?q=`),
+              fetch(`/api/pkg/search?author=${encodeURIComponent(s.login)}&limit=100`, { headers: { Accept: 'application/json' } }),
               fetch(`${registryApi}/api/tokens`, { headers: { Authorization: `Bearer ${s.token}` } }),
             ]);
             if (toksRes.status === 401) {
@@ -137,7 +140,9 @@ import '../styles/global.css';
               return;
             }
             const all = await pkgsRes.json();
-            const mine = (Array.isArray(all) ? all : []).filter((p) => p.author === s.login);
+            // Server filters by author; re-filter client-side too while
+            // older registry releases ignore `?author=`.
+            const mine = (Array.isArray(all) ? all : []).filter((p) => p?.author === s.login);
             const toks = await toksRes.json();
 
             document.getElementById('stat-pkgs').textContent = mine.length;

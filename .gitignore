@@ -24,3 +24,6 @@ plans/
 
 # pagefind
 .pagefind/
+
+# opencode session state (local only, never commit)
+.opencode/

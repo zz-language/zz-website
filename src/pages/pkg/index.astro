@@ -44,6 +44,7 @@ import '../../styles/global.css';
               type="text"
               placeholder="Search packages..."
               autocomplete="off"
+              maxlength="500"
               role="combobox"
               aria-expanded="false"
               aria-controls="pkg-suggest"
@@ -83,14 +84,6 @@ import '../../styles/global.css';
             <div id="pkg-maturity-menu" class="hidden absolute left-0 top-[calc(100%+6px)] min-w-44 rounded-xl border border-border bg-surface shadow-2xl shadow-black/50 p-1.5 z-20" role="listbox" aria-label="Filter by maturity"></div>
           </div>
           <div class="relative">
-            <button id="pkg-category-btn" class="flex items-center gap-2 px-3.5 py-2 rounded-full bg-blue-500/[0.07] border border-blue-500/20 text-[13px] text-foreground hover:border-blue-500/50 hover:bg-blue-500/[0.12] transition" aria-haspopup="listbox" aria-expanded="false">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" class="text-blue-400"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg>
-              <span id="pkg-category-label">All categories</span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" class="text-faint"><polyline points="6 9 12 15 18 9"/></svg>
-            </button>
-            <div id="pkg-category-menu" class="hidden absolute left-0 top-[calc(100%+6px)] min-w-44 rounded-xl border border-border bg-surface shadow-2xl shadow-black/50 p-1.5 z-20" role="listbox" aria-label="Filter by category"></div>
-          </div>
-          <div class="relative">
             <button id="pkg-sort-btn" class="flex items-center gap-2 px-3.5 py-2 rounded-full bg-blue-500/[0.07] border border-blue-500/20 text-[13px] text-foreground hover:border-blue-500/50 hover:bg-blue-500/[0.12] transition" aria-haspopup="listbox" aria-expanded="false">
               <span id="pkg-sort-label">Recently updated</span>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" class="text-faint"><polyline points="6 9 12 15 18 9"/></svg>
@@ -99,17 +92,24 @@ import '../../styles/global.css';
           </div>
         </div>
 
+        <div id="pkg-cats" class="flex flex-wrap gap-2 max-w-3xl mb-8" role="group" aria-label="Filter by category"></div>
+
         <div id="pkg-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div class="rounded-lg border border-border bg-surface p-6 text-muted text-sm">Loading packages…</div>
         </div>
+        <div id="pkg-pager"></div>
       </div>
     </main>
 
     <Footer />
 
-    <script define:vars={{ registryApi: site.registryApi }}>
-    function main() {
-    if (!document.getElementById('pkg-search')) return;
+    <script>
+      import { esc, escAttr, wireCopyButton, announce } from '../../lib/pkg-api';
+
+      function boot() {
+        if (!document.getElementById('pkg-search') || document.getElementById('pkg-search').dataset.wired) return;
+        document.getElementById('pkg-search').dataset.wired = '1';
+
         const searchInput = document.getElementById('pkg-search');
         const authorBtn = document.getElementById('pkg-author-btn');
         const authorLabel = document.getElementById('pkg-author-label');
@@ -125,21 +125,29 @@ import '../../styles/global.css';
         const sortBtn = document.getElementById('pkg-sort-btn');
         const sortLabel = document.getElementById('pkg-sort-label');
         const sortMenu = document.getElementById('pkg-sort-menu');
-        const categoryBtn = document.getElementById('pkg-category-btn');
-        const categoryLabel = document.getElementById('pkg-category-label');
-        const categoryMenu = document.getElementById('pkg-category-menu');
         const pkgList = document.getElementById('pkg-list');
+        const suggestBox = document.getElementById('pkg-suggest');
+
         let allPackages = [];
+        let totalPackages = 0;
+        let page = 0;
+        let serverMode = true;
+        const PAGE_SIZE = 24;
         let authorFilter = '';
         let licenseFilter = '';
         let maturityFilter = '';
-        let categoryFilter = '';
         let sortMode = 'recent';
-        // License lookup cache (name -> license): the search rows don't
-        // carry licenses, so one batched info round per unseen package.
-        const licenseCache = new Map();
+        let inFlight = null;
+        let debounce = 0;
+
+        const CATEGORIES = ['backend', 'cli', 'frameworks', 'math', 'gui', 'utilities'];
+        let categoryFilter = new URLSearchParams(window.location.search).get('category') || '';
+        if (categoryFilter && !CATEGORIES.includes(categoryFilter.toLowerCase())) categoryFilter = '';
+        categoryFilter = categoryFilter.toLowerCase();
+
         const SORTS = [
           ['recent', 'Recently updated'],
+          ['downloads', 'Most downloaded'],
           ['name', 'Name A–Z'],
         ];
         const MATURITIES = [
@@ -148,103 +156,123 @@ import '../../styles/global.css';
           ['early', 'Early (0.x)'],
         ];
 
-        // Fixed vocabulary (mirrors the CLI): only categories present in
-        // the result set are offered, each with a live count.
-        const CATEGORIES = ['backend', 'cli', 'frameworks', 'math', 'gui', 'utilities'];
-        function refreshCategories() {
-          const counts = {};
-          for (const p of allPackages) {
-            if (p.category) counts[p.category] = (counts[p.category] || 0) + 1;
-          }
-          const present = CATEGORIES.filter((c) => counts[c]);
-          if (categoryFilter && !counts[categoryFilter]) {
-            categoryFilter = '';
-            categoryLabel.textContent = 'All categories';
-          }
-          categoryMenu.innerHTML =
-            `<button data-category="" role="option" class="filter-item">All categories${categoryFilter === '' ? checkMark() : ''}</button>` +
-            present
-              .map(
-                (c) =>
-                  `<button data-category="${esc(c)}" role="option" class="filter-item">${esc(c)}<span class="ml-auto text-xs text-faint">${counts[c]}</span>${categoryFilter === c ? checkMark() : ''}</button>`,
-              )
-              .join('') +
-            (present.length === 0 ? '<div class="px-3 py-2 text-xs text-faint">No categorized packages yet</div>' : '');
-          categoryMenu.querySelectorAll('[data-category]').forEach((btn) => {
-            btn.addEventListener('click', () => {
-              categoryFilter = btn.dataset.category;
-              categoryLabel.textContent = categoryFilter || 'All categories';
-              closeMenus();
-              renderPackages();
-            });
-          });
-        }
         function majorOf(v) {
           const n = parseInt(String(v || '0').split('.')[0], 10);
           return Number.isFinite(n) ? n : 0;
         }
 
+        function serverSort() {
+          return sortMode === 'downloads' ? 'downloads' : sortMode === 'name' ? 'name' : 'updated';
+        }
+
+        // Same-origin search: one request per settle, abortable so fast
+        // typing never races. All filters + sort + paging run server-side
+        // (envelope carries the total). Legacy array responses (old
+        // registry) fall back to client-side filtering over the page.
         async function fetchPackages(query) {
+          if (inFlight) inFlight.abort();
+          inFlight = new AbortController();
+          const signal = inFlight.signal;
+          const timer = setTimeout(() => inFlight.abort(), 10000);
           try {
-            const url = query
-              ? `${registryApi}/api/pkg/search?q=${encodeURIComponent(query)}`
-              : `${registryApi}/api/pkg/search?q=`;
-            const res = await fetch(url);
+            const params = new URLSearchParams({
+              q: query || '',
+              limit: String(PAGE_SIZE),
+              offset: String(page * PAGE_SIZE),
+              sort: serverSort(),
+              envelope: '1',
+            });
+            if (authorFilter) params.set('author', authorFilter);
+            if (categoryFilter) params.set('category', categoryFilter);
+            if (licenseFilter) params.set('license', licenseFilter);
+            if (maturityFilter) params.set('maturity', maturityFilter);
+            const res = await fetch(`/api/pkg/search?${params.toString()}`, { signal, headers: { Accept: 'application/json' } });
+            if (!res.ok) throw new Error(`search ${res.status}`);
             const data = await res.json();
-            allPackages = Array.isArray(data) ? data : [];
+            if (signal.aborted) return;
+            if (Array.isArray(data)) {
+              serverMode = false;
+              allPackages = data;
+              totalPackages = applyClientFilters(data).length;
+            } else {
+              serverMode = true;
+              allPackages = Array.isArray(data.items) ? data.items : [];
+              totalPackages = Number(data.total) || 0;
+            }
             refreshAuthors();
-            refreshLicenses();
-            refreshCategories();
+            refreshLicenseMenu();
+            renderCategoryPills();
             renderPackages();
             renderSuggest(searchInput.value.trim());
-          } catch {
+          } catch (e) {
+            if (signal.aborted) return;
             renderEmpty('Could not reach the registry. Try again in a moment.');
+            announce('Could not reach the registry');
+          } finally {
+            clearTimeout(timer);
           }
         }
 
-        async function licenseOf(name) {
-          if (licenseCache.has(name)) return licenseCache.get(name);
-          try {
-            const res = await fetch(`${registryApi}/api/pkg/${encodeURIComponent(name)}`);
-            if (!res.ok) return '';
-            const pkg = await res.json();
-            const lic = (pkg.metadata && pkg.metadata.license) || '';
-            licenseCache.set(name, lic);
-            return lic;
-          } catch {
-            return '';
-          }
+        // Legacy path: exact-match filters over fetched rows.
+        function applyClientFilters(rows) {
+          let list = rows.slice();
+          if (authorFilter) list = list.filter((p) => p.author === authorFilter);
+          if (licenseFilter) list = list.filter((p) => (p.license || '') === licenseFilter);
+          if (maturityFilter === 'stable') list = list.filter((p) => majorOf(p.latest) >= 1);
+          if (maturityFilter === 'early') list = list.filter((p) => majorOf(p.latest) < 1);
+          return list;
         }
 
-        async function refreshLicenses() {
-          const missing = allPackages.map((p) => p.name).filter((n) => !licenseCache.has(n));
-          await Promise.all(missing.map((n) => licenseOf(n)));
-          const licenses = [...new Set(allPackages.map((p) => licenseCache.get(p.name) || '').filter(Boolean))].sort();
+        function renderCategoryPills() {
+          const box = document.getElementById('pkg-cats');
+          const pill = (value, label) => {
+            const on = categoryFilter === value;
+            return `<button data-cat="${escAttr(value)}" aria-pressed="${on}" class="px-3 py-1.5 rounded-full border text-[13px] font-mono transition ${on ? 'border-accent-border bg-accent-soft text-accent' : 'border-border text-muted hover:text-foreground hover:border-accent-border'}">${esc(label)}</button>`;
+          };
+          box.innerHTML = pill('', 'All') + CATEGORIES.map((c) => pill(c, c)).join('');
+          box.querySelectorAll('[data-cat]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+              categoryFilter = btn.dataset.cat;
+              page = 0;
+              const url = new URL(window.location.href);
+              if (categoryFilter) url.searchParams.set('category', categoryFilter);
+              else url.searchParams.delete('category');
+              window.history.replaceState(null, '', url.toString());
+              fetchPackages(searchInput.value.trim());
+            });
+          });
+        }
+
+        // License options derive from the search rows directly (F-04).
+        function licenseList() {
+          return [...new Set(allPackages.map((p) => p.license).filter(Boolean))].sort();
+        }
+
+        function refreshLicenseMenu() {
+          const licenses = licenseList();
           if (licenseFilter && !licenses.includes(licenseFilter)) {
             licenseFilter = '';
             licenseLabel.textContent = 'All licenses';
           }
           licenseMenu.innerHTML =
-            `<button data-license="" role="option" class="filter-item">All licenses${licenseFilter === '' ? checkMark() : ''}</button>` +
+            `<button data-license="" role="option" aria-selected="${licenseFilter === ''}" class="filter-item">All licenses${licenseFilter === '' ? checkMark() : ''}</button>` +
             licenses
               .map(
                 (l) =>
-                  `<button data-license="${esc(l)}" role="option" class="filter-item">${esc(l)}${licenseFilter === l ? checkMark() : ''}</button>`,
+                  `<button data-license="${escAttr(l)}" role="option" aria-selected="${licenseFilter === l}" class="filter-item">${esc(l)}${licenseFilter === l ? checkMark() : ''}</button>`,
               )
               .join('');
           licenseMenu.querySelectorAll('[data-license]').forEach((btn) => {
             btn.addEventListener('click', () => {
               licenseFilter = btn.dataset.license;
               licenseLabel.textContent = licenseFilter || 'All licenses';
+              page = 0;
               closeMenus();
-              renderPackages();
+              fetchPackages(searchInput.value.trim());
             });
           });
         }
 
-        // Author filter with fuzzy search: type to narrow, click to pick.
-        // (The search API matches name/description only, so author options
-        // derive from the result set client-side.)
         function authorList() {
           return [...new Set(allPackages.map((p) => p.author).filter(Boolean))].sort();
         }
@@ -263,11 +291,11 @@ import '../../styles/global.css';
           const query = q.trim().toLowerCase();
           const authors = authorList().filter((a) => !query || a.toLowerCase().includes(query));
           authorOpts.innerHTML =
-            `<button data-author="" role="option" class="filter-item">All authors${authorFilter === '' ? checkMark() : ''}</button>` +
+            `<button data-author="" role="option" aria-selected="${authorFilter === ''}" class="filter-item">All authors${authorFilter === '' ? checkMark() : ''}</button>` +
             authors
               .map(
                 (a) =>
-                  `<button data-author="${esc(a)}" role="option" class="filter-item">${esc(a)}${authorFilter === a ? checkMark() : ''}</button>`,
+                  `<button data-author="${escAttr(a)}" role="option" aria-selected="${authorFilter === a}" class="filter-item">${esc(a)}${authorFilter === a ? checkMark() : ''}</button>`,
               )
               .join('') +
             (authors.length === 0 ? '<div class="px-3 py-2 text-xs text-faint">No authors match</div>' : '');
@@ -275,8 +303,9 @@ import '../../styles/global.css';
             btn.addEventListener('click', () => {
               authorFilter = btn.dataset.author;
               authorLabel.textContent = authorFilter || 'All authors';
+              page = 0;
               closeMenus();
-              renderPackages();
+              fetchPackages(searchInput.value.trim());
             });
           });
         }
@@ -285,9 +314,12 @@ import '../../styles/global.css';
           return '<svg class="ml-auto" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
         }
 
-        function closeMenus() {
-          [authorMenu, licenseMenu, maturityMenu, sortMenu, categoryMenu].forEach((m) => m.classList.add('hidden'));
-          [authorBtn, licenseBtn, maturityBtn, sortBtn, categoryBtn].forEach((b) => b.setAttribute('aria-expanded', 'false'));
+        function closeMenus(returnFocus) {
+          [authorMenu, licenseMenu, maturityMenu, sortMenu].forEach((m) => m.classList.add('hidden'));
+          [authorBtn, licenseBtn, maturityBtn, sortBtn].forEach((b) => b.setAttribute('aria-expanded', 'false'));
+          if (returnFocus && document.activeElement && document.activeElement.closest('[role="listbox"]')) {
+            returnFocus.focus();
+          }
         }
 
         function toggleMenu(menu, btn) {
@@ -310,29 +342,26 @@ import '../../styles/global.css';
         wireMenu(licenseBtn, licenseMenu);
         wireMenu(maturityBtn, maturityMenu);
         wireMenu(sortBtn, sortMenu);
-        wireMenu(categoryBtn, categoryMenu);
-        document.addEventListener('click', (e) => {
-          if (![authorMenu, licenseMenu, maturityMenu, sortMenu, categoryMenu].some((m) => m.contains(e.target))) closeMenus();
-        });
         if (authorSearch) {
           authorSearch.addEventListener('click', (e) => e.stopPropagation());
           authorSearch.addEventListener('input', (e) => renderAuthorOpts(e.target.value));
         }
         maturityMenu.innerHTML = MATURITIES.map(
           ([v, label]) =>
-            `<button data-maturity="${v}" role="option" class="filter-item">${label}${maturityFilter === v ? checkMark() : ''}</button>`,
+            `<button data-maturity="${escAttr(v)}" role="option" aria-selected="${maturityFilter === v}" class="filter-item">${esc(label)}${maturityFilter === v ? checkMark() : ''}</button>`,
         ).join('');
         maturityMenu.querySelectorAll('[data-maturity]').forEach((btn) => {
           btn.addEventListener('click', () => {
             maturityFilter = btn.dataset.maturity;
             maturityLabel.textContent = MATURITIES.find(([v]) => v === maturityFilter)[1];
+            page = 0;
             closeMenus();
-            renderPackages();
+            fetchPackages(searchInput.value.trim());
           });
         });
         sortMenu.innerHTML = SORTS.map(
           ([v, label]) =>
-            `<button data-sort="${v}" role="option" class="filter-item">${label}${sortMode === v ? checkMark() : ''}</button>`,
+            `<button data-sort="${escAttr(v)}" role="option" aria-selected="${sortMode === v}" class="filter-item">${esc(label)}${sortMode === v ? checkMark() : ''}</button>`,
         ).join('');
         sortMenu.querySelectorAll('[data-sort]').forEach((btn) => {
           btn.addEventListener('click', () => {
@@ -340,29 +369,84 @@ import '../../styles/global.css';
             sortLabel.textContent = SORTS.find(([v]) => v === sortMode)[1];
             sortMenu.querySelectorAll('[data-sort]').forEach((b) => {
               const on = b.dataset.sort === sortMode;
+              b.setAttribute('aria-selected', String(on));
               b.querySelector('svg')?.remove();
               if (on) b.insertAdjacentHTML('beforeend', checkMark());
             });
+            page = 0;
             closeMenus();
-            renderPackages();
+            fetchPackages(searchInput.value.trim());
           });
         });
 
         function visiblePackages() {
-          let list = allPackages.slice();
-          if (authorFilter) list = list.filter((p) => p.author === authorFilter);
-          if (categoryFilter) list = list.filter((p) => p.category === categoryFilter);
-          if (licenseFilter) list = list.filter((p) => (licenseCache.get(p.name) || '') === licenseFilter);
-          if (maturityFilter === 'stable') list = list.filter((p) => majorOf(p.latest) >= 1);
-          if (maturityFilter === 'early') list = list.filter((p) => majorOf(p.latest) < 1);
-          if (sortMode === 'name') list.sort((a, b) => String(a.name).localeCompare(String(b.name)));
-          return list;
+          if (serverMode) return allPackages;
+          const filtered = applyClientFilters(allPackages);
+          totalPackages = filtered.length;
+          return filtered.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
+        }
+
+        function totalPages() {
+          return Math.max(1, Math.ceil(totalPackages / PAGE_SIZE));
+        }
+
+        function renderPager() {
+          const pager = document.getElementById('pkg-pager');
+          const pages = totalPages();
+          if (pages <= 1) {
+            pager.innerHTML = '';
+            return;
+          }
+          const btn = (p, label, opts = {}) => {
+            const isCurrent = p === page;
+            const disabled = opts.disabled ? 'disabled' : '';
+            return `<button data-page="${p}" ${disabled} ${isCurrent ? 'aria-current="page"' : ''} class="min-w-9 px-2.5 py-1.5 rounded-lg border text-sm font-mono transition ${isCurrent ? 'border-accent-border bg-accent-soft text-accent' : 'border-border text-muted hover:text-foreground hover:border-accent-border'} disabled:opacity-40">${label}</button>`;
+          };
+          let nums = [];
+          const win = [];
+          for (let p = 0; p < pages; p++) {
+            if (p === 0 || p === pages - 1 || Math.abs(p - page) <= 2) win.push(p);
+          }
+          let last = -1;
+          for (const p of win) {
+            if (p - last > 1) nums.push('<span class="px-1 text-faint">…</span>');
+            nums.push(btn(p, String(p + 1)));
+            last = p;
+          }
+          pager.innerHTML = `
+            <div class="mt-8 flex flex-wrap items-center justify-between gap-3">
+              <span class="text-xs font-mono text-faint">Showing ${page * PAGE_SIZE + 1}–${Math.min((page + 1) * PAGE_SIZE, totalPackages)} of ${totalPackages}</span>
+              <div class="flex items-center gap-1.5" role="navigation" aria-label="Package pages">
+                ${btn(Math.max(0, page - 1), 'Previous', { disabled: page === 0 })}
+                ${nums.join('')}
+                ${btn(Math.min(pages - 1, page + 1), 'Next', { disabled: page >= pages - 1 })}
+              </div>
+            </div>`;
+          pager.querySelectorAll('[data-page]').forEach((b) => {
+            b.addEventListener('click', () => {
+              const next = Number(b.dataset.page);
+              if (next === page) return;
+              page = next;
+              fetchPackages(searchInput.value.trim());
+              document.getElementById('pkg-list').scrollIntoView({ block: 'start' });
+            });
+          });
         }
 
         function renderPackages() {
           const packages = visiblePackages();
           const counter = document.getElementById('pkg-count');
-          if (counter) counter.textContent = packages.length === 1 ? '1 package' : `${packages.length} packages`;
+          if (counter) {
+            counter.textContent =
+              totalPackages === 0
+                ? '0 packages'
+                : totalPackages === packages.length && totalPages() === 1
+                  ? totalPackages === 1
+                    ? '1 package'
+                    : `${totalPackages} packages`
+                  : `Showing ${page * PAGE_SIZE + 1}–${page * PAGE_SIZE + packages.length} of ${totalPackages}`;
+          }
+          renderPager();
           if (packages.length === 0) {
             renderEmpty();
             return;
@@ -377,58 +461,28 @@ import '../../styles/global.css';
                   <span class="shrink-0 bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 text-xs rounded-full font-mono">v${esc(pkg.latest)}</span>
                 </div>
                 <p class="text-sm mt-1.5 leading-relaxed text-muted">${esc(pkg.description) || 'No description'}</p>
-                ${pkg.category ? `<div class="mt-2.5"><span class="inline-block bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 text-[11px] rounded-full font-mono">${esc(pkg.category)}</span></div>` : ''}
               </a>
               <div class="flex items-center justify-between mt-4 text-xs">
                 <a href="/u/${encodeURIComponent(pkg.author || '')}" class="flex items-center gap-1.5 text-muted hover:text-blue-400">
                   <span class="flex items-center justify-center w-5 h-5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 font-mono text-[10px] font-semibold">${esc((pkg.author || '?').slice(0, 1).toUpperCase())}</span>
                   ${esc(pkg.author)}
                 </a>
-                <button data-copy="zz add ${esc(pkg.name)}" class="copy-btn bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg border border-slate-700/50 flex items-center gap-2"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>copy install</span></button>
+                <button data-copy="zz add ${escAttr(pkg.name)}" class="copy-btn bg-surface hover:bg-raised text-muted hover:text-accent text-xs px-3 py-1.5 rounded-lg border border-border flex items-center gap-2"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>copy install</span></button>
               </div>
             </div>`,
             )
             .join('');
-          pkgList.querySelectorAll('.copy-btn').forEach((btn) => {
-            btn.addEventListener('click', async () => {
-              const label = btn.querySelector('span');
-              try {
-                await navigator.clipboard.writeText(btn.dataset.copy);
-                if (label) label.textContent = 'copied!';
-                setTimeout(() => {
-                  if (label) label.textContent = 'copy install';
-                }, 1500);
-              } catch {
-                if (label) label.textContent = 'copy failed';
-              }
-            });
-          });
+          pkgList.querySelectorAll('.copy-btn').forEach((btn) => wireCopyButton(btn, 'copy install'));
         }
 
         function renderEmpty(note) {
           pkgList.innerHTML = `
             <div class="rounded-lg border border-border bg-surface p-8 text-center md:col-span-2 lg:col-span-3">
               <p class="text-foreground font-medium mb-1">No packages found</p>
-              <p class="text-muted text-sm mb-4">${note || 'Be the first to publish a package.'}</p>
+              <p class="text-muted text-sm mb-4">${esc(note || 'Be the first to publish a package.')}</p>
               <code class="inline-block px-3 py-1.5 bg-background border border-border rounded-md text-accent text-sm font-mono">zz publish</code>
             </div>`;
         }
-
-        function esc(s) {
-          return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-        }
-
-        let timeout;
-        const suggestBox = document.getElementById('pkg-suggest');
-
-        // Deep link: /pkg?category=cli preselects the filter.
-        try {
-          const deep = new URLSearchParams(window.location.search).get('category') || '';
-          if (deep) {
-            categoryFilter = deep;
-            categoryLabel.textContent = deep;
-          }
-        } catch {}
 
         function renderSuggest(query) {
           const q = query.toLowerCase();
@@ -452,8 +506,8 @@ import '../../styles/global.css';
         searchInput.addEventListener('input', (e) => {
           const q = e.target.value.trim();
           renderSuggest(q);
-          clearTimeout(timeout);
-          timeout = setTimeout(() => fetchPackages(q), 300);
+          clearTimeout(debounce);
+          debounce = setTimeout(() => { page = 0; fetchPackages(q); }, 300);
         });
         searchInput.addEventListener('blur', () => {
           setTimeout(() => suggestBox.classList.add('hidden'), 150);
@@ -461,8 +515,38 @@ import '../../styles/global.css';
         searchInput.addEventListener('focus', (e) => renderSuggest(e.target.value.trim()));
 
         fetchPackages('');
-    }
-    document.addEventListener('astro:page-load', main);
+      }
+
+      boot();
+      // Document-level handlers registered once (F-10): Escape closes
+      // menus, outside clicks dismiss. Per-menu buttons wire in boot().
+      if (!(window as any).__zzPkgIndexNav) {
+        (window as any).__zzPkgIndexNav = true;
+        document.addEventListener('astro:page-load', boot);
+        document.addEventListener('click', (e) => {
+          const menus = ['pkg-author-menu', 'pkg-license-menu', 'pkg-maturity-menu', 'pkg-sort-menu'];
+          const open = menus.map((id) => document.getElementById(id)).filter((m) => m && !m.classList.contains('hidden'));
+          if (open.length === 0) return;
+          if (open.some((m) => m.contains(e.target))) return;
+          open.forEach((m) => m.classList.add('hidden'));
+        });
+        document.addEventListener('keydown', (e) => {
+          if (e.key !== 'Escape') return;
+          const menus = ['pkg-author-menu', 'pkg-license-menu', 'pkg-maturity-menu', 'pkg-sort-menu'];
+          const btns = ['pkg-author-btn', 'pkg-license-btn', 'pkg-maturity-btn', 'pkg-sort-btn'];
+          let focused = false;
+          menus.forEach((id, i) => {
+            const m = document.getElementById(id);
+            if (m && !m.classList.contains('hidden')) {
+              m.classList.add('hidden');
+              if (!focused) {
+                document.getElementById(btns[i])?.focus();
+                focused = true;
+              }
+            }
+          });
+        });
+      }
     </script>
   </body>
 </html>

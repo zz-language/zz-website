@@ -18,35 +18,16 @@ import site from './src/config/site.json';
 // https://astro.build/config
 export default defineConfig({
   site: site.domain,
-  // NOTE: pretty registry URLs (/pkg/[name], /u/[username]) are
-  // prerendered at build time from the live catalog (getStaticPaths).
-  // The query-param pages (/pkg/view?name=, /pkg/author?login=) stay as
-  // eternal fallbacks for packages published after the last site build.
-  // No SSR adapter: the site remains fully static on Cloudflare Pages.
-  // Starlight serves docs at site root; redirect spec /docs/* URLs there.
-  redirects: {
-    '/docs': '/getting-started',
-    '/docs/getting-started': '/getting-started',
-    '/docs/syntax': '/syntax',
-    '/docs/modules': '/stdlib/overview',
-    '/docs/language-reference': '/language-reference',
-    '/docs/error-handling': '/error-handling',
-    '/docs/best-practices': '/best-practices',
-    '/docs/async-sockets': '/async-sockets',
-    '/docs/advanced': '/advanced',
-    '/docs/stdlib': '/stdlib/overview',
-    '/docs/stdlib/overview': '/stdlib/overview',
-    '/docs/stdlib/str': '/stdlib/str',
-    '/docs/stdlib/vec': '/stdlib/vec',
-    '/docs/stdlib/json': '/stdlib/json',
-    '/docs/stdlib/http': '/stdlib/http',
-    '/docs/stdlib/fs': '/stdlib/fs',
-    '/docs/stdlib/env': '/stdlib/env',
-    '/docs/stdlib/math': '/stdlib/math',
-    '/docs/stdlib/time': '/stdlib/time',
-    '/docs/stdlib/encoding': '/stdlib/encoding',
-    '/docs/stdlib/net': '/stdlib/net',
-  },
+  // Fully static on Cloudflare Pages. Pretty registry URLs (/pkg/[name],
+  // /u/[username]) are NOT prerendered (getStaticPaths returns []): the
+  // Pages Functions fallback (functions/pkg/[name].ts, functions/u/[username].ts)
+  // serves the shell for any name, so publishing never needs a rebuild
+  // and builds never crawl the registry (fast rebuilds).
+  // Docs live under /docs/* via the Pages middleware rewrite
+  // (functions/_middleware.ts maps /docs/<slug> to the Starlight page,
+  // URL preserved); /docs/ itself is the docs hub (src/pages/docs.astro).
+  // NOTE: no /docs/* entries may exist in `redirects` — Pages applies
+  // static redirects before Functions, which would shadow the rewrite.
   integrations: [
     react(),
     starlight({

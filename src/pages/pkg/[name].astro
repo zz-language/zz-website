@@ -3,28 +3,21 @@ import CustomHeader from '../../components/header/CustomHeader.astro';
 import { ClientRouter } from 'astro:transitions';
 import ThemeInit from '../../components/ThemeInit.astro';
 import Footer from '../../components/Footer.astro';
-import Icon from '../../components/icons/Icon.astro';
+import PkgDetail from '../../components/pkg/PkgDetail.astro';
 import site from '../../config/site.json';
 import '../../styles/global.css';
 
 const routeName = Astro.params.name ?? '';
 
+// Intentionally NOT prerendered: the Pages Function fallback
+// (functions/pkg/[name].ts) serves this shell for every name, so new
+// packages resolve without a rebuild and builds never crawl the registry.
 export async function getStaticPaths() {
-  // Retry: a registry cold-start during build/dev-start must not silently
-  // yield zero pretty URLs (Astro caches the first result).
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    try {
-      const res = await fetch(`${site.registryApi}/api/pkg/search?q=`);
-      const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
-        return data.map((p) => ({ params: { name: p.name } }));
-      }
-    } catch {}
-    await new Promise((r) => setTimeout(r, 2000 * attempt));
-  }
-  console.warn('[pkg/[name]] registry unreachable after retries: no pretty package URLs prerendered');
   return [];
 }
+
+const pageTitle = routeName ? `${routeName} | ZZ Packages` : `Package | ${site.siteName}`;
+const canonical = `${site.domain}/pkg/${encodeURIComponent(routeName)}`;
 ---
 
 <html lang="en">
@@ -34,355 +27,46 @@ export async function getStaticPaths() {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>Package | {site.siteName}</title>
+    <title>{pageTitle}</title>
+    <meta name="description" content="ZZ package details and install instructions." />
+    <link rel="canonical" href={canonical} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={site.domain + site.ogImage} />
+    <meta name="twitter:card" content="summary" />
   </head>
   <body class="bg-background text-foreground font-sans antialiased">
     <CustomHeader />
 
     <main class="pt-14">
       <div class="max-w-4xl mx-auto px-4 md:px-6 py-10 md:py-14">
-        <a href="/pkg" class="inline-flex items-center gap-1.5 text-sm text-accent hover:underline mb-6">
-          <Icon name="chevron-right" size={16} class="rotate-180" />
-          Back to packages
-        </a>
-        <div id="pkg-content">
-          <div class="text-muted text-sm">Loading package…</div>
-        </div>
+        <PkgDetail routeName={routeName} />
       </div>
     </main>
 
     <Footer />
 
-    <script define:vars={{ registryApi: site.registryApi, routeName }}>
-    function main() {
-    if (!document.getElementById('pkg-content')) return;
-        const content = document.getElementById('pkg-content');
-        const pkgName = routeName || new URLSearchParams(window.location.search).get('name');
-
-        function esc(s) {
-          return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-        }
-
-        function fmtSize(b) {
-          if (typeof b !== 'number' || !(b > 0)) return '—';
-          const units = ['B', 'KB', 'MB', 'GB'];
-          let i = 0;
-          let v = b;
-          while (v >= 1024 && i < units.length - 1) {
-            v /= 1024;
-            i++;
-          }
-          return (i === 0 ? v : v.toFixed(1)) + ' ' + units[i];
-        }
-
-        function zzSession() {
-          try {
-            const login = localStorage.getItem('zz_login') || '';
-            const token = localStorage.getItem('zz_token') || '';
-            return login && token ? { login, token } : null;
-          } catch {
-            return null;
-          }
-        }
-
-        function versionsHtml(md) {
-          const versions = Array.isArray(md.versions) ? md.versions : [];
-          if (versions.length === 0) return '';
-          const details =
-            md.version_details && typeof md.version_details === 'object' ? md.version_details : {};
-          const rows = versions
-            .map((v) => {
-              const d = details[v] || {};
-              const sha = typeof d.sha256 === 'string' ? d.sha256.slice(0, 12) : '';
-              const lic = d.license || md.license || '';
-              const tag = v === md.latest ? ' <span class="text-accent">latest</span>' : '';
-              return `<div class="flex items-center justify-between gap-3 py-2.5 border-b border-border last:border-0 font-mono text-sm"><span>v${esc(v)}${tag}</span><span class="text-faint text-xs">${esc(lic)}${sha ? ` · <span title="${esc(d.sha256 || '')}">${esc(sha)}</span>` : ''}</span></div>`;
-            })
-            .join('');
-          return `<div class="mb-4"><h2 class="font-medium mb-2">Versions</h2><div class="rounded-lg border border-border bg-surface px-4">${rows}</div></div>`;
-        }
-
-        if (!pkgName) {
-          content.innerHTML = `
-            <div class="text-center py-12">
-              <h1 class="text-xl font-semibold mb-2">No package specified</h1>
-              <p class="text-muted text-sm mb-6">Use search to find a package.</p>
-              <a href="/pkg" class="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium">Browse packages</a>
-            </div>`;
-        } else {
-          loadPackage(pkgName);
-        }
-
-        async function loadPackage(name) {
-          try {
-            const res = await fetch(`${registryApi}/api/pkg/${encodeURIComponent(name)}`);
-            if (!res.ok) throw new Error('not found');
-            const pkg = await res.json();
-            const md = pkg.metadata;
-            document.title = `${md.name} | ZZ Packages`;
-            const deps = md.deps && typeof md.deps === 'object' ? Object.entries(md.deps) : [];
-            content.innerHTML = `
-              <div class="flex items-start justify-between gap-4 mb-4">
-                <div>
-                  <h1 class="text-2xl md:text-3xl font-semibold tracking-tight font-mono">${esc(md.name)}</h1>
-                  <p class="text-muted mt-2">${esc(md.description) || 'No description'}</p>
-                </div>
-                <span class="shrink-0 text-accent font-mono">v${esc(md.latest)}</span>
-              </div>
-              ${
-                md.category || (Array.isArray(md.keywords) && md.keywords.length > 0)
-                  ? `<div class="flex flex-wrap items-center gap-1.5 mb-6">${
-                      md.category
-                        ? `<a href="/pkg?category=${encodeURIComponent(md.category)}" class="inline-block bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2.5 py-0.5 text-xs rounded-full font-mono hover:border-blue-500/50">${esc(md.category)}</a>`
-                        : ''
-                    }${Array.isArray(md.keywords) ? md.keywords.map((k) => `<span class="inline-block bg-raised border border-border px-2.5 py-0.5 text-xs rounded-full font-mono text-muted">${esc(k)}</span>`).join('') : ''}</div>`
-                  : ''
-              }
-              <div class="rounded-lg border border-border bg-surface p-4 mb-4">
-                <div class="text-xs text-faint font-mono mb-1.5">Install</div>
-                <div class="flex items-center justify-between gap-3">
-                  <code class="text-accent font-mono text-sm break-all">zz add ${esc(md.name)}</code>
-                  <button data-copy="zz add ${esc(md.name)}" class="copy-btn shrink-0 text-xs text-muted hover:text-accent font-mono border border-border rounded-md px-2.5 py-1.5">copy</button>
-                </div>
-              </div>
-              <div class="grid grid-cols-2 gap-4 mb-4">
-                <div class="rounded-lg border border-border bg-surface p-4">
-                  <div class="text-xs text-faint mb-1">Author</div>
-                  <a href="/u/${encodeURIComponent(md.author || '')}" class="font-mono text-sm text-accent hover:underline">${esc(md.author)}</a>
-                </div>
-                <div class="rounded-lg border border-border bg-surface p-4">
-                  <div class="text-xs text-faint mb-1">Version</div>
-                  <div class="font-mono text-sm">${esc(md.latest)}</div>
-                </div>
-                <div class="rounded-lg border border-border bg-surface p-4">
-                  <div class="text-xs text-faint mb-1">Size</div>
-                  <div class="font-mono text-sm" title="${typeof md.size_bytes === 'number' ? esc(md.size_bytes) + ' bytes (latest version)' : ''}">${esc(fmtSize(md.size_bytes))}</div>
-                </div>
-                ${
-                  md.homepage
-                    ? `<div class="rounded-lg border border-border bg-surface p-4">
-                  <div class="text-xs text-faint mb-1.5">Homepage</div>
-                  <a href="${esc(md.homepage)}" target="_blank" rel="noopener noreferrer" class="font-mono text-sm text-accent hover:underline break-all">${esc(String(md.homepage).replace(/^https?:\/\//, ''))}</a>
-                </div>`
-                    : ''
-                }
-              </div>
-              ${
-                (Array.isArray(md.owners) && md.owners.length > 0) || md.repo
-                  ? `<div class="grid grid-cols-2 gap-4 mb-4">
-                  <div class="rounded-lg border border-border bg-surface p-4">
-                    <div class="text-xs text-faint mb-1.5">Collaborators</div>
-                    <div class="flex flex-wrap items-center gap-1.5">${
-                      Array.isArray(md.owners) && md.owners.length > 0
-                        ? md.owners
-                            .map(
-                              (o) => `<a href="/u/${encodeURIComponent(o)}" title="${esc(o)}" class="flex items-center justify-center w-7 h-7 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 font-mono text-xs font-semibold hover:border-blue-500/50">${esc(String(o).slice(0, 1).toUpperCase())}</a>`,
-                            )
-                            .join('')
-                        : '<span class="text-xs text-faint">—</span>'
-                    }</div>
-                  </div>
-                  <div class="rounded-lg border border-border bg-surface p-4">
-                    <div class="text-xs text-faint mb-1.5">Repository</div>
-                    ${
-                      md.repo
-                        ? `<a href="${esc(md.repo)}" target="_blank" rel="noopener noreferrer" class="font-mono text-sm text-accent hover:underline break-all">${esc(md.repo.replace(/^https?:\/\//, ''))}</a>`
-                        : '<span class="text-xs text-faint">Not linked</span>'
-                    }
-                  </div>
-                </div>`
-                  : ''
-              }
-              ${versionsHtml(md)}
-              ${
-                deps.length > 0
-                  ? `<div class="mb-4">
-                  <h2 class="font-medium mb-2">Dependencies</h2>
-                  <div class="rounded-lg border border-border bg-surface px-4">
-                    ${deps.map(([k, v]) => `<div class="flex justify-between py-2.5 border-b border-border last:border-0 font-mono text-sm"><span>${esc(k)}</span><span class="text-muted">${esc(v)}</span></div>`).join('')}
-                  </div>
-                </div>`
-                  : ''
-              }
-              <div>
-                <h2 class="font-medium mb-2">README</h2>
-                <div class="rounded-lg border border-border bg-surface p-5 md:p-6 md-body" data-readme>${pkg.readme ? 'Loading README…' : 'No README available.'}</div>
-              </div>
-              <div data-settings></div>`;
-            if (pkg.readme) {
-              const readmeEl = content.querySelector('[data-readme]');
-              const render = window.renderMarkdown;
-              if (readmeEl && typeof render === 'function') {
-                readmeEl.innerHTML = render(pkg.readme);
-              } else if (readmeEl) {
-                readmeEl.textContent = pkg.readme;
-              }
-            }
-            const copyBtn = content.querySelector('.copy-btn');
-            if (copyBtn) {
-              copyBtn.addEventListener('click', async () => {
-                try {
-                  await navigator.clipboard.writeText(copyBtn.dataset.copy);
-                  copyBtn.textContent = 'copied!';
-                  setTimeout(() => (copyBtn.textContent = 'copy'), 1500);
-                } catch {
-                  copyBtn.textContent = 'copy failed';
-                }
-              });
-            }
-            renderSettings(pkg, md);
-          } catch {
-            content.innerHTML = `
-              <div class="text-center py-12">
-                <h1 class="text-xl font-semibold mb-2">Package not found</h1>
-                <p class="text-muted text-sm mb-6">The package "${esc(name)}" does not exist yet.</p>
-                <code class="px-4 py-2 bg-surface border border-border rounded-lg text-accent font-mono text-sm">zz publish</code>
-              </div>`;
-          }
-        }
-
-        function renderSettings(pkg, md) {
-          const slot = content.querySelector('[data-settings]');
-          if (!slot) return;
-          const session = zzSession();
-          const owners = Array.isArray(md.owners) ? md.owners : [];
-          const isOwner = !!session && (owners.includes(session.login) || session.login === md.author);
-          if (!isOwner) return;
-          const token = session.token;
-          const inputCls =
-            'w-full bg-raised border border-border rounded-md px-3 py-2 text-sm font-mono placeholder:text-faint focus:outline-none focus:border-accent';
-          slot.innerHTML = `
-            <div class="mt-8 rounded-lg border border-accent-border bg-surface p-4 md:p-5">
-              <div class="flex items-center justify-between gap-3 mb-1">
-                <h2 class="font-medium">Package settings</h2>
-                <span class="text-xs text-faint font-mono">visible to owners only</span>
-              </div>
-              <p class="text-xs text-muted mb-4">Changes apply immediately and survive republishes. Leave a field empty to clear it.</p>
-              <div class="grid gap-3 mb-3">
-                <label class="block">
-                  <span class="block text-xs text-faint mb-1">Repository URL</span>
-                  <input data-set-repo class="${inputCls}" value="${esc(md.repo || '')}" placeholder="https://github.com/you/pkg" spellcheck="false" />
-                </label>
-                <label class="block">
-                  <span class="block text-xs text-faint mb-1">Homepage URL</span>
-                  <input data-set-homepage class="${inputCls}" value="${esc(md.homepage || '')}" placeholder="https://you.dev/pkg" spellcheck="false" />
-                </label>
-                <label class="block">
-                  <span class="block text-xs text-faint mb-1">Description</span>
-                  <input data-set-desc class="${inputCls}" value="${esc(md.description || '')}" placeholder="One-line description" maxlength="2000" spellcheck="false" />
-                </label>
-              </div>
-              <div class="flex items-center gap-3 mb-5">
-                <button data-set-save class="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium disabled:opacity-50">Save changes</button>
-                <span data-set-msg class="text-xs font-mono"></span>
-              </div>
-              <div class="border-t border-border pt-4">
-                <h3 class="text-sm font-medium mb-1">Collaborators</h3>
-                <p class="text-xs text-muted mb-3">Owners can publish and manage this package. They must have signed in once before you can add them.</p>
-                <div data-set-owners class="flex flex-wrap items-center gap-1.5 mb-3"></div>
-                <div class="flex items-center gap-2">
-                  <input data-set-add class="${inputCls}" style="max-width: 16rem" placeholder="github-login" spellcheck="false" />
-                  <button data-set-addbtn class="px-3 py-2 rounded-lg border border-border text-sm text-muted hover:text-accent hover:border-accent-border font-mono shrink-0">Add</button>
-                  <span data-set-ownmsg class="text-xs font-mono"></span>
-                </div>
-              </div>
-            </div>`;
-
-          const msg = slot.querySelector('[data-set-msg]');
-          const say = (el, text, ok) => {
-            el.textContent = text;
-            el.className = 'text-xs font-mono ' + (ok ? 'text-green-400' : 'text-red-400');
-          };
-          const api = async (method, path, body) => {
-            const res = await fetch(`${registryApi}${path}`, {
-              method,
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-              },
-              body: body === undefined ? undefined : JSON.stringify(body),
-            });
-            let data = {};
-            try {
-              data = await res.json();
-            } catch {}
-            if (!res.ok) throw new Error(data.error || `request failed (${res.status})`);
-            return data;
-          };
-          const refresh = () => loadPackage(md.name);
-
-          slot.querySelector('[data-set-save]').addEventListener('click', async (e) => {
-            const btn = e.currentTarget;
-            btn.disabled = true;
-            try {
-              await api('PUT', `/api/pkg/${encodeURIComponent(md.name)}`, {
-                repo: slot.querySelector('[data-set-repo]').value.trim(),
-                homepage: slot.querySelector('[data-set-homepage]').value.trim(),
-                description: slot.querySelector('[data-set-desc]').value.trim(),
-              });
-              say(msg, 'saved', true);
-              refresh();
-            } catch (err) {
-              say(msg, String((err && err.message) || err), false);
-            } finally {
-              btn.disabled = false;
-            }
-          });
-
-          const ownersEl = slot.querySelector('[data-set-owners]');
-          const ownMsg = slot.querySelector('[data-set-ownmsg]');
-          const paintOwners = (list, self) => {
-            ownersEl.innerHTML = list
-              .map(
-                (o) =>
-                  `<span class="inline-flex items-center gap-1.5 bg-raised border border-border pl-2.5 pr-1.5 py-1 text-xs rounded-full font-mono"><a href="/u/${encodeURIComponent(o)}" class="text-accent hover:underline">${esc(o)}</a>` +
-                  (o === self
-                    ? ''
-                    : `<button data-unowner="${esc(o)}" title="Remove ${esc(o)}" class="text-faint hover:text-red-400 font-mono px-1">×</button>`) +
-                  `</span>`,
-              )
-              .join('');
-            ownersEl.querySelectorAll('[data-unowner]').forEach((b) =>
-              b.addEventListener('click', async () => {
-                const login = b.dataset.unowner;
-                try {
-                  await api('DELETE', `/api/pkg/${encodeURIComponent(md.name)}/owners/${encodeURIComponent(login)}`);
-                  say(ownMsg, `removed ${login}`, true);
-                  refresh();
-                } catch (err) {
-                  say(ownMsg, String((err && err.message) || err), false);
-                }
-              }),
-            );
-          };
-          paintOwners(owners, session.login);
-
-          const addInput = slot.querySelector('[data-set-add]');
-          const doAdd = async () => {
-            const login = addInput.value.trim();
-            if (!login) return;
-            try {
-              await api('POST', `/api/pkg/${encodeURIComponent(md.name)}/owners`, { login });
-              say(ownMsg, `added ${login}`, true);
-              refresh();
-            } catch (err) {
-              say(ownMsg, String((err && err.message) || err), false);
-            }
-          };
-          slot.querySelector('[data-set-addbtn]').addEventListener('click', doAdd);
-          addInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              doAdd();
-            }
-          });
-        }
-    }
-    document.addEventListener('astro:page-load', main);
-    </script>
     <script>
-      import { renderMarkdown } from '../../lib/markdown';
-      window.renderMarkdown = renderMarkdown;
+      import { resolveSlug } from '../../lib/pkg-api';
+      import { renderPkgDetail, wirePkgDetail } from '../../lib/pkg-detail';
+
+      function boot() {
+        const content = document.getElementById('pkg-content');
+        if (!content || content.dataset.wired) return;
+        content.dataset.wired = '1';
+        if (content.dataset.ssr === '1') {
+          wirePkgDetail(content);
+        } else {
+          renderPkgDetail(content, resolveSlug(content.dataset.route || '', 'name'));
+        }
+      }
+      boot();
+      // Guarded: inline scripts re-execute on every View-Transitions
+      // navigation, but the document handler must be registered once.
+      if (!(window as any).__zzPkgDetailNav) {
+        (window as any).__zzPkgDetailNav = true;
+        document.addEventListener('astro:page-load', boot);
+      }
     </script>
   </body>
 </html>

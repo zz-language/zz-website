@@ -95,7 +95,7 @@ const ICONS: Record<string, string> = {
   }
 </style>
 
-<script define:vars={{ registryApi: site.registryApi, docs: DOCS, icons: ICONS }}>
+<script define:vars={{ docs: DOCS, icons: ICONS }}>
   let pkgCache = null;
   let items = [];
   let active = 0;
@@ -150,7 +150,7 @@ const ICONS: Record<string, string> = {
   async function packages() {
     if (pkgCache) return pkgCache;
     try {
-      const res = await fetch(`${registryApi}/api/pkg/search?q=`);
+      const res = await fetch(`/api/pkg/search?q=&limit=100`, { headers: { Accept: 'application/json' } });
       const data = await res.json();
       pkgCache = (Array.isArray(data) ? data : []).map((p) => ({
         title: p.name,
