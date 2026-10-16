@@ -3,8 +3,11 @@ import CustomHeader from '../components/header/CustomHeader.astro';
 import { ClientRouter } from 'astro:transitions';
 import ThemeInit from '../components/ThemeInit.astro';
 import Footer from '../components/Footer.astro';
+import Icon from '../components/icons/Icon.astro';
 import site from '../config/site.json';
 import '../styles/global.css';
+
+const issuesUrl = `${site.githubRepo}/issues/new?title=${encodeURIComponent('Broken link: ')}`;
 ---
 
 <html lang="en">
@@ -21,43 +24,128 @@ import '../styles/global.css';
     <CustomHeader />
 
     <main class="pt-14">
-      <div class="max-w-2xl mx-auto px-4 md:px-6 py-16 md:py-24 text-center">
-        <p class="font-mono text-sm text-faint mb-3" id="notfound-code">404</p>
-        <h1 class="text-3xl md:text-4xl font-semibold tracking-tight mb-4" id="notfound-title">Page not found</h1>
-        <p class="text-muted mb-2" id="notfound-body">This page wandered off.</p>
-        <p class="text-muted text-sm mb-8 hidden" id="notfound-hint"></p>
-        <div class="flex flex-wrap justify-center gap-3">
-          <a href="/pkg" class="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium">Browse packages</a>
-          <a href={site.docsPath} class="px-4 py-2 rounded-lg border border-border text-sm text-muted hover:text-foreground hover:border-accent-border">Read the docs</a>
-          <a href="/playground" class="px-4 py-2 rounded-lg border border-border text-sm text-muted hover:text-foreground hover:border-accent-border">Open playground</a>
+      <div class="max-w-2xl mx-auto px-4 md:px-6 py-14 md:py-20">
+        {/* Ghost backdrop */}
+        <div aria-hidden="true" class="pointer-events-none select-none text-center font-mono font-bold leading-none text-[7rem] md:text-[10rem] text-raised -mb-6 md:-mb-10">404</div>
+
+        {/* Terminal card — always dark, like code blocks */}
+        <div class="relative rounded-xl border border-[#21262d] bg-[#0d1117] overflow-hidden shadow-2xl shadow-black/50">
+          <div class="flex items-center gap-1.5 px-4 py-3 border-b border-[#21262d]">
+            <span class="w-3 h-3 rounded-full bg-[#ff5f57]"></span>
+            <span class="w-3 h-3 rounded-full bg-[#febc2e]"></span>
+            <span class="w-3 h-3 rounded-full bg-[#28c840]"></span>
+            <span class="ml-2 text-[#8b949e] text-xs font-mono">terminal — zz</span>
+            <span class="ml-auto font-mono text-[11px] px-2 py-0.5 rounded-full border border-[#f85149]/40 text-[#f85149] bg-[#f85149]/10">exit 404</span>
+          </div>
+          <div class="p-5 font-mono text-sm leading-7">
+            <div class="text-[#e6edf3] break-all"><span class="text-[#2f81f7]">$</span> <span id="nf-cmd">zz open …</span></div>
+            <div class="text-[#f85149] break-all" id="nf-err">error[E404]: path not found</div>
+            <div class="text-[#8b949e]" id="nf-hint">hint: check the spelling, or pick a door below <span class="zz-cursor" aria-hidden="true"></span></div>
+          </div>
         </div>
+
+        <h1 class="sr-only" id="notfound-title">Page not found</h1>
+        <p class="sr-only" id="notfound-body">This page does not exist.</p>
+        <p class="sr-only" id="notfound-hint"></p>
+
+        {/* Search */}
+        <form id="nf-search" class="mt-6 grid grid-cols-[minmax(0,1fr)_auto] gap-2" role="search" aria-label="Search packages">
+          <div class="relative min-w-0">
+            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-faint">
+              <Icon name="search" size={16} />
+            </span>
+            <label for="nf-q" class="sr-only">Search packages</label>
+            <input
+              id="nf-q"
+              type="text"
+              placeholder="Search packages, docs, authors…"
+              autocomplete="off"
+              class="w-full bg-surface border border-border rounded-lg py-2.5 pl-10 pr-3 text-sm placeholder:text-faint focus:outline-none focus:border-accent-border"
+            />
+          </div>
+          <button type="submit" class="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium shrink-0">Search</button>
+        </form>
+
+        {/* Doors */}
+        <div id="nf-doors" class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2.5"></div>
+
+        <p class="mt-8 text-center text-xs text-faint">
+          Landed here from a link on this site?
+          <a id="nf-report" href={issuesUrl} target="_blank" rel="noopener noreferrer" class="text-accent hover:underline">Report the broken link</a>
+        </p>
       </div>
     </main>
 
     <Footer />
 
-    <script>
+    <script define:vars={{ issuesBase: site.githubRepo }}>
       (function () {
         const path = window.location.pathname;
-        // Package URLs that missed both the prerender and the fallback
-        // function get a registry-flavored 404, not the generic one.
-        const m = path.match(/^\/(pkg|u)\/([^/]+)\/?$/);
-        if (!m) return;
-        const [, kind, slug] = m;
-        if (!/^[a-z0-9_-]+$/i.test(slug)) return;
+        const cmd = document.getElementById('nf-cmd');
+        const err = document.getElementById('nf-err');
+        const hint = document.getElementById('nf-hint');
+        const title = document.getElementById('notfound-title');
+        const doors = document.getElementById('nf-doors');
+        const report = document.getElementById('nf-report');
+
+        const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+        const seg = path.split('/').filter(Boolean).pop() || '';
+        const clean = /^[a-z0-9_.~-]+$/i.test(seg) ? seg : '';
+
+        cmd.textContent = `zz open ${path}`;
         document.title = 'Not found | ZZ Packages';
-        const isPkg = kind === 'pkg';
-        document.getElementById('notfound-title').textContent = isPkg
-          ? `Package "${slug}" not found`
-          : `Author "${slug}" has no page yet`;
-        document.getElementById('notfound-body').textContent = isPkg
-          ? `The package "${slug}" does not exist yet.`
-          : `No packages have been published under "${slug}" yet.`;
-        const hint = document.getElementById('notfound-hint');
-        hint.classList.remove('hidden');
-        hint.innerHTML = isPkg
-          ? 'Publishing it right now? Wait a minute for the registry, then <a href="" onclick="window.location.reload();return false" class="text-accent hover:underline">reload</a>. Otherwise ship it with <code class="font-mono text-xs text-accent">zz publish</code>.'
-          : 'If you just published, wait a minute for the registry, then reload.';
+        report.href = `${issuesBase}/issues/new?title=${encodeURIComponent(`Broken link: ${path}`)}`;
+
+        const door = (href, label, sub) => `
+          <a href="${href}" class="rounded-lg border border-border bg-surface p-3.5 hover:border-accent-border transition group">
+            <div class="text-sm font-medium group-hover:text-accent">${label}</div>
+            <div class="text-xs text-faint mt-0.5">${sub}</div>
+          </a>`;
+
+        const m = path.match(/^\/(pkg|u|docs)\/([^/]+)\/?$/);
+        if (m && clean) {
+          const [, kind, slug] = m;
+          if (kind === 'pkg') {
+            document.title = `Package "${slug}" not found | ZZ Packages`;
+            title.textContent = `Package "${slug}" not found`;
+            err.innerHTML = `error[E404]: package not found — <span class="text-zinc-100">${esc(slug)}</span> is not in the registry`;
+            hint.textContent = 'hint: publishing it right now? wait a minute, then reload — or ship it yourself';
+            doors.innerHTML =
+              door(`/pkg?search=${encodeURIComponent(slug)}`, 'Search similar', 'find a near-match') +
+              door('/pkg', 'Browse packages', 'everything published') +
+              door(`/pkg/edit?name=${encodeURIComponent(slug)}`, 'Publish it', 'zz publish, then reload');
+          } else if (kind === 'u') {
+            document.title = `Author "${slug}" not found | ZZ Packages`;
+            title.textContent = `Author "${slug}" not found`;
+            err.innerHTML = `error[E404]: no packages under <span class="text-zinc-100">@${esc(slug)}</span> yet`;
+            hint.textContent = 'hint: authors appear after their first publish';
+            doors.innerHTML =
+              door('/pkg', 'Browse packages', 'everything published') +
+              door('/docs/getting-started', 'Publish guide', 'ship your first package') +
+              door('/', 'Back home', 'start over');
+          } else {
+            document.title = 'Docs page not found | ZZ Packages';
+            title.textContent = 'Docs page not found';
+            err.innerHTML = `error[E404]: no docs page at <span class="text-zinc-100">${esc(path)}</span>`;
+            hint.textContent = 'hint: the docs moved under /docs/ — start from the hub';
+            doors.innerHTML =
+              door('/docs/', 'Docs hub', 'all guides') +
+              door('/docs/getting-started', 'Getting started', 'first install') +
+              door('/', 'Back home', 'start over');
+          }
+        } else {
+          err.innerHTML = `error[E404]: path not found — <span class="text-zinc-100">${esc(path)}</span>`;
+          doors.innerHTML =
+            door('/pkg', 'Packages', 'libraries for ZZ') +
+            door('/docs/', 'Documentation', 'guides + reference') +
+            door('/playground', 'Playground', 'run ZZ now');
+        }
+
+        document.getElementById('nf-search').addEventListener('submit', (e) => {
+          e.preventDefault();
+          const q = document.getElementById('nf-q').value.trim();
+          window.location.href = q ? `/pkg?q=${encodeURIComponent(q)}` : '/pkg';
+        });
       })();
     </script>
   </body>

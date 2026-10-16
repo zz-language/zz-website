@@ -6,6 +6,16 @@
 @import 'tailwindcss/theme.css' layer(theme);
 @import 'tailwindcss/utilities.css' layer(utilities);
 
+/* ——— Base box model (Tailwind preflight is intentionally not imported;
+   this keeps the box model sane without its element resets) ——— */
+@layer base {
+  *,
+  ::before,
+  ::after {
+    box-sizing: border-box;
+  }
+}
+
 /* ——— ZZ design tokens: deep black default, soft light alternative ——— */
 @theme {
   --color-background: #0b0f17;
