@@ -16,6 +16,35 @@ export interface TocEntry {
 
 const ALLOWED_LANG = /^[a-z0-9+#-]{1,20}$/i;
 
+// GitHub-style admonitions: `> [!NOTE]` … `> [!CAUTION]`.
+const ALERTS: Record<string, { label: string; icon: string }> = {
+  NOTE: {
+    label: 'Note',
+    icon: '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM7 5.5a1 1 0 1 1 2 0v1a1 1 0 0 1-2 0v-1Zm.5 3h1a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-3a.5.5 0 0 1 .5-.5Z"/></svg>',
+  },
+  TIP: {
+    label: 'Tip',
+    icon: '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.5c.362 0 .654.29.654.654 0 .36-.29.655-.654.655A1.782 1.782 0 0 1 6.384 1.5H8Zm-3.15 3.1c.36 0 .65.29.65.65v4.09c0 .723.3 1.235.83 1.745l1.324 1.26c.25.24.38.56.38.91v.1c0 .36-.29.65-.65.65H4.6a.65.65 0 0 1-.65-.65v-.1c0-.35.13-.67.38-.91l1.324-1.26c.53-.51.83-1.022.83-1.745V5.25c0-.36.29-.65.65-.65Z"/></svg>',
+  },
+  IMPORTANT: {
+    label: 'Important',
+    icon: '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM7 4.75a.75.75 0 0 1 1.5 0v4.5a.75.75 0 0 1-1.5 0v-4.5Zm.75 6.75a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Z"/></svg>',
+  },
+  WARNING: {
+    label: 'Warning',
+    icon: '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.5 1.6 13.4c-.2.35.05.8.45.8h12.9c.4 0 .65-.45.45-.8L8 1.5ZM7.25 6v3.5a.75.75 0 0 0 1.5 0V6a.75.75 0 0 0-1.5 0Zm.75 6.25a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z"/></svg>',
+  },
+  CAUTION: {
+    label: 'Caution',
+    icon: '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM4.5 6.6c.3-.3.77-.3 1.06 0l1.19 1.19 1.19-1.19c.3-.3.76-.3 1.06 0 .3.3.3.77 0 1.06l-1.19 1.19 1.19 1.19c.3.3.3.77 0 1.06-.3.3-.76.3-1.06 0L6.75 9.91l-1.19 1.19c-.3.3-.76.3-1.06 0-.3-.3-.3-.77 0-1.06l1.19-1.19-1.19-1.19c-.3-.29-.3-.76 0-1.06Z"/></svg>',
+  },
+};
+
+export const COPY_SVG =
+  '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M13.5 1.5H5.75a.75.75 0 0 0-.75.75v1.5h1.5v-.75h6.25v9.25H12v1.5h1.5a.75.75 0 0 0 .75-.75V2.25a.75.75 0 0 0-.75-.75ZM10.25 4H2.5a.75.75 0 0 0-.75.75v9.5c0 .414.336.75.75.75h7.75a.75.75 0 0 0 .75-.75v-9.5a.75.75 0 0 0-.75-.75Zm-7 8.5v-7.75h6.25v7.75H3.25Z"/></svg>';
+const CHECK_SVG =
+  '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 1.042-1.08l2.72 2.72 6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>';
+
 function escapeText(s: string): string {
   return s
     .replace(/&/g, '&amp;')
@@ -123,7 +152,18 @@ export function renderMarkdown(src: string): { html: string; toc: TocEntry[] } {
   };
   const closeQuote = () => {
     if (quote.length > 0) {
-      html.push(`<blockquote class="md-quote">${renderInline(quote.join(' '))}</blockquote>`);
+      // GitHub alert: `> [!NOTE]` as first line promotes the quote.
+      const first = quote[0].match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*(.*)$/i);
+      if (first) {
+        const kind = first[1].toUpperCase();
+        const meta = ALERTS[kind];
+        const rest = [first[2], ...quote.slice(1)].filter((l) => l !== '').join(' ');
+        html.push(
+          `<div class="md-alert md-alert-${kind.toLowerCase()}"><p class="md-alert-title">${meta.icon} ${meta.label}</p><p class="md-p">${renderInline(rest) || ''}</p></div>`,
+        );
+      } else {
+        html.push(`<blockquote class="md-quote">${renderInline(quote.join(' '))}</blockquote>`);
+      }
       quote = [];
     }
   };
@@ -138,7 +178,7 @@ export function renderMarkdown(src: string): { html: string; toc: TocEntry[] } {
     const id = `code-${Math.random().toString(36).slice(2, 8)}`;
     html.push(
       `<div class="md-codeblock"><div class="md-codebar"><span class="md-codelang">${lang}</span>` +
-        `<button class="md-copy" data-copy-target="${id}">copy</button></div>` +
+        `<button class="md-copy" data-copy-target="${id}" aria-label="Copy code to clipboard" title="Copy">${COPY_SVG}</button></div>` +
         `<pre><code id="${id}" class="language-${lang}">${code || ' '}</code></pre></div>`,
     );
     codeBuf = [];
@@ -181,7 +221,11 @@ export function renderMarkdown(src: string): { html: string; toc: TocEntry[] } {
       const text = h[2].replace(/`/g, '');
       const id = slugify(text.replace(/[#*_\[\]()!]/g, ''), seen);
       if (level <= 3) toc.push({ level, text, id });
-      html.push(`<h${level} id="${id}" class="md-h${level}">${renderInline(h[2])}</h${level}>`);
+      const anchor =
+        level <= 3
+          ? `<a href="#${id}" class="md-anchor" aria-label="Link to ${escapeText(text)}" title="Copy link">#</a>`
+          : '';
+      html.push(`<h${level} id="${id}" class="md-h${level}">${renderInline(h[2])}${anchor}</h${level}>`);
       i++;
       continue;
     }
@@ -298,18 +342,29 @@ export function renderMarkdown(src: string): { html: string; toc: TocEntry[] } {
   return { html: html.join('\n'), toc };
 }
 
-/** Wire `.md-copy` buttons inside a container (copies the code text). */
+/** Wire `.md-copy` buttons inside a container (GitHub-style icon swap). */
 export function wireMdCopy(root: HTMLElement): void {
   root.querySelectorAll('.md-copy').forEach((btn) => {
+    if ((btn as HTMLElement).dataset.mdWired) return;
+    (btn as HTMLElement).dataset.mdWired = '1';
     btn.addEventListener('click', async () => {
       const target = (btn as HTMLElement).dataset.copyTarget;
       const code = target ? root.querySelector(`#${CSS.escape(target)}`) : null;
+      const done = (ok: boolean) => {
+        btn.innerHTML = ok ? CHECK_SVG : COPY_SVG;
+        btn.setAttribute('aria-label', ok ? 'Copied!' : 'Copy failed — try again');
+        (btn as HTMLElement).classList.toggle('md-copied', ok);
+        setTimeout(() => {
+          btn.innerHTML = COPY_SVG;
+          btn.setAttribute('aria-label', 'Copy code to clipboard');
+          (btn as HTMLElement).classList.remove('md-copied');
+        }, 1500);
+      };
       try {
         await navigator.clipboard.writeText(code?.textContent ?? '');
-        btn.textContent = 'copied!';
-        setTimeout(() => (btn.textContent = 'copy'), 1500);
+        done(true);
       } catch {
-        btn.textContent = 'copy failed';
+        done(false);
       }
     });
   });
