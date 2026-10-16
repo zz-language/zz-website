@@ -118,6 +118,9 @@ export function wireCopyButton(btn: HTMLElement, idleLabel = 'copy'): void {
   });
 }
 
+/** Fixed category vocabulary (mirrors registry + CLI). */
+export const CATEGORIES = ['backend', 'cli', 'frameworks', 'math', 'gui', 'utilities'];
+
 /**
  * Resolve a package/author slug for detail shells from, in order:
  * explicit route param (pretty prerendered page), `?name=`/`?login=`
