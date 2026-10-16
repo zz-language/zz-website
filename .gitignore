@@ -27,3 +27,6 @@ plans/
 
 # opencode session state (local only, never commit)
 .opencode/
+
+# wrangler local state (deploy cache, logs)
+.wrangler/
