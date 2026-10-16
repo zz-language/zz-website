@@ -253,7 +253,6 @@ export function packageHtml(pkg: any, stale = false): string {
       </div>
       <h1 class="text-2xl md:text-3xl font-semibold tracking-tight font-mono">${esc(md.name)}</h1>
       <p class="text-muted mt-2">${esc(md.description) || 'No description'}</p>
-      <a href="/pkg/edit?name=${encodeURIComponent(md.name)}" class="inline-flex items-center gap-1 mt-2 text-xs text-faint hover:text-accent">Improve this page →</a>
     </div>
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
       <div class="rounded-lg border border-border bg-surface p-3">
